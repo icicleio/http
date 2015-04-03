@@ -1,0 +1,30 @@
+{
+    "name": "icicleio/http",
+    "description": "Asynchronous HTTP component for Icicle.",
+    "keywords": [
+        "http",
+        "asynchronous",
+        "async"
+    ],
+    "homepage": "http://icicle.io",
+    "license": "Apache-2.0",
+    "authors": [
+        {
+            "name": "Aaron Piotrowski",
+            "email": "aaron@icicle.io"
+        }
+    ],
+    "require": {
+        "icicleio/icicle": "dev-development",
+        "psr/http-message": "^0.9"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "~4",
+        "satooshi/php-coveralls": "dev-master"
+    },
+    "autoload": {
+        "psr-4": {
+            "Icicle\\Http\\": "src"
+        }
+    }
+}
