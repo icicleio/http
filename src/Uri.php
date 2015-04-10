@@ -2,10 +2,24 @@
 namespace Icicle\Http;
 
 use Icicle\Http\Exception\InvalidArgumentException;
-use Psr\Http\Message\UriInterface;
 
+/**
+ * URI implementation based on phly/http URI implementation.
+ *
+ * @see https://github.com/phly/http
+ */
 class Uri implements UriInterface
 {
+    const UNRESERVED_CHARS = 'A-Za-z0-9_\-\.~';
+    const GEN_DELIMITERS = ':\/\?#\[\]@';
+    const SUB_DELIMITERS = '!\$&\'\(\)\*\+,;=';
+    const ENCODED_CHAR = '%(?![A-Fa-f0-9]{2})';
+
+    /**
+     * Array of valid schemes to corresponding port numbers.
+     *
+     * @var int[]
+     */
     protected static $schemes = [
         'http'  => 80,
         'https' => 443
@@ -42,19 +56,14 @@ class Uri implements UriInterface
     private $path;
 
     /**
-     * @var string
+     * @var string[]
      */
-    private $query;
+    private $query = [];
 
     /**
      * @var string
      */
     private $fragment;
-
-    /**
-     * @var string|null
-     */
-    private $uri;
 
     /**
      * @param   string $uri
@@ -66,14 +75,6 @@ class Uri implements UriInterface
         if (strlen($uri)) {
             $this->parseUri($uri);
         }
-    }
-
-    /**
-     * Nulls cached string representation of URI.
-     */
-    public function __clone()
-    {
-        $this->uri = null;
     }
 
     /**
@@ -89,18 +90,19 @@ class Uri implements UriInterface
      */
     public function getAuthority()
     {
-        if (!$this->host) {
-            return $this->host;
+        $authority = $this->getHost();
+        if (!$authority) {
+            return '';
         }
 
-        $authority = $this->host;
         $userInfo = $this->getUserInfo();
         if ($userInfo) {
             $authority = sprintf('%s@%s', $userInfo, $authority);
         }
 
-        if ($this->port) {
-            $authority .= sprintf(':%s', $this->port);
+        $port = $this->getPort();
+        if ($port && $this->getPortForScheme() !== $port) {
+            $authority = sprintf('%s:%s', $authority, $this->getPort());
         }
 
         return $authority;
@@ -131,6 +133,10 @@ class Uri implements UriInterface
      */
     public function getPort()
     {
+        if (null === $this->port) {
+            return $this->getPortForScheme();
+        }
+
         return $this->port;
     }
 
@@ -139,7 +145,7 @@ class Uri implements UriInterface
      */
     public function getPath()
     {
-        $this->path;
+        return $this->path;
     }
 
     /**
@@ -147,7 +153,33 @@ class Uri implements UriInterface
      */
     public function getQuery()
     {
-        return $this->query;
+        if (empty($this->query)) {
+            return '';
+        }
+
+        ksort($this->query);
+
+        $query = [];
+
+        foreach ($this->query as $name => $value) {
+            if ('' === $value) {
+                $query[] = $name;
+            } else {
+                $query[] = sprintf('%s=%s', $name, $value);
+            }
+        }
+
+        return implode('&', $query);
+    }
+
+    /**
+     * @inheritdoc
+     */
+    public function getQueryValue($name)
+    {
+        $name = $this->encodeValue($name);
+
+        return isset($this->query[$name]) ? $this->query[$name] : null;
     }
 
     /**
@@ -163,12 +195,8 @@ class Uri implements UriInterface
      */
     public function withScheme($scheme)
     {
-        $scheme = $this->filterScheme($scheme);
-
         $new = clone $this;
-        $new->scheme = $scheme;
-
-        $new->port = $this->filterPort($this->port, $scheme);
+        $new->scheme = $new->filterScheme($scheme);
 
         return $new;
     }
@@ -180,12 +208,12 @@ class Uri implements UriInterface
     {
         $new = clone $this;
 
-        $new->user = $this->encode($user);
+        $new->user = $new->encodeValue($user);
 
         if (null === $password) {
             $new->password = null;
         } else {
-            $new->password = $this->encode($password);
+            $new->password = $new->encodeValue($password);
         }
 
         return $new;
@@ -207,10 +235,8 @@ class Uri implements UriInterface
      */
     public function withPort($port)
     {
-        $port = $this->filterPort($port, $this->getScheme());
-
         $new = clone $this;
-        $new->port = $port;
+        $new->port = $new->filterPort($port);
 
         return $new;
     }
@@ -221,8 +247,7 @@ class Uri implements UriInterface
     public function withPath($path)
     {
         $new = clone $this;
-
-        $new->path = $this->parsePath($path);
+        $new->path = $new->parsePath($path);
 
         return $new;
     }
@@ -232,10 +257,8 @@ class Uri implements UriInterface
      */
     public function withQuery($query)
     {
-        $query = $this->parseQuery($query);
-
         $new = clone $this;
-        $new->query = $query;
+        $new->query = $new->parseQuery($query);
 
         return $new;
     }
@@ -245,10 +268,37 @@ class Uri implements UriInterface
      */
     public function withFragment($fragment)
     {
-        $fragment = $this->parseFragment($fragment);
-
         $new = clone $this;
-        $new->fragment = $fragment;
+        $new->fragment = $new->parseFragment($fragment);
+
+        return $new;
+    }
+
+    /**
+     * @inheritdoc
+     */
+    public function withQueryValue($name, $value)
+    {
+        $new = clone $this;
+
+        $name = $new->encodeValue($name);
+        $value = $new->encodeValue($value);
+
+        $new->query[$name] = $value;
+
+        return $new;
+    }
+
+    /**
+     * @inheritdoc
+     */
+    public function withoutQueryValue($name)
+    {
+        $new = clone $this;
+
+        $name = $this->encodeValue($name);
+
+        unset($new->query[$name]);
 
         return $new;
     }
@@ -258,31 +308,44 @@ class Uri implements UriInterface
      */
     public function __toString()
     {
-        if (null !== $this->uri) {
-            return $this->uri;
+        $uri = $this->getAuthority();
+
+        if (!empty($uri)) {
+            $scheme = $this->getScheme();
+            if ($scheme) {
+                $uri = sprintf('%s://%s', $scheme, $uri);
+            }
         }
 
-        $this->uri = '';
+        $uri .= $this->getPath();
 
+        $query = $this->getQuery();
+        if ($query) {
+            $uri = sprintf('%s?%s', $uri, $query);
+        }
+
+        $fragment = $this->getFragment();
+        if ($fragment) {
+            $uri = sprintf('%s#%s', $uri, $fragment);
+        }
+
+        return $uri;
+    }
+
+    /**
+     * Returns the default port for the current scheme or null if no scheme is set.
+     *
+     * @return  int|null
+     */
+    protected function getPortForScheme()
+    {
         $scheme = $this->getScheme();
 
-        if ($scheme) {
-            $this->uri .= sprintf('%s://', $scheme);
+        if (!$scheme) {
+            return null;
         }
 
-        $this->uri .= $this->getAuthority();
-
-        $this->uri .= $this->path;
-
-        if ($this->query) {
-            $this->uri .= sprintf('?%s', $this->query);
-        }
-
-        if ($this->fragment) {
-            $this->uri .= sprintf('#%s', $this->fragment);
-        }
-
-        return $this->uri;
+        return $this->allowedSchemes()[$scheme];
     }
 
     /**
@@ -292,33 +355,44 @@ class Uri implements UriInterface
     {
         $components = parse_url($uri);
 
-        $this->scheme   = isset($components['scheme'])  ? $this->filterScheme($components['scheme']) : '';
-        $this->host     = isset($components['host'])    ? $components['host'] : '';
-        $this->port     = isset($components['port'])    ? $this->filterPort($components['port'], $this->getScheme()) : null;
-        $this->user     = isset($components['user'])    ? $this->encode($components['user']) : '';
-        $this->password = isset($components['pass'])    ? $this->encode($components['pass']) : '';
-        $this->path     = isset($components['path'])    ? $this->parsePath($components['path']) : '/';
-        $this->query    = isset($components['query'])   ? $this->parseQuery($components['query']) : '';
-        $this->fragment = isset($components['fragment'])? $this->parseFragment($components['fragment']) : '';
+        $this->scheme   = isset($components['scheme'])   ? $this->filterScheme($components['scheme']) : '';
+        $this->host     = isset($components['host'])     ? $components['host'] : '';
+        $this->port     = isset($components['port'])     ? $this->filterPort($components['port']) : null;
+        $this->user     = isset($components['user'])     ? $this->encodeValue($components['user']) : '';
+        $this->password = isset($components['pass'])     ? $this->encodeValue($components['pass']) : '';
+        $this->path     = isset($components['path'])     ? $this->parsePath($components['path']) : '/';
+        $this->query    = isset($components['query'])    ? $this->parseQuery($components['query']) : [];
+        $this->fragment = isset($components['fragment']) ? $this->parseFragment($components['fragment']) : '';
     }
 
     /**
      * @return  int[] Array indexed by valid scheme names to their corresponding ports.
      */
-    protected function getValidSchemes()
+    protected function allowedSchemes()
     {
         return self::$schemes;
     }
 
+    /**
+     * @param   string $scheme
+     *
+     * @return  string
+     */
     protected function filterScheme($scheme)
     {
         $scheme = strtolower($scheme);
-        if (strpos($scheme, '://')) {
-            str_replace('://', '', $scheme);
+        $scheme = preg_replace('/:(?:\/\/)?$/', '', $scheme);
+
+        if (empty($scheme)) {
+            return '';
         }
 
-        if (!array_key_exists($scheme, $this->getValidSchemes())) {
-            throw new InvalidArgumentException("Invalid scheme: {$scheme}");
+        if (!array_key_exists($scheme, $this->allowedSchemes())) {
+            throw new InvalidArgumentException(sprintf(
+                    'Invalid scheme: %s. Must be null or in the following set: %s',
+                    $scheme,
+                    implode(', ', array_keys($this->allowedSchemes()))
+                ));
         }
 
         return $scheme;
@@ -326,28 +400,16 @@ class Uri implements UriInterface
 
     /**
      * @param   int|null $port
-     * @param   string $scheme
      *
      * @return  int|null
      */
-    protected function filterPort($port, $scheme = null)
+    protected function filterPort($port)
     {
-        if (null === $port) {
-            return $port;
-        }
-
-        $port = (int) $port;
-
-        if ($scheme) {
-            $schemes = $this->getvalidSchemes();
-
-            if (isset($schemes[$scheme]) && $port === $schemes[$scheme]) {
-                return null;
+        if (null !== $port) {
+            $port = (int) $port;
+            if (1 > $port || 0xffff < $port) {
+                throw new InvalidArgumentException(sprintf('Invalid port: %d. Must be between 1 and 65535', $port));
             }
-        }
-
-        if (1 > $port || 65535 < $port) {
-            throw new InvalidArgumentException("Invalid port: {$port}");
         }
 
         return $port;
@@ -364,25 +426,28 @@ class Uri implements UriInterface
 
         $path = '/' . $path;
 
-        return $this->encode($path);
+        return $this->encodePath($path);
     }
 
     /**
      * @param   string|null $query
      *
-     * @return  string
+     * @return  string[]
      */
     protected function parseQuery($query)
     {
         $query = ltrim($query, '?');
 
-        $fields = explode('&', $query);
+        $fields = [];
 
-        foreach ($fields as $key => $data) {
-            $fields[$key] = $this->parseQueryPair($data);
+        foreach (explode('&', $query) as $data) {
+            list($name, $value) = $this->parseQueryPair($data);
+            if ('' !== $name) {
+                $fields[$name] = $value;
+            }
         }
 
-        return implode('&', $fields);
+        return $fields;
     }
 
     /**
@@ -394,9 +459,9 @@ class Uri implements UriInterface
     {
         $data = explode('=', $data, 2);
         if (1 === count($data)) {
-            return $this->encode($data[0]);
+            return [$this->encodeValue($data[0]), ''];
         }
-        return $this->encode($data[0]) . '=' . $this->encode($data[1]);
+        return [$this->encodeValue($data[0]), $this->encodeValue($data[1])];
     }
 
     /**
@@ -408,18 +473,42 @@ class Uri implements UriInterface
     {
         $fragment = ltrim($fragment, '#');
 
-        return $this->encode($fragment);
+        return $this->encodeValue($fragment);
     }
 
     /**
+     * Escapes all reserved chars and sub delimiters.
+     *
      * @param   string $string
      *
      * @return  string
      */
-    protected function encode($string)
+    protected function encodePath($string)
     {
-        return preg_replace_callback('/(?:[^A-Za-z0-9_~\-\.\/%]|%(?![A-Fa-f0-9]{2}))/', function (array $matches) {
-            return rawurlencode($matches[0]);
-        }, $string);
+        return preg_replace_callback(
+            '/(?:[^' . self::UNRESERVED_CHARS . '\/%]+|' . self::ENCODED_CHAR . ')/',
+            function (array $matches) {
+                return rawurlencode($matches[0]);
+            },
+            $string
+        );
+    }
+
+    /**
+     * Escapes all reserved chars.
+     *
+     * @param   string $string
+     *
+     * @return  string
+     */
+    protected function encodeValue($string)
+    {
+        return preg_replace_callback(
+            '/(?:[^' . self::UNRESERVED_CHARS . self::SUB_DELIMITERS . '\/%]+|' . self::ENCODED_CHAR . ')/',
+            function (array $matches) {
+                return rawurlencode($matches[0]);
+            },
+            $string
+        );
     }
 }
