@@ -16,8 +16,7 @@
     ],
     "require": {
         "icicleio/icicle": "^0.2",
-        "icicleio/dns": "^0.1",
-        "psr/http-message": "^0.9"
+        "icicleio/dns": "^0.1"
     },
     "require-dev": {
         "phpunit/phpunit": "~4",

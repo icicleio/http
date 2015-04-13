@@ -1,5 +1,5 @@
 <?php
-namespace Icicle\Http;
+namespace Icicle\Http\Message;
 
 use Icicle\Http\Exception\InvalidArgumentException;
 
@@ -20,9 +20,9 @@ class Uri implements UriInterface
      *
      * @var int[]
      */
-    protected static $schemes = [
+    private static $schemes = [
         'http'  => 80,
-        'https' => 443
+        'https' => 443,
     ];
 
     /**
@@ -70,11 +70,7 @@ class Uri implements UriInterface
      */
     public function __construct($uri = '')
     {
-        $uri = (string) $uri;
-
-        if (strlen($uri)) {
-            $this->parseUri($uri);
-        }
+        $this->parseUri((string) $uri);
     }
 
     /**
@@ -157,8 +153,6 @@ class Uri implements UriInterface
             return '';
         }
 
-        ksort($this->query);
-
         $query = [];
 
         foreach ($this->query as $name => $value) {
@@ -170,6 +164,14 @@ class Uri implements UriInterface
         }
 
         return implode('&', $query);
+    }
+
+    /**
+     * @inheritdoc
+     */
+    public function getQueryValues()
+    {
+        return $this->query;
     }
 
     /**
@@ -360,7 +362,7 @@ class Uri implements UriInterface
         $this->port     = isset($components['port'])     ? $this->filterPort($components['port']) : null;
         $this->user     = isset($components['user'])     ? $this->encodeValue($components['user']) : '';
         $this->password = isset($components['pass'])     ? $this->encodeValue($components['pass']) : '';
-        $this->path     = isset($components['path'])     ? $this->parsePath($components['path']) : '/';
+        $this->path     = isset($components['path'])     ? $this->parsePath($components['path']) : '';
         $this->query    = isset($components['query'])    ? $this->parseQuery($components['query']) : [];
         $this->fragment = isset($components['fragment']) ? $this->parseFragment($components['fragment']) : '';
     }
@@ -380,16 +382,16 @@ class Uri implements UriInterface
      */
     protected function filterScheme($scheme)
     {
-        $scheme = strtolower($scheme);
-        $scheme = preg_replace('/:(?:\/\/)?$/', '', $scheme);
-
-        if (empty($scheme)) {
+        if (null === $scheme) {
             return '';
         }
 
-        if (!array_key_exists($scheme, $this->allowedSchemes())) {
+        $scheme = strtolower($scheme);
+        $scheme = rtrim($scheme, ':/');
+
+        if ('' !== $scheme && !array_key_exists($scheme, $this->allowedSchemes())) {
             throw new InvalidArgumentException(sprintf(
-                    'Invalid scheme: %s. Must be null or in the following set: %s',
+                    'Invalid scheme: %s. Must be null, an empty string, or in set (%s).',
                     $scheme,
                     implode(', ', array_keys($this->allowedSchemes()))
                 ));
@@ -408,7 +410,9 @@ class Uri implements UriInterface
         if (null !== $port) {
             $port = (int) $port;
             if (1 > $port || 0xffff < $port) {
-                throw new InvalidArgumentException(sprintf('Invalid port: %d. Must be between 1 and 65535', $port));
+                throw new InvalidArgumentException(
+                    sprintf('Invalid port: %d. Must be null or an integer between 1 and 65535.', $port)
+                );
             }
         }
 
@@ -422,6 +426,10 @@ class Uri implements UriInterface
      */
     protected function parsePath($path)
     {
+        if ('' === $path || null === $path) {
+            return '';
+        }
+
         $path = ltrim($path, '/');
 
         $path = '/' . $path;
@@ -446,6 +454,8 @@ class Uri implements UriInterface
                 $fields[$name] = $value;
             }
         }
+
+        ksort($fields);
 
         return $fields;
     }

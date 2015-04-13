@@ -1,7 +1,7 @@
 <?php
-namespace Icicle\Tests\Http;
+namespace Icicle\Tests\Http\Message;
 
-use Icicle\Http\Uri;
+use Icicle\Http\Message\Uri;
 use Icicle\Tests\TestCase;
 
 class UriTest extends TestCase
@@ -19,6 +19,19 @@ class UriTest extends TestCase
         $this->assertSame('value1', $uri->getQueryValue('foo'));
         $this->assertSame('value2', $uri->getQueryValue('bar'));
         $this->assertSame('fragment-value', $uri->getFragment());
+    }
+
+    public function testConstructFromEmptyString()
+    {
+        $uri = new Uri();
+        $this->assertSame('', $uri->getScheme());
+        $this->assertSame('', $uri->getUserInfo());
+        $this->assertSame('', $uri->getHost());
+        $this->assertSame(null, $uri->getPort());
+        $this->assertSame('', $uri->getAuthority());
+        $this->assertSame('', $uri->getPath());
+        $this->assertSame('', $uri->getQuery());
+        $this->assertSame('', $uri->getFragment());
     }
 
     /**
@@ -125,19 +138,19 @@ class UriTest extends TestCase
 
         $this->assertNotSame($uri, $new);
         $this->assertSame('username:password', $new->getUserInfo());
-        $this->assertSame('https://username:password@example.com:8443/', (string) $new);
+        $this->assertSame('https://username:password@example.com:8443', (string) $new);
 
         $new = $uri->withUserInfo('username');
 
         $this->assertNotSame($uri, $new);
         $this->assertSame('username', $new->getUserInfo());
-        $this->assertSame('https://username@example.com:8443/', (string) $new);
+        $this->assertSame('https://username@example.com:8443', (string) $new);
 
         $new = $uri->withUserInfo('user name', 'påsswørd');
 
         $this->assertNotSame($uri, $new);
         $this->assertSame('user%20name:p%C3%A5ssw%C3%B8rd', $new->getUserInfo());
-        $this->assertSame('https://user%20name:p%C3%A5ssw%C3%B8rd@example.com:8443/', (string) $new);
+        $this->assertSame('https://user%20name:p%C3%A5ssw%C3%B8rd@example.com:8443', (string) $new);
     }
 
     /**
@@ -199,6 +212,7 @@ class UriTest extends TestCase
         $this->assertSame('key1=value1&key2=value2', $new->getQuery());
         $this->assertSame('value1', $new->getQueryValue('key1'));
         $this->assertSame('value2', $new->getQueryValue('key2'));
+        $this->assertSame(['key1' => 'value1', 'key2' => 'value2'], $new->getQueryValues());
         $this->assertSame('http://example.com/path?key1=value1&key2=value2', (string) $new);
 
         $new = $uri->withQuery('test1&test2=value');
@@ -207,6 +221,7 @@ class UriTest extends TestCase
         $this->assertSame('test1&test2=value', $new->getQuery());
         $this->assertSame('', $new->getQueryValue('test1'));
         $this->assertSame('value', $new->getQueryValue('test2'));
+        $this->assertSame(['test1' => '', 'test2' => 'value'], $new->getQueryValues());
         $this->assertSame('http://example.com/path?test1&test2=value', (string) $new);
     }
 
@@ -221,18 +236,21 @@ class UriTest extends TestCase
 
         $this->assertNotSame($uri, $new);
         $this->assertSame('foo=bar&name=val%C3%BCe', $new->getQuery());
+        $this->assertSame(['foo' => 'bar', 'name' => 'val%C3%BCe'], $new->getQueryValues());
         $this->assertSame('http://example.com/path?foo=bar&name=val%C3%BCe', (string) $new);
 
         $new = $uri->withQueryValue('tést', null);
 
         $this->assertNotSame($uri, $new);
         $this->assertSame('foo=bar&t%C3%A9st', $new->getQuery());
+        $this->assertSame(['foo' => 'bar', 't%C3%A9st' => ''], $new->getQueryValues());
         $this->assertSame('http://example.com/path?foo=bar&t%C3%A9st', (string) $new);
 
         $new = $uri->withQueryValue('foo', 'foo=bar');
 
         $this->assertNotSame($uri, $new);
         $this->assertSame('foo=foo=bar', $new->getQuery());
+        $this->assertSame(['foo' => 'foo=bar'], $new->getQueryValues());
         $this->assertSame('http://example.com/path?foo=foo=bar', (string) $new);
     }
 
@@ -248,6 +266,7 @@ class UriTest extends TestCase
         $this->assertNotSame($uri, $new);
         $this->assertSame('key1=value1&key3', $new->getQuery());
         $this->assertSame(null, $new->getQueryValue('key2'));
+        $this->assertSame(['key1' => 'value1', 'key3' => ''], $new->getQueryValues());
         $this->assertSame('http://example.com/path?key1=value1&key3', (string) $new);
 
         $new = $uri->withoutQueryValue('key1');
@@ -255,6 +274,7 @@ class UriTest extends TestCase
         $this->assertNotSame($uri, $new);
         $this->assertSame('key2=value2&key3', $new->getQuery());
         $this->assertSame(null, $new->getQueryValue('key1'));
+        $this->assertSame(['key2' => 'value2', 'key3' => ''], $new->getQueryValues());
         $this->assertSame('http://example.com/path?key2=value2&key3', (string) $new);
 
         $new = $uri->withoutQueryValue('key1');
@@ -263,6 +283,7 @@ class UriTest extends TestCase
 
         $this->assertNotSame($uri, $new);
         $this->assertSame('', $new->getQuery());
+        $this->assertSame([], $new->getQueryValues());
         $this->assertSame('http://example.com/path', (string) $new);
     }
 
@@ -273,8 +294,8 @@ class UriTest extends TestCase
     {
         return [
             ['/', '/'],
-            ['', '/'],
-            [null, '/'],
+            ['', ''],
+            [null, ''],
             ['path/to/file', '/path/to/file'],
             ['path with spaces', '/path%20with%20spaces'],
             ['påth/wïth/spécial/chârs', '/p%C3%A5th/w%C3%AFth/sp%C3%A9cial/ch%C3%A2rs'],

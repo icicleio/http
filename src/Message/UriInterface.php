@@ -1,5 +1,5 @@
 <?php
-namespace Icicle\Http;
+namespace Icicle\Http\Message;
 
 /**
  * Interface for URIs based on PSR-7 specification, adding methods for easier manipulation of query parameters and
@@ -45,7 +45,7 @@ interface UriInterface
     /**
      * Returns the path portion of the URI.
      *
-     * @return  string Path including proceeding /.
+     * @return  string Path including / prefix unless path is empty, then an empty string is returned.
      */
     public function getPath();
 
@@ -57,7 +57,15 @@ interface UriInterface
     public function getQuery();
 
     /**
-     * Returns the value for the given query key name or null if the key name does not exist.
+     * Returns an array of the key/value pairs corresponding to the query portion of the URI.
+     *
+     * @return  string[]
+     */
+    public function getQueryValues();
+
+    /**
+     * Returns the value for the given query key name or null if the key name does not exist. Returns an empty string
+     * if the key name is set but has no value.
      *
      * @param   string $name
      *
@@ -77,7 +85,7 @@ interface UriInterface
      *
      * @param   string|null $scheme
      *
-     * @return  self
+     * @return  static
      */
     public function withScheme($scheme);
 
@@ -87,7 +95,7 @@ interface UriInterface
      * @param   string|null $user
      * @param   string|null $password
      *
-     * @return  self
+     * @return  static
      */
     public function withUserInfo($user, $password = null);
 
@@ -96,7 +104,7 @@ interface UriInterface
      *
      * @param   int|null $port
      *
-     * @return  self
+     * @return  static
      */
     public function withPort($port);
 
@@ -104,9 +112,9 @@ interface UriInterface
      * Returns a new instance with the given query string or null to remove query string. Any ? prefix should be
      * trimmed.
      *
-     * @param   string $query
+     * @param   string|null $query
      *
-     * @return  self
+     * @return  static
      */
     public function withQuery($query);
 
@@ -114,9 +122,9 @@ interface UriInterface
      * Returns a new instance with the given name and value pair in the query string (i.e., $name=$value)
      *
      * @param   string $name
-     * @param   string $value
+     * @param   string|null $value
      *
-     * @return  self
+     * @return  static
      */
     public function withQueryValue($name, $value);
 
@@ -125,16 +133,16 @@ interface UriInterface
      *
      * @param   string $name
      *
-     * @return  self
+     * @return  static
      */
     public function withoutQueryValue($name);
 
     /**
      * Returns a new instance with the given fragment or null to remove fragment. Any # prefix should be trimmed.
      *
-     * @param   string $fragment
+     * @param   string|null $fragment
      *
-     * @return  self
+     * @return  static
      */
     public function withFragment($fragment);
 
