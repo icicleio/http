@@ -15,7 +15,7 @@
         }
     ],
     "require": {
-        "icicleio/icicle": "^0.2",
+        "icicleio/icicle": "0.3.x-dev as 0.2.3",
         "icicleio/dns": "^0.1"
     },
     "require-dev": {

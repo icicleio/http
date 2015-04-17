@@ -41,7 +41,7 @@ abstract class Message implements MessageInterface
         }
 
         $this->stream = $stream ?: new Stream();
-        $this->protocol = $protocol;
+        $this->protocol = $this->filterProtocolVersion($protocol);
     }
 
     /**
@@ -122,7 +122,7 @@ abstract class Message implements MessageInterface
     public function withProtocolVersion($version)
     {
         $new = clone $this;
-        $new->protocol = (string) $version;
+        $new->protocol = $this->filterProtocolVersion($version);
         return $new;
     }
 
@@ -261,6 +261,15 @@ abstract class Message implements MessageInterface
         }
 
         return $this;
+    }
+
+    protected function filterProtocolVersion($protocol)
+    {
+        if (!preg_match('/^\d+(?:\.\d+)?$/', $protocol)) {
+            throw new InvalidArgumentException('Invalid format for protocol version.');
+        }
+
+        return $protocol;
     }
 
     /**

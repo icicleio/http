@@ -28,7 +28,7 @@ class Parser
             throw new ParseException('Body portion in message when stream provided for body.');
         }
 
-        if (!preg_match('/HTTP\/([0-9\.]+) (\d{3}) (.*)/i', $startLine, $matches)) {
+        if (!preg_match('/^HTTP\/(\d+(?:\.\d+)?) (\d{3}) (.*)$/i', $startLine, $matches)) {
             throw new ParseException('Could not parse start line.');
         }
 
@@ -62,7 +62,7 @@ class Parser
             throw new ParseException('Body portion in message when stream provided for body.');
         }
 
-        if (!preg_match('/([A-Z]+) (\S+) HTTP\/([0-9\.]+)/i', $startLine, $matches)) {
+        if (!preg_match('/^([A-Z]+) (\S+) HTTP\/(\d+(?:\.\d+)?)$/i', $startLine, $matches)) {
             throw new ParseException('Could not parse start line.');
         }
 
@@ -108,15 +108,15 @@ class Parser
             throw new ParseException('No header found in message.');
         }
 
-        $lines = $this->splitHeader($header);
+        $headers = $this->splitHeader($header);
 
-        if (empty($lines)) {
+        if (empty($headers)) {
             throw new ParseException('No start line in message.');
         }
 
-        $startLine = array_shift($lines);
+        $startLine = trim(array_shift($headers));
 
-        return [$startLine, $lines, $body];
+        return [$startLine, $headers, $body];
     }
 
     /**
