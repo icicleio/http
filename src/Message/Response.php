@@ -50,7 +50,7 @@ class Response extends Message implements ResponseInterface
         413 => 'Request Entity Too Large',
         414 => 'Request-URI Too Large',
         415 => 'Unsupported Media Type',
-        416 => 'Requested Range Not satisfiable',
+        416 => 'Requested Range Not Satisfiable',
         417 => 'Expectation Failed',
         418 => 'I\'m a teapot',
         422 => 'Unprocessable Entity',
@@ -95,12 +95,12 @@ class Response extends Message implements ResponseInterface
      */
     public function __construct(
         $code = 200,
-        ReadableStreamInterface $stream = null,
         array $headers = null,
+        ReadableStreamInterface $stream = null,
         $reason = null,
         $protocol = '1.1'
     ) {
-        parent::__construct($stream, $headers, $protocol);
+        parent::__construct($headers, $stream, $protocol);
 
         $this->status = $this->validateStatusCode($code);
 

@@ -3,7 +3,7 @@ namespace Icicle\Http\Message;
 
 use Icicle\Http\Exception\InvalidArgumentException;
 use Icicle\Stream\ReadableStreamInterface;
-use Icicle\Stream\Stream;
+use Icicle\Stream\Sink;
 
 abstract class Message implements MessageInterface
 {
@@ -34,13 +34,13 @@ abstract class Message implements MessageInterface
      *
      * @throws  \Icicle\Http\Exception\InvalidArgumentException
      */
-    public function __construct(ReadableStreamInterface $stream = null, array $headers = null, $protocol = '1.1')
+    public function __construct(array $headers = null, ReadableStreamInterface $stream = null, $protocol = '1.1')
     {
         if (null !== $headers) {
             $this->setHeaders($headers);
         }
 
-        $this->stream = $stream ?: new Stream();
+        $this->stream = $stream ?: new Sink();
         $this->protocol = $this->filterProtocolVersion($protocol);
     }
 
@@ -65,7 +65,7 @@ abstract class Message implements MessageInterface
      */
     public function hasHeader($name)
     {
-        return array_key_exists($this->normalizeHeaderName($name), $this->headerNameMap);
+        return array_key_exists(strtolower($name), $this->headerNameMap);
     }
 
     /**
@@ -73,7 +73,7 @@ abstract class Message implements MessageInterface
      */
     public function getHeader($name)
     {
-        $name = $this->normalizeHeaderName($name);
+        $name = strtolower($name);
 
         if (!array_key_exists($name, $this->headerNameMap)) {
             return [];
@@ -164,18 +164,6 @@ abstract class Message implements MessageInterface
     }
 
     /**
-     * Normalizes header names a case-insensitive representation.
-     *
-     * @param   string $name
-     *
-     * @return  string
-     */
-    protected function normalizeHeaderName($name)
-    {
-        return strtolower($name);
-    }
-
-    /**
      * Sets the headers from the given array.
      *
      * @param   string[] $headers
@@ -183,8 +171,8 @@ abstract class Message implements MessageInterface
     protected function setHeaders(array $headers)
     {
         foreach ($headers as $name => $value) {
-            $normalized = $this->normalizeHeaderName($name);
-            $value = $this->filterHeaderValue($value);
+            $normalized = strtolower($name);
+            $value = $this->filterHeader($value);
 
             if (array_key_exists($normalized, $this->headerNameMap)) {
                 $name = $this->headerNameMap[$normalized];
@@ -206,8 +194,8 @@ abstract class Message implements MessageInterface
      */
     protected function setHeader($name, $value)
     {
-        $normalized = $this->normalizeHeaderName($name);
-        $value = $this->filterHeaderValue($value);
+        $normalized = strtolower($name);
+        $value = $this->filterHeader($value);
 
         // Header may have been previously set with a different case. If so, remove that header.
         if (isset($this->headerNameMap[$normalized]) && $this->headerNameMap[$normalized] !== $name) {
@@ -230,8 +218,8 @@ abstract class Message implements MessageInterface
      */
     protected function addHeader($name, $value)
     {
-        $normalized = $this->normalizeHeaderName($name);
-        $value = $this->filterHeaderValue($value);
+        $normalized = strtolower($name);
+        $value = $this->filterHeader($value);
 
         if (array_key_exists($normalized, $this->headerNameMap)) {
             $name = $this->headerNameMap[$normalized]; // Use original case to add header value.
@@ -253,7 +241,7 @@ abstract class Message implements MessageInterface
      */
     protected function removeHeader($name)
     {
-        $normalized = $this->normalizeHeaderName($name);
+        $normalized = strtolower($name);
 
         if (array_key_exists($normalized, $this->headerNameMap)) {
             $name = $this->headerNameMap[$normalized];
@@ -263,6 +251,11 @@ abstract class Message implements MessageInterface
         return $this;
     }
 
+    /**
+     * @param   string $protocol
+     *
+     * @return  string
+     */
     protected function filterProtocolVersion($protocol)
     {
         if (!preg_match('/^\d+(?:\.\d+)?$/', $protocol)) {
@@ -275,19 +268,36 @@ abstract class Message implements MessageInterface
     /**
      * Converts a given header value to an array of strings.
      *
-     * @param   string|string[] $value
+     * @param   mixed|mixed[] $value
      *
      * @return  string[]
      *
-     * @throws  \Icicle\Http\Exception\InvalidArgumentException If the given value is not a string or array of strings.
+     * @throws  \Icicle\Http\Exception\InvalidArgumentException If the given value cannot be converted to a string and
+     *          is not an array of values that can be converted to strings.
+     */
+    private function filterHeader($value)
+    {
+        if (is_array($value)) {
+            return $this->filterHeaderArray($value);
+        }
+
+        return [$this->filterHeaderValue($value)];
+    }
+
+    /**
+     * @param   string $value
+     *
+     * @return  string
+     *
+     * @throws  \Icicle\Http\Exception\InvalidArgumentException If the given value cannot be converted to a string.
      */
     private function filterHeaderValue($value)
     {
-        if (is_string($value)) {
-            return [$value];
+        if (is_numeric($value) || (is_object($value) && method_exists($value, '__toString'))) {
+            return (string) $value;
         }
 
-        if (!is_array($value) || !$this->validateHeaderArray($value)) {
+        if (!is_string($value)) {
             throw new InvalidArgumentException('Header values must be strings or an array of strings.');
         }
 
@@ -295,20 +305,21 @@ abstract class Message implements MessageInterface
     }
 
     /**
-     * Determines if the given array contains only strings.
+     * @param   mixed[] $values
      *
-     * @param   array $values
+     * @return  string[]
      *
-     * @return  bool
+     * @throws  \Icicle\Http\Exception\InvalidArgumentException If the given value is not an array of values that can
+     *          be converted to strings.
      */
-    private function validateHeaderArray(array $values)
+    private function filterHeaderArray(array $values)
     {
+        $lines = [];
+
         foreach ($values as $value) {
-            if (!is_string($value)) {
-                return false;
-            }
+            $lines[] = $this->filterHeaderValue($value);
         }
 
-        return true;
+        return $lines;
     }
 }

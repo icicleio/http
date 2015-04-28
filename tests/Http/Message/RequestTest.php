@@ -99,7 +99,7 @@ class RequestTest extends TestCase
             'Host' => 'example.net:8080',
         ];
 
-        $request = new Request('GET', new Uri('http://example.com/path'), null, $headers);
+        $request = new Request('GET', new Uri('http://example.com/path'), $headers);
 
         $this->assertTrue($request->hasHeader('Host'));
         $this->assertSame('example.net:8080', $request->getHeaderLine('Host'));

@@ -54,12 +54,12 @@ class Request extends Message implements RequestInterface
     public function __construct(
         $method,
         $uri = '',
-        ReadableStreamInterface $stream = null,
         array $headers = null,
+        ReadableStreamInterface $stream = null,
         $target = null,
         $protocol = '1.1'
     ) {
-        parent::__construct($stream, $headers, $protocol);
+        parent::__construct($headers, $stream, $protocol);
 
         $this->method = $this->filterMethod($method);
         $this->uri = $uri instanceof UriInterface ? $uri : new Uri($uri);

@@ -1,31 +1,31 @@
 <?php
-namespace Icicle\Http\Message;
+namespace Icicle\Http\Parser;
 
+use Icicle\Http\Exception\InvalidArgumentException;
+use Icicle\Http\Exception\LogicException;
 use Icicle\Http\Exception\MessageException;
+use Icicle\Http\Exception\MissingHostException;
 use Icicle\Http\Exception\ParseException;
+use Icicle\Http\Message\Request;
+use Icicle\Http\Message\Response;
+use Icicle\Http\Message\Uri;
 use Icicle\Stream\ReadableStreamInterface;
-use Icicle\Stream\Stream;
+use Icicle\Stream\Sink;
 
-class Parser
+class Parser implements ParserInterface
 {
     /**
-     * @param   string $message
-     * @param   \Icicle\Stream\ReadableStreamInterface|null $stream
-     *
-     * @return  \Icicle\Http\Message\Response
-     *
-     * @throws  \Icicle\Http\Exception\ParseException If parsing the message fails.
-     * @throws  \Icicle\Http\Exception\InvalidArgumentException If the message is invalid.
+     * @inheritdoc
      */
     public function parseResponse($message, ReadableStreamInterface $stream = null)
     {
         list($startLine, $headers, $body) = $this->parseMessage($message);
 
         if (null === $stream) {
-            $stream = new Stream();
+            $stream = new Sink();
             $stream->write($body);
         } elseif ('' !== $body) {
-            throw new ParseException('Body portion in message when stream provided for body.');
+            throw new LogicException('Body portion in message when stream provided for body.');
         }
 
         if (!preg_match('/^HTTP\/(\d+(?:\.\d+)?) (\d{3}) (.*)$/i', $startLine, $matches)) {
@@ -38,28 +38,25 @@ class Parser
 
         $headers = $this->parseHeaders($headers);
 
-        return new Response($code, $stream, $headers, $reason, $protocol);
+        try {
+            return new Response($code, $headers, $stream, $reason, $protocol);
+        } catch (InvalidArgumentException $exception) {
+            throw new MessageException('Invalid data in response.');
+        }
     }
 
     /**
-     * @param   string $message
-     * @param   \Icicle\Stream\ReadableStreamInterface|null $stream
-     *
-     * @return  \Icicle\Http\Message\Request
-     *
-     * @throws  \Icicle\Http\Exception\ParseException If parsing the message fails.
-     * @throws  \Icicle\Http\Exception\MessageException If no host header is found.
-     * @throws  \Icicle\Http\Exception\InvalidArgumentException If the message is invalid.
+     * @inheritdoc
      */
     public function parseRequest($message, ReadableStreamInterface $stream = null)
     {
         list($startLine, $headers, $body) = $this->parseMessage($message);
 
         if (null === $stream) {
-            $stream = new Stream();
+            $stream = new Sink();
             $stream->write($body);
         } elseif ('' !== $body) {
-            throw new ParseException('Body portion in message when stream provided for body.');
+            throw new LogicException('Body portion in message when stream provided for body.');
         }
 
         if (!preg_match('/^([A-Z]+) (\S+) HTTP\/(\d+(?:\.\d+)?)$/i', $startLine, $matches)) {
@@ -80,10 +77,10 @@ class Parser
         }
 
         if (!isset($host)) {
-            throw new MessageException('No Host header in message.');
+            throw new MissingHostException('No Host header in message.');
         }
 
-        if (substr($target, 0, 1) === '/') { // origin-form
+        if ('/' === $target[0]) { // origin-form
             $uri = new Uri($host . $target);
             $target = null; // null $target since it was a path.
         } elseif ('*' === $target) {
@@ -92,7 +89,11 @@ class Parser
             $uri = new Uri($target); // absolute-form or authority-form
         }
 
-        return new Request($method, $uri, $stream, $headers, $target, $protocol);
+        try {
+            return new Request($method, $uri, $headers, $stream, $target, $protocol);
+        } catch (InvalidArgumentException $exception) {
+            throw new MessageException('Invalid data in request.');
+        }
     }
 
     /**

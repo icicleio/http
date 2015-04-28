@@ -23,7 +23,7 @@ class MessageTest extends TestCase
      */
     public function createMessage(ReadableStreamInterface $stream = null, array $headers = null, $protocol = '1.1')
     {
-        return $this->getMockForAbstractClass('Icicle\Http\Message\Message', [$stream, $headers, $protocol]);
+        return $this->getMockForAbstractClass('Icicle\Http\Message\Message', [$headers, $stream, $protocol]);
     }
 
     public function testGetProtocol()
