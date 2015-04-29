@@ -25,8 +25,8 @@ $server = new Server(function (RequestInterface $request, ClientInterface $clien
     return $response;
 });
 
-$server->listen('127.0.0.1', 8080);
-$server->listen('127.0.0.1', 8888);
+$server->listen(8080);
+$server->listen(8888);
 
 $server->on('failure', function (Exception $exception) {
     printf("Server error: %s\n", $exception->getMessage());

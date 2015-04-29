@@ -3,14 +3,10 @@ namespace Icicle\Http\Server;
 
 interface ServerInterface
 {
-    const DEFAULT_ADDRESS = '127.0.0.1';
-
     /**
-     * @param   int $port
-     * @param   string $address
-     * @param   mixed[] $options
+     * @param   int|string $port Port number or socket.
      */
-    public function listen($port, $address = self::DEFAULT_ADDRESS, array $options = null);
+    public function listen($port);
 
     /**
      * Determines if the server is open, accepting connections.

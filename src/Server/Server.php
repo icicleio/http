@@ -33,6 +33,7 @@ class Server implements ServerInterface
 {
     use EventEmitterTrait;
 
+    const DEFAULT_ADDRESS = '127.0.0.1';
     const DEFAULT_MAX_HEADER_SIZE = 8192;
     const DEFAULT_TIMEOUT = 15;
     const STREAM_HWM = 8192;
@@ -178,7 +179,7 @@ class Server implements ServerInterface
      *
      * @see     \Icicle\Socket\Server\ServerFactoryInterface::create()
      */
-    public function listen($address, $port = 80, array $options = null)
+    public function listen($port, $address = self::DEFAULT_ADDRESS, array $options = null)
     {
         if (!$this->open) {
             throw new LogicException('The server has been closed.');
