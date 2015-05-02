@@ -19,8 +19,8 @@ class Builder implements BuilderInterface
     private $compressTypes = [
         '/^text\/\S+/i',
         '/^application\/(?:json|javascript|(?:xhtml\+)?xml)/i',
-        '/^image/svg\+xml/i',
-        '/^font/(?:opentype|otf|ttf)/i'
+        '/^image\/svg\+xml/i',
+        '/^font\/(?:opentype|otf|ttf)/i'
     ];
 
     /**
