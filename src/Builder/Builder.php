@@ -1,6 +1,7 @@
 <?php
 namespace Icicle\Http\Builder;
 
+use Icicle\Http\Exception\LogicException;
 use Icicle\Http\Exception\MessageException;
 use Icicle\Http\Message\MessageInterface;
 use Icicle\Http\Message\RequestInterface;
@@ -58,21 +59,22 @@ class Builder implements BuilderInterface
         $timeout = null,
         $allowPersistent = false
     ) {
-        if (null === $request) {
+        if (null === $request) { // Fallback to 1.0 for responses due to message errors.
             $response = $response->withProtocolVersion('1.0');
-            $response = $response->withoutHeader('Content-Encoding');
         } elseif ($request->getProtocolVersion() !== $response->getProtocolVersion()) {
             $response = $response->withProtocolVersion($request->getProtocolVersion());
         }
 
         if ($response->getProtocolVersion() === '1.1') {
             if (!$response->hasHeader('Connection')) {
-                if ($allowPersistent
+                if (
+                    $allowPersistent
                     && null !== $request
                     && strtolower($request->getHeaderLine('Connection')) === 'keep-alive'
                 ) {
-                    $response = $response->withHeader('Connection', 'keep-alive');
-                    $response = $response->withHeader('Keep-Alive', sprintf('timeout=%d', $timeout));
+                    $response = $response
+                        ->withHeader('Connection', 'keep-alive')
+                        ->withHeader('Keep-Alive', sprintf('timeout=%d', $timeout));
                 } else {
                     $response = $response->withHeader('Connection', 'close');
                 }
@@ -83,7 +85,8 @@ class Builder implements BuilderInterface
 
         $response = $response->withoutHeader('Content-Encoding');
 
-        if ($this->compressionEnabled
+        if (
+            $this->compressionEnabled
             && null !== $request
             && $request->hasHeader('Accept-Encoding')
             && $response->hasHeader('Content-Type')
@@ -185,15 +188,17 @@ class Builder implements BuilderInterface
             }
 
             $message->getBody()->pipe($stream);
-            $message = $message->withBody($stream);
-            $message = $message->withoutHeader('Content-Length');
+            $message = $message
+                ->withBody($stream)
+                ->withoutHeader('Content-Length');
         }
 
         if ($message->getProtocolVersion() === '1.1' && !$message->hasHeader('Content-Length')) {
             $stream = new ChunkedEncoder($this->hwm);
             $message->getBody()->pipe($stream, true, null, null, $timeout);
-            $message = $message->withHeader('Transfer-Encoding', 'chunked');
-            return $message->withBody($stream);
+            return $message
+                ->withBody($stream)
+                ->withHeader('Transfer-Encoding', 'chunked');
         }
 
         return $message;
@@ -222,11 +227,13 @@ class Builder implements BuilderInterface
             $message->getBody()->pipe($stream, true, null, null, $timeout);
             $message = $message->withBody($stream);
         } elseif ($message->hasHeader('Content-Length')) {
-            $length = (int) $message->getHeaderLine('Content-Length');
-            $stream = new LimitStream($length, $this->hwm);
+            $stream = new LimitStream((int) $message->getHeaderLine('Content-Length'), $this->hwm);
             $message->getBody()->pipe($stream, true, null, null, $timeout);
             $message = $message->withBody($stream);
-        } elseif (strtolower($message->getHeaderLine('Connection')) !== 'close') {
+        } elseif (
+            !$message instanceof ResponseInterface // ResponseInterface may have no length on incoming stream.
+            && strtolower($message->getHeaderLine('Connection')) !== 'close'
+        ) {
             $stream = new LimitStream(0); // Assume no body in message.
             return $message->withBody($stream);
         }
