@@ -97,20 +97,6 @@ abstract class Message implements MessageInterface
     /**
      * @inheritdoc
      */
-    public function getHeaderLines()
-    {
-        $headers = [];
-
-        foreach ($this->getHeaders() as $name => $values) {
-            $headers[$name] = implode(',', $values);
-        }
-
-        return $headers;
-    }
-
-    /**
-     * @inheritdoc
-     */
     public function getBody()
     {
         return $this->stream;

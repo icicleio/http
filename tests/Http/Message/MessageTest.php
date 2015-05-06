@@ -201,17 +201,12 @@ class MessageTest extends TestCase
             'Accept' => ['text/html', 'text/plain'],
         ];
 
-        $lines = [
-            'Accept' => 'text/html,text/plain',
-        ];
-
         $line = 'text/html,text/plain';
 
         $message = $this->createMessage(null, $headers);
 
         $this->assertSame($expected, $message->getHeaders());
         $this->assertSame($line, $message->getHeaderLine('Accept'));
-        $this->assertSame($lines, $message->getHeaderLines());
     }
 
     public function testWithHeader()
@@ -253,15 +248,10 @@ class MessageTest extends TestCase
             'Accept' => ['text/html', 'text/plain'],
         ];
 
-        $lines = [
-            'Accept' => 'text/html,text/plain',
-        ];
-
         $line = 'text/html,text/plain';
 
         $this->assertSame($expected, $new->getHeaders());
         $this->assertSame($line, $new->getHeaderLine('Accept'));
-        $this->assertSame($lines, $new->getHeaderLines());
     }
 
     /**
@@ -277,15 +267,10 @@ class MessageTest extends TestCase
             'Accept' => ['text/html', 'text/plain', '*/*'],
         ];
 
-        $lines = [
-            'Accept' => 'text/html,text/plain,*/*',
-        ];
-
         $line = 'text/html,text/plain,*/*';
 
         $this->assertSame($expected, $new->getHeaders());
         $this->assertSame($line, $new->getHeaderLine('Accept'));
-        $this->assertSame($lines, $new->getHeaderLines());
     }
 
     /**
@@ -301,13 +286,7 @@ class MessageTest extends TestCase
             'Connection' => ['close'],
         ];
 
-        $lines = [
-            'Accept' => 'text/html',
-            'Connection' => 'close',
-        ];
-
         $this->assertSame($expected, $new->getHeaders());
-        $this->assertSame($lines, $new->getHeaderLines());
     }
 
     /**

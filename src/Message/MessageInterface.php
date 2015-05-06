@@ -41,20 +41,13 @@ interface MessageInterface
 
     /**
      * Returns the values for the given header as a comma separated list or null if the header does not exist.
+     * Note that not all headers can be accurately represented as a comma-separated list.
      *
      * @param   string $name
      *
      * @return  string|null
      */
     public function getHeaderLine($name);
-
-    /**
-     * Returns all the set headers as an array of comma separated lists of values. Returns an empty array if no
-     * headers have been set.
-     *
-     * @return  string[]
-     */
-    public function getHeaderLines();
 
     /**
      * Returns the stream for the message body.
