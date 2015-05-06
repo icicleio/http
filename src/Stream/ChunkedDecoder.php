@@ -41,7 +41,7 @@ class ChunkedDecoder extends Stream
         while (!$this->buffer->isEmpty()) {
             if (0 === $this->length) { // Read chunk length.
                 if (false === ($position = $this->buffer->search("\n"))) {
-                    return parent::send(null, $end);
+                    return parent::send($data, $end);
                 }
 
                 $length = rtrim($this->buffer->remove($position + 1), "\r\n");

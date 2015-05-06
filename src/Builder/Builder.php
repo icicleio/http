@@ -180,7 +180,7 @@ class Builder implements BuilderInterface
 
                 default:
                     throw new MessageException(
-                        sprintf('Unsupported content encoding header set: %s', $contentEncoding)
+                        sprintf('Unsupported content encoding set: %s', $contentEncoding)
                     );
             }
 
@@ -189,14 +189,7 @@ class Builder implements BuilderInterface
             $message = $message->withoutHeader('Content-Length');
         }
 
-        if ($message->getProtocolVersion() === '1.1') {
-            if ($message->hasHeader('Content-Length')) {
-                $length = (int) $message->getHeaderLine('Content-Length');
-                $stream = new LimitStream($length, $this->hwm);
-                $message->getBody()->pipe($stream, true, null, null, $timeout);
-                return $message->withBody($stream);
-            }
-
+        if ($message->getProtocolVersion() === '1.1' && !$message->hasHeader('Content-Length')) {
             $stream = new ChunkedEncoder($this->hwm);
             $message->getBody()->pipe($stream, true, null, null, $timeout);
             $message = $message->withHeader('Transfer-Encoding', 'chunked');
@@ -252,7 +245,7 @@ class Builder implements BuilderInterface
 
             default:
                 throw new MessageException(
-                    sprintf('Unsupported content encoding header set: %s', $contentEncoding)
+                    sprintf('Unsupported content encoding received: %s', $contentEncoding)
                 );
         }
     }

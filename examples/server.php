@@ -28,8 +28,8 @@ $server = new Server(function (RequestInterface $request, ClientInterface $clien
 $server->listen(8080);
 $server->listen(8888);
 
-$server->on('failure', function (Exception $exception) {
-    printf("Server error: %s\n", $exception->getMessage());
+$server->on('client-error', function (Exception $exception) {
+    printf("Client error: %s\n", $exception->getMessage());
 });
 
 Loop::run();

@@ -4,16 +4,38 @@ namespace Icicle\Http\Parser;
 use Icicle\Http\Exception\InvalidArgumentException;
 use Icicle\Http\Exception\LogicException;
 use Icicle\Http\Exception\MessageException;
+use Icicle\Http\Exception\MessageHeaderSizeException;
 use Icicle\Http\Exception\MissingHostException;
 use Icicle\Http\Exception\ParseException;
 use Icicle\Http\Message\Request;
 use Icicle\Http\Message\Response;
 use Icicle\Http\Message\Uri;
+use Icicle\Socket\Client\ClientInterface;
 use Icicle\Stream\ReadableStreamInterface;
 use Icicle\Stream\Sink;
 
 class Parser implements ParserInterface
 {
+    /**
+     * @inheritdoc
+     */
+    public function readMessage(ClientInterface $client, $maxSize, $timeout = null)
+    {
+        $data = '';
+
+        do {
+            $data .= (yield $client->read(null, "\n", $timeout));
+
+            if (strlen($data) > $maxSize) {
+                throw new MessageHeaderSizeException(
+                    sprintf('Message header exceeded maximum size of %d bytes.', $maxSize)
+                );
+            }
+        } while (!preg_match("/\r?\n\r?\n$/", $data));
+
+        yield $data;
+    }
+
     /**
      * @inheritdoc
      */

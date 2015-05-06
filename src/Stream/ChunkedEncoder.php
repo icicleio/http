@@ -13,24 +13,16 @@ class ChunkedEncoder extends Stream
      */
     protected function send($data, $end = false)
     {
-        if (strlen($data)) {
-            $data = $this->encode($data);
+        $length = strlen($data);
+
+        if ($length) {
+            $data = sprintf("%x\r\n%s\r\n", $length, $data);
         }
 
         if ($end) {
-            $data .= $this->encode('');
+            $data .= "0\r\n\r\n";
         }
 
         return parent::send($data, $end);
-    }
-
-    /**
-     * @param   string $data
-     *
-     * @return  string
-     */
-    protected function encode($data)
-    {
-        return sprintf("%x\r\n%s\r\n", strlen($data), $data);
     }
 }

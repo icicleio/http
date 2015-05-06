@@ -41,6 +41,11 @@ class Requester implements RequesterInterface
     /**
      * @var int
      */
+    private $timeout = self::DEFAULT_TIMEOUT;
+
+    /**
+     * @var int
+     */
     private $cryptoMethod = self::DEFAULT_CRYPTO_METHOD;
 
     /**
@@ -48,10 +53,10 @@ class Requester implements RequesterInterface
      */
     public function __construct(array $options = null)
     {
+        $this->timeout = isset($options['timeout']) ? (float) $options['timeout'] : self::DEFAULT_TIMEOUT;
         $this->maxHeaderSize = isset($options['max_header_size'])
             ? (int) $options['max_header_size']
             : self::DEFAULT_MAX_HEADER_SIZE;
-
         $this->cryptoMethod = isset($options['crypto_method'])
             ? (int) $options['crypto_method']
             : self::DEFAULT_CRYPTO_METHOD;
@@ -103,9 +108,7 @@ class Requester implements RequesterInterface
 
         $request = $this->builder->buildOutgoingRequest($request);
 
-        $data = $this->encoder->encodeRequest($request);
-
-        yield $client->write($data);
+        yield $client->write($this->encoder->encodeRequest($request));
 
         $stream = $request->getBody();
 
@@ -113,20 +116,11 @@ class Requester implements RequesterInterface
             yield $stream->pipe($client, false);
         }
 
-        $data = '';
+        $response = $this->parser->parseResponse(
+            (yield $this->parser->readMessage($client, $this->maxHeaderSize, $this->timeout)),
+            $client
+        );
 
-        do {
-            $data .= (yield $client->read(null, "\n", $timeout));
-
-            if (strlen($data) > $this->maxHeaderSize) {
-                throw new MessageHeaderSizeException('Request header too large.');
-            }
-        } while (!preg_match("/\r?\n\r?\n$/", $data));
-
-        $response = $this->parser->parseResponse($data, $client);
-
-        $response = $this->builder->buildIncomingResponse($response);
-
-        yield $response;
+        yield $this->builder->buildIncomingResponse($response);
     }
 }

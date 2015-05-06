@@ -36,7 +36,7 @@ class Server implements ServerInterface
     const DEFAULT_ADDRESS = '127.0.0.1';
     const DEFAULT_MAX_HEADER_SIZE = 8192;
     const DEFAULT_TIMEOUT = 15;
-    const STREAM_HWM = 8192;
+    const DEFAULT_CRYPTO_METHOD = STREAM_CRYPTO_METHOD_TLS_SERVER;
 
     /**
      * @var callable
@@ -136,13 +136,19 @@ class Server implements ServerInterface
             );
         }
 
-        $this->createEvent('error')
-             ->createEvent('failure');
+        $this
+            ->createEvent('connect-error')
+            ->createEvent('client-error')
+            ->createEvent('logic-error')
+            ->createEvent('fatal-error');
 
         $this->onRequest = $onRequest;
         $this->onError = $onError;
     }
 
+    /**
+     * @return  bool
+     */
     public function isOpen()
     {
         return $this->open;
@@ -160,11 +166,17 @@ class Server implements ServerInterface
         }
     }
 
+    /**
+     * @return  float|int
+     */
     public function getTimeout()
     {
         return $this->timeout;
     }
 
+    /**
+     * @return  bool
+     */
     public function allowPersistent()
     {
         return $this->allowPersistent;
@@ -191,15 +203,9 @@ class Server implements ServerInterface
 
         $cryptoMethod = isset($options['crypto_method'])
             ? (int) $options['crypto_method']
-            : (isset($options['pem']) ? STREAM_CRYPTO_METHOD_TLS_SERVER : 0);
+            : (isset($options['pem']) ? self::DEFAULT_CRYPTO_METHOD : 0);
 
-        (new Coroutine($this->accept($server, $cryptoMethod)))
-        ->done(null, function (Exception $exception) {
-            if ($this->open) {
-                $this->close();
-                throw $exception;
-            }
-        });
+        (new Coroutine($this->accept($server, $cryptoMethod)))->done();
     }
 
     /**
@@ -216,17 +222,18 @@ class Server implements ServerInterface
             try {
                 $client = (yield $server->accept());
 
-                (new Coroutine($this->process($client, $cryptoMethod)))
-                ->done(null, function (Exception $exception) {
-                    $this->close();
-                    throw $exception;
-                });
+                (new Coroutine($this->process($client, $cryptoMethod)))->done();
             } catch (AcceptException $exception) {
-                $this->emit('error', $exception);
+                $this->emit('connect-error', $exception);
                 // Ignore failed client accept.
             } catch (FailureException $exception) {
-                $this->emit('error', $exception);
+                $this->emit('connect-error', $exception);
                 // Ignore failed client connections.
+            } catch (Exception $exception) {
+                if ($this->isOpen()) {
+                    $this->close();
+                    $this->emit('fatal-error', $exception);
+                }
             }
         }
     }
@@ -241,26 +248,20 @@ class Server implements ServerInterface
      */
     protected function process(SocketClientInterface $client, $cryptoMethod)
     {
+        $count = 0;
+        $upgrade = false;
+
         try {
             if (0 !== $cryptoMethod) {
                 yield $client->enableCrypto($cryptoMethod, $this->timeout);
             }
 
-            $count = 0;
-
             do {
-                $data = '';
-
                 try {
-                    do {
-                        $data .= (yield $client->read(null, "\n", $this->timeout));
-
-                        if (strlen($data) > $this->maxHeaderSize) {
-                            throw new MessageHeaderSizeException('Request header too large.');
-                        }
-                    } while (!preg_match("/\r?\n\r?\n$/", $data));
-
-                    $request = $this->parser->parseRequest($data, $client);
+                    $request = $this->parser->parseRequest(
+                        (yield $this->parser->readMessage($client, $this->maxHeaderSize, $this->timeout)),
+                        $client
+                    );
 
                     $request = $this->builder->buildIncomingRequest($request, $this->getTimeout());
 
@@ -270,7 +271,7 @@ class Server implements ServerInterface
                     $response = (yield $this->createResponse($request, $client));
 
                 } catch (TimeoutException $exception) { // Request timeout.
-                    if ('' === $data && 0 < $count) {
+                    if (0 < $count) {
                         return; // Keep-alive timeout expired.
                     }
                     $response = (yield $this->createErrorResponse(408, $client));
@@ -282,9 +283,7 @@ class Server implements ServerInterface
                     $response = (yield $this->createErrorResponse(400, $client));
                 }
 
-                $data = $this->encoder->encodeResponse($response);
-
-                yield $client->write($data);
+                yield $client->write($this->encoder->encodeResponse($response));
 
                 $stream = $response->getBody();
 
@@ -292,19 +291,23 @@ class Server implements ServerInterface
                     yield $stream->pipe($client, false);
                 }
 
-                if (strtolower($response->getHeaderLine('Connection')) !== 'keep-alive') {
-                    break;
-                }
-            } while ($client->isReadable() && $client->isWritable());
-
+                $connection = strtolower($response->getHeaderLine('Connection'));
+                $upgrade = $connection === 'upgrade';
+                $keepAlive = !$upgrade && $this->allowPersistent() && $connection === 'keep-alive';
+            } while ($keepAlive && $client->isReadable() && $client->isWritable());
         } catch (SocketException $exception) {
-            $this->emit('error', $exception);
+            $this->emit('client-error', $exception);
             // Ignore socket exceptions from client hang-ups.
         } catch (StreamException $exception) {
-            $this->emit('error', $exception);
+            $this->emit('client-error', $exception);
             // Ignore stream exceptions from client read/write failures.
+        } catch (Exception $exception) {
+            $this->close();
+            $this->emit('fatal-error', $exception);
         } finally {
-            $client->close();
+            if (!$upgrade) { // Only close if connection was not upgraded.
+                $client->close();
+            }
         }
     }
 
@@ -338,7 +341,7 @@ class Server implements ServerInterface
                 $this->allowPersistent()
             );
         } catch (Exception $exception) {
-            $this->emit('failure', $exception);
+            $this->emit('logic-error', $exception);
             yield $this->createDefaultErrorResponse(500, $exception);
         }
     }
@@ -371,9 +374,9 @@ class Server implements ServerInterface
                 );
             }
 
-            yield $this->builder->buildOutgoingResponse($response);
+            yield $this->builder->buildOutgoingResponse($response, null, $this->getTimeout(), false);
         } catch (Exception $exception) {
-            $this->emit('failure', $exception);
+            $this->emit('logic-error', $exception);
             yield $this->createDefaultErrorResponse(500, $exception);
         }
     }
