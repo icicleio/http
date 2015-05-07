@@ -40,12 +40,13 @@ interface MessageInterface
     public function getHeader($name);
 
     /**
-     * Returns the values for the given header as a comma separated list or null if the header does not exist.
+     * Returns the values for the given header as a comma separated list. Returns an empty string if the the header
+     * does not exit.
      * Note that not all headers can be accurately represented as a comma-separated list.
      *
      * @param   string $name
      *
-     * @return  string|null
+     * @return  string
      */
     public function getHeaderLine($name);
 

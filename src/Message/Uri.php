@@ -46,7 +46,7 @@ class Uri implements UriInterface
     private $user;
 
     /**
-     * @var string
+     * @var string|null
      */
     private $password;
 
@@ -109,7 +109,7 @@ class Uri implements UriInterface
      */
     public function getUserInfo()
     {
-        if ($this->password) {
+        if (null !== $this->password) {
             return sprintf('%s:%s', $this->user, $this->password);
         }
 
@@ -361,7 +361,7 @@ class Uri implements UriInterface
         $this->host     = isset($components['host'])     ? $components['host'] : '';
         $this->port     = isset($components['port'])     ? $this->filterPort($components['port']) : null;
         $this->user     = isset($components['user'])     ? $this->encodeValue($components['user']) : '';
-        $this->password = isset($components['pass'])     ? $this->encodeValue($components['pass']) : '';
+        $this->password = isset($components['pass'])     ? $this->encodeValue($components['pass']) : null;
         $this->path     = isset($components['path'])     ? $this->parsePath($components['path']) : '';
         $this->query    = isset($components['query'])    ? $this->parseQuery($components['query']) : [];
         $this->fragment = isset($components['fragment']) ? $this->parseFragment($components['fragment']) : '';

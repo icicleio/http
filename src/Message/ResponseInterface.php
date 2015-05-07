@@ -21,7 +21,8 @@ interface ResponseInterface extends MessageInterface
      * Returns a new instance with the given status.
      *
      * @param   int $code 3-digit status code.
-     * @param   string|null $reason Description of status code.
+     * @param   string|null $reason Description of status code or null to use default reason associated with the
+     *          status code given.
      *
      * @return  static
      */

@@ -97,16 +97,13 @@ class Response extends Message implements ResponseInterface
         $code = 200,
         array $headers = null,
         ReadableStreamInterface $stream = null,
-        $reason = null,
+        $reason = '',
         $protocol = '1.1'
     ) {
         parent::__construct($headers, $stream, $protocol);
 
         $this->status = $this->validateStatusCode($code);
-
-        if (null !== $reason) {
-            $this->reason = (string) $reason;
-        }
+        $this->reason = $this->filterReason($reason);
     }
 
     /**
@@ -126,7 +123,7 @@ class Response extends Message implements ResponseInterface
             return $this->reason;
         }
 
-        return isset(self::$phrases[$this->status]) ? self::$phrases[$this->status] : null;
+        return isset(self::$phrases[$this->status]) ? self::$phrases[$this->status] : '';
     }
 
     /**
@@ -135,8 +132,8 @@ class Response extends Message implements ResponseInterface
     public function withStatus($code, $reason = null)
     {
         $new = clone $this;
-        $new->status = $this->validateStatusCode($code);
-        $new->reason = null !== $reason ? (string) $reason : null;
+        $new->status = $new->validateStatusCode($code);
+        $new->reason = $new->filterReason($reason);
         return $new;
     }
 
@@ -147,7 +144,7 @@ class Response extends Message implements ResponseInterface
      *
      * @throws  \Icicle\Http\Exception\InvalidArgumentException
      */
-    public function validateStatusCode($code)
+    protected function validateStatusCode($code)
     {
         if (!is_numeric($code) || is_float($code) || 100 > $code || 599 < $code) {
             throw new InvalidArgumentException(
@@ -156,5 +153,15 @@ class Response extends Message implements ResponseInterface
         }
 
         return (int) $code;
+    }
+
+    /**
+     * @param   string $reason
+     *
+     * @return  string|null
+     */
+    protected function filterReason($reason)
+    {
+        return $reason ? (string) $reason : null;
     }
 }

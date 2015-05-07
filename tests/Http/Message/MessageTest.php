@@ -51,6 +51,28 @@ class MessageTest extends TestCase
         $this->assertSame($original, $message->getProtocolVersion());
     }
 
+    /**
+     * @expectedException \Icicle\Http\Exception\InvalidArgumentException
+     */
+    public function testCreateWithInvalidProtocol()
+    {
+        $protocol = 'protocol';
+
+        $message = $this->createMessage(null, null, $protocol);
+    }
+
+    /**
+     * @expectedException \Icicle\Http\Exception\InvalidArgumentException
+     */
+    public function testWithInvalidProtocol()
+    {
+        $original = '1.1';
+        $protocol = 'protocol';
+
+        $message = $this->createMessage(null, null, $original);
+        $new = $message->withProtocolVersion($protocol);
+    }
+
     public function testGetBody()
     {
         $message = $this->createMessage();
@@ -151,7 +173,7 @@ class MessageTest extends TestCase
 
         $this->assertFalse($message->hasHeader('Connection'));
         $this->assertSame([], $message->getHeader('Connection'));
-        $this->assertSame(null, $message->getHeaderLine('Connection'));
+        $this->assertSame('', $message->getHeaderLine('Connection'));
     }
 
     public function testHeaderCreationWithArrayOfArrayOfStrings()
@@ -216,9 +238,27 @@ class MessageTest extends TestCase
 
         $this->assertNotSame($message, $new);
         $this->assertSame('text/html', $new->getHeaderLine('Accept'));
-        $this->assertSame(null, $message->getHeaderLine('Accept'));
+        $this->assertSame('', $message->getHeaderLine('Accept'));
 
         return $new;
+    }
+
+    /**
+     * @expectedException \Icicle\Http\Exception\InvalidArgumentException
+     */
+    public function testWithHeaderNonStringValue()
+    {
+        $message = $this->createMessage();
+
+        $new = $message->withHeader('Content-Length', 100);
+
+        $this->assertSame('100', $new->getHeaderLine('Content-Length'));
+
+        $new = $message->withHeader('Null-Value-Header', null);
+
+        $this->assertSame('', $new->getHeaderLine('Null-Value-Header'));
+
+        $new = $message->withHeader('Invalid-Type', new \stdClass());
     }
 
     /**
@@ -252,6 +292,29 @@ class MessageTest extends TestCase
 
         $this->assertSame($expected, $new->getHeaders());
         $this->assertSame($line, $new->getHeaderLine('Accept'));
+    }
+
+    /**
+     * @depends testWithHeader
+     * @param   \Icicle\Http\Message\Message $message
+     * @expectedException \Icicle\Http\Exception\InvalidArgumentException
+     */
+    public function testWithAddedHeaderNonStringValue($message)
+    {
+        $new = $message->withAddedHeader('Content-Length', 100);
+
+        $this->assertSame('100', $new->getHeaderLine('Content-Length'));
+
+        $new = $message->withAddedHeader('Accept', null);
+
+        $expected = ['text/html', ''];
+
+        $line = 'text/html,';
+
+        $this->assertSame($expected, $new->getHeader('Accept'));
+        $this->assertSame($line, $new->getHeaderLine('Accept'));
+
+        $new = $message->withAddedHeader('Invalid-Type', new \stdClass());
     }
 
     /**

@@ -91,7 +91,7 @@ abstract class Message implements MessageInterface
     {
         $value = $this->getHeader($name);
 
-        return empty($value) ? null : implode(',', $value);
+        return empty($value) ? '' : implode(',', $value);
     }
 
     /**
@@ -271,7 +271,7 @@ abstract class Message implements MessageInterface
     }
 
     /**
-     * @param   string $value
+     * @param   string|float|int|null $value
      *
      * @return  string
      *
@@ -279,7 +279,7 @@ abstract class Message implements MessageInterface
      */
     private function filterHeaderValue($value)
     {
-        if (is_numeric($value) || (is_object($value) && method_exists($value, '__toString'))) {
+        if (is_numeric($value) || is_null($value) || (is_object($value) && method_exists($value, '__toString'))) {
             return (string) $value;
         }
 

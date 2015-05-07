@@ -69,7 +69,7 @@ interface UriInterface
      *
      * @param   string $name
      *
-     * @return  string|null
+     * @return  string
      */
     public function getQueryValue($name);
 
@@ -83,7 +83,7 @@ interface UriInterface
     /**
      * Returns a new instance with the given scheme or no scheme if null. :// or : suffix should be trimmed.
      *
-     * @param   string|null $scheme
+     * @param   string $scheme
      *
      * @return  static
      */
@@ -92,7 +92,7 @@ interface UriInterface
     /**
      * Returns a new instance with the given user and password. Use null for $user to remove user info.
      *
-     * @param   string|null $user
+     * @param   string $user
      * @param   string|null $password
      *
      * @return  static
@@ -112,7 +112,7 @@ interface UriInterface
      * Returns a new instance with the given query string or null to remove query string. Any ? prefix should be
      * trimmed.
      *
-     * @param   string|null $query
+     * @param   string $query
      *
      * @return  static
      */
@@ -122,7 +122,7 @@ interface UriInterface
      * Returns a new instance with the given name and value pair in the query string (i.e., $name=$value)
      *
      * @param   string $name
-     * @param   string|null $value
+     * @param   string $value
      *
      * @return  static
      */
