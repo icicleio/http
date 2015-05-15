@@ -1,0 +1,6 @@
+GET /search?query=test HTTP/1.1
+Host: example.com
+Accept: */*
+Accept-Encoding: gzip, deflate
+Connection: keep-alive
+

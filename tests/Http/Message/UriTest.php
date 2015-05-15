@@ -6,32 +6,127 @@ use Icicle\Tests\TestCase;
 
 class UriTest extends TestCase
 {
-    public function testConstructor()
+    /**
+     * @return  array
+     */
+    public function getUris()
     {
-        $uri = new Uri('https://username:password@example.com:8443/async/http?foo=value1&bar=value2#fragment-value');
-        $this->assertSame('https', $uri->getScheme());
-        $this->assertSame('username:password', $uri->getUserInfo());
-        $this->assertSame('example.com', $uri->getHost());
-        $this->assertSame(8443, $uri->getPort());
-        $this->assertSame('username:password@example.com:8443', $uri->getAuthority());
-        $this->assertSame('/async/http', $uri->getPath());
-        $this->assertSame('bar=value2&foo=value1', $uri->getQuery());
-        $this->assertSame('value1', $uri->getQueryValue('foo'));
-        $this->assertSame('value2', $uri->getQueryValue('bar'));
-        $this->assertSame('fragment-value', $uri->getFragment());
+        return [
+            [
+                'https://username:password@example.com:8443/async/http?foo=value1&bar=value2#fragment-value',
+                'https',
+                'username:password',
+                'example.com',
+                8443,
+                'username:password@example.com:8443',
+                '/async/http',
+                'bar=value2&foo=value1',
+                'fragment-value',
+            ],
+            [
+                'http://example.com/path',
+                'http',
+                '',
+                'example.com',
+                80,
+                'example.com',
+                '/path',
+                '',
+                '',
+            ],
+            [
+                '//example.com',
+                '',
+                '',
+                'example.com',
+                null,
+                'example.com',
+                '',
+                '',
+                '',
+            ],
+            [
+                'example.org:443',
+                '',
+                '',
+                'example.org',
+                443,
+                'example.org:443',
+                '',
+                '',
+                '',
+            ],
+            [
+                '//example.com/path/to/resource',
+                '',
+                '',
+                'example.com',
+                null,
+                'example.com',
+                '/path/to/resource',
+                '',
+                '',
+            ],
+            [
+                '/path/without/host?name=value#fragment-value',
+                '',
+                '',
+                '',
+                null,
+                '',
+                '/path/without/host',
+                'name=value',
+                'fragment-value',
+            ],
+            [
+                'http://username@example.org/',
+                'http',
+                'username',
+                'example.org',
+                80,
+                'username@example.org',
+                '/',
+                '',
+                '',
+            ],
+            [
+                '',
+                '',
+                '',
+                '',
+                null,
+                '',
+                '',
+                '',
+                '',
+            ],
+        ];
     }
 
-    public function testConstructFromEmptyString()
+    /**
+     * @dataProvider getUris
+     *
+     * @param   string $uri
+     * @param   string $scheme
+     * @param   string $user
+     * @param   string $host
+     * @param   int|null $port
+     * @param   string $authority
+     * @param   string $path
+     * @param   string $query
+     * @param   string $fragment
+     */
+    public function testConstructor($uri, $scheme, $user, $host, $port, $authority, $path, $query, $fragment)
     {
-        $uri = new Uri();
-        $this->assertSame('', $uri->getScheme());
-        $this->assertSame('', $uri->getUserInfo());
-        $this->assertSame('', $uri->getHost());
-        $this->assertSame(null, $uri->getPort());
-        $this->assertSame('', $uri->getAuthority());
-        $this->assertSame('', $uri->getPath());
-        $this->assertSame('', $uri->getQuery());
-        $this->assertSame('', $uri->getFragment());
+        $uri = new Uri($uri);
+        $this->assertSame($scheme, $uri->getScheme());
+        $this->assertSame($user, $uri->getUserInfo());
+        $this->assertSame($host, $uri->getHost());
+        $this->assertSame($port, $uri->getPort());
+        $this->assertSame($authority, $uri->getAuthority());
+        $this->assertSame($path, $uri->getPath());
+        $this->assertSame($query, $uri->getQuery());
+        $this->assertSame($fragment, $uri->getFragment());
     }
 
     /**
@@ -86,14 +181,16 @@ class UriTest extends TestCase
             ['http://example.com:8080', null, 80],
             ['https://example.com:8443', null, 443],
             ['https://example.com', '8080', 8080],
-            ['example.com', 80, 80],
-            ['example.com:80', null, null],
         ];
     }
 
     /**
      * @depends testConstructor
      * @dataProvider getValidPorts
+     *
+     * @param   string $uri
+     * @param   int|string|null $port
+     * @param   int $expected
      */
     public function testWithPort($uri, $port, $expected)
     {
@@ -120,6 +217,8 @@ class UriTest extends TestCase
      * @depends testConstructor
      * @dataProvider getInvalidPorts
      * @expectedException \Icicle\Http\Exception\InvalidArgumentException
+     *
+     * @param   int|string|null $port
      */
     public function testWithInvalidPort($port)
     {
@@ -192,6 +291,9 @@ class UriTest extends TestCase
 
     /**
      * @dataProvider getAuthorities
+     *
+     * @param   string $uri
+     * @param   string $expected
      */
     public function testGetAuthority($uri, $expected)
     {
@@ -305,6 +407,9 @@ class UriTest extends TestCase
 
     /**
      * @dataProvider getPaths
+     *
+     * @param   string|null $path
+     * @param   string $expected
      */
     public function testWithPath($path, $expected)
     {
@@ -335,6 +440,9 @@ class UriTest extends TestCase
 
     /**
      * @dataProvider getFragments
+     *
+     * @param   string|null $path
+     * @param   string $expected
      */
     public function testWithFragment($path, $expected)
     {

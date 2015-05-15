@@ -1,0 +1,86 @@
+
+- file: requests/01.txt
+  method: GET
+  target: /
+  protocolVersion: "1.1"
+  headers:
+    Host:
+      - example.com
+    Connection:
+      - close
+
+- file: requests/02.txt
+  method: POST
+  target: /test
+  protocolVersion: "1.0"
+  headers:
+    Host:
+      - example.com
+    Connection:
+      - close
+
+- file: requests/03.txt
+  method: GET
+  target: /search?query=test
+  protocolVersion: "1.1"
+  headers:
+    Host:
+      - example.com
+    Connection:
+      - keep-alive
+    Accept:
+      - "*/*"
+    Accept-Encoding:
+      - gzip, deflate
+
+- file: requests/04.txt
+  method: PUT
+  target: /path/to/resource
+  protocolVersion: "1.1"
+  headers:
+    Host:
+      - api.example.org
+    Connection:
+      - close
+  body: '{"key": "value"}'
+
+- file: requests/05.txt
+  method: POST
+  target: /form/submit
+  protocolVersion: "1.1"
+  headers:
+    Host:
+      - example.com
+    Connection:
+      - keep-alive
+    Cookie:
+      - name=value
+  body: "field1=value1&field2=value2&field3=value3"
+
+- file: requests/06.txt
+  method: GET
+  target: http://example.com/test/path
+  protocolVersion: "1.1"
+  headers:
+    Host:
+      - example.com
+    Connection:
+      - keep-alive
+
+- file: requests/07.txt
+  method: OPTIONS
+  target: "*"
+  protocolVersion: "1.1"
+  headers:
+    Host:
+      - example.com
+    Connection:
+      - close
+
+- file: requests/08.txt
+  method: CONNECT
+  target: example.com:80
+  protocolVersion: "1.1"
+  headers:
+    Host:
+      - example.com:80

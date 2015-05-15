@@ -37,7 +37,7 @@ abstract class Message implements MessageInterface
     public function __construct(array $headers = null, ReadableStreamInterface $stream = null, $protocol = '1.1')
     {
         if (null !== $headers) {
-            $this->setHeaders($headers);
+            $this->addHeaders($headers);
         }
 
         $this->stream = $stream ?: new Sink();
@@ -108,7 +108,7 @@ abstract class Message implements MessageInterface
     public function withProtocolVersion($version)
     {
         $new = clone $this;
-        $new->protocol = $this->filterProtocolVersion($version);
+        $new->protocol = $new->filterProtocolVersion($version);
         return $new;
     }
 
@@ -153,21 +153,31 @@ abstract class Message implements MessageInterface
      * Sets the headers from the given array.
      *
      * @param   string[] $headers
+     *
+     * @return  $this
      */
     protected function setHeaders(array $headers)
     {
-        foreach ($headers as $name => $value) {
-            $normalized = strtolower($name);
-            $value = $this->filterHeader($value);
+        $this->headerNameMap = [];
+        $this->headers = [];
 
-            if (array_key_exists($normalized, $this->headerNameMap)) {
-                $name = $this->headerNameMap[$normalized];
-                $this->headers[$name] = array_merge($this->headers[$name], $value);
-            } else {
-                $this->headerNameMap[$normalized] = $name;
-                $this->headers[$name] = $value;
-            }
+        return $this->addHeaders($headers);
+    }
+
+    /**
+     * Adds headers from the given array.
+     *
+     * @param   string[] $headers
+     *
+     * @return  $this
+     */
+    protected function addHeaders(array $headers)
+    {
+        foreach ($headers as $name => $value) {
+            $this->addHeader($name, $value);
         }
+
+        return $this;
     }
 
     /**
@@ -177,9 +187,15 @@ abstract class Message implements MessageInterface
      * @param   string|string[] $value
      *
      * @return  $this
+     *
+     * @throws  \Icicle\Http\Exception\InvalidArgumentException If the header name or value is invalid.
      */
     protected function setHeader($name, $value)
     {
+        if (!$this->isHeaderNameValid($name)) {
+            throw new InvalidArgumentException('Header name is invalid.');
+        }
+
         $normalized = strtolower($name);
         $value = $this->filterHeader($value);
 
@@ -201,9 +217,15 @@ abstract class Message implements MessageInterface
      * @param   string|string[] $value
      *
      * @return  $this
+     *
+     * @throws  \Icicle\Http\Exception\InvalidArgumentException If the header name or value is invalid.
      */
     protected function addHeader($name, $value)
     {
+        if (!$this->isHeaderNameValid($name)) {
+            throw new InvalidArgumentException('Header name is invalid.');
+        }
+
         $normalized = strtolower($name);
         $value = $this->filterHeader($value);
 
@@ -241,14 +263,29 @@ abstract class Message implements MessageInterface
      * @param   string $protocol
      *
      * @return  string
+     *
+     * @throws  \Icicle\Http\Exception\InvalidArgumentException If the protocol is not valid.
      */
-    protected function filterProtocolVersion($protocol)
+    private function filterProtocolVersion($protocol)
     {
-        if (!preg_match('/^\d+(?:\.\d+)?$/', $protocol)) {
-            throw new InvalidArgumentException('Invalid format for protocol version.');
-        }
+        switch ($protocol) {
+            case '1.1':
+            case '1.0':
+                return $protocol;
 
-        return $protocol;
+            default:
+                throw new InvalidArgumentException('Invalid protocol version.');
+        }
+    }
+
+    /**
+     * @param   string $name
+     *
+     * @return  bool
+     */
+    private function isHeaderNameValid($name)
+    {
+        return (bool) preg_match('/^[A-Za-z0-9`~!#$%^&_|\'\-]+$/', $name);
     }
 
     /**
@@ -279,12 +316,14 @@ abstract class Message implements MessageInterface
      */
     private function filterHeaderValue($value)
     {
-        if (is_numeric($value) || is_null($value) || (is_object($value) && method_exists($value, '__toString'))) {
-            return (string) $value;
+        if (is_numeric($value) || (is_object($value) && method_exists($value, '__toString'))) {
+            $value = (string) $value;
+        } elseif (!is_string($value)) {
+            throw new InvalidArgumentException('Header values must be strings or an array of strings.');
         }
 
-        if (!is_string($value)) {
-            throw new InvalidArgumentException('Header values must be strings or an array of strings.');
+        if (!preg_match("/^[\t\x20-\x7e\x80-\xfe]+$/", $value)) {
+            throw new InvalidArgumentException('Invalid character in header value.');
         }
 
         return $value;

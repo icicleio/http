@@ -73,6 +73,8 @@ interface MessageInterface
      * @param   string|string[] $value
      *
      * @return  static
+     *
+     * @throws  \Icicle\Http\Exception\InvalidArgumentException If the header name or value is invalid.
      */
     public function withHeader($name, $value);
 
@@ -84,6 +86,8 @@ interface MessageInterface
      * @param   string|string[] $value
      *
      * @return  static
+     *
+     * @throws  \Icicle\Http\Exception\InvalidArgumentException If the header name or value is invalid.
      */
     public function withAddedHeader($name, $value);
 

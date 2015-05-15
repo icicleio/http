@@ -1,0 +1,4 @@
+GET /invalid/header/name HTTP/1.1
+Host: example.com
+Invalid…name: test
+

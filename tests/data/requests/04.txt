@@ -1,0 +1,5 @@
+PUT /path/to/resource HTTP/1.1
+Host: api.example.org
+Connection: close
+
+{"key": "value"}

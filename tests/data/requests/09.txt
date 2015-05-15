@@ -1,0 +1,6 @@
+PUT HTTP/1.1
+Host: example.com
+Content-Type: text/plain
+Content-Length: 16
+
+No request path.

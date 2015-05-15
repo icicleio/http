@@ -1,0 +1,4 @@
+DELETE /path/to/resource HTTP/1.1.1
+Host: example.com
+Connection: close
+

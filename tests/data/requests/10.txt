@@ -1,0 +1,3 @@
+GET /path with spaces HTTP/1.1
+Host: example.com
+

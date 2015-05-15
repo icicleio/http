@@ -1,0 +1,94 @@
+
+- file: responses/01.txt
+  code: 200
+  reason: OK
+  protocolVersion: "1.0"
+  headers:
+    Connection:
+      - close
+  body: Response body.
+
+- file: responses/02.txt
+  code: 200
+  reason: OK
+  protocolVersion: "1.1"
+  headers:
+    Connection:
+      - keep-alive
+    Content-Length:
+      - "16"
+    Content-Type:
+      - application/json
+    Cache-Control:
+      - private, max-age=0, no-cache
+  body: '{"key": "value"}'
+
+- file: responses/03.txt
+  code: 200
+  reason: OK
+  protocolVersion: "1.1"
+  headers:
+    Connection:
+      - close
+    Content-Length:
+      - "14"
+    Content-Type:
+      - text/plain
+    Set-Cookie:
+      - "session_id=e42a5c21fa7b9012783de71b; expires=Fri, 15 May 2015 12:00:00 GMT; domain=example.com; secure"
+      - "user_id=917402; expires=Fri, 15 May 2015 12:00:00 GMT; domain=example.com; secure"
+  body: Response body.
+
+- file: responses/04.txt
+  code: 400
+  reason: Bad Request
+  protocolVersion: "1.1"
+  headers:
+    Connection:
+      - close
+
+- file: responses/05.txt
+  code: 405
+  reason: Method Not Allowed
+  protocolVersion: "1.0"
+  headers:
+    Connection:
+      - close
+    Content-Type:
+      - text/html
+    Content-Length:
+      - "52"
+  body: "<html><body><p>Method not allowed.</p></body></html>"
+
+- file: responses/06.txt
+  code: 500
+  reason: Custom Reason Phrase
+  protocolVersion: "1.1"
+  headers:
+    Connection:
+      - close
+
+- file: responses/07.txt
+  code: 101
+  reason: Switching Protocols
+  protocolVersion: "1.1"
+  headers:
+    Upgrade:
+      - websocket
+    Connection:
+      - upgrade
+    Sec-WebSocket-Accept:
+      - s3pPLMBiTxaQ9kYGzzhZRbK+xOo=
+    Sec-WebSocket-Protocol:
+      - chat
+
+- file: responses/08.txt
+  code: 200
+  reason: OK
+  protocolVersion: "1.1"
+  headers:
+    Connection:
+      - close
+    Content-Length:
+      - "22"
+  body: Missing reason phrase.

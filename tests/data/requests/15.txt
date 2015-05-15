@@ -1,0 +1,4 @@
+POST /no/header/body/boundary HTTP/1.1
+Host: example.com
+Connection: close
+field1=value1&field2=value2

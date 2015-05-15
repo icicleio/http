@@ -1,0 +1,5 @@
+HTTP/1.0.1 200 OK
+Connection: close
+Content-Length: 17
+
+Invalid protocol.

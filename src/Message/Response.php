@@ -97,7 +97,7 @@ class Response extends Message implements ResponseInterface
         $code = 200,
         array $headers = null,
         ReadableStreamInterface $stream = null,
-        $reason = '',
+        $reason = null,
         $protocol = '1.1'
     ) {
         parent::__construct($headers, $stream, $protocol);

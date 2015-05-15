@@ -50,21 +50,17 @@ class Parser implements ParserInterface
             throw new LogicException('Body portion in message when stream provided for body.');
         }
 
-        if (!preg_match('/^HTTP\/(\d+(?:\.\d+)?) (\d{3}) (.*)$/i', $startLine, $matches)) {
+        if (!preg_match('/^HTTP\/(\d+(?:\.\d+)?) (\d{3})(?: (.+))?$/i', $startLine, $matches)) {
             throw new ParseException('Could not parse start line.');
         }
 
         $protocol = $matches[1];
         $code = (int) $matches[2];
-        $reason = $matches[3];
+        $reason = isset($matches[3]) ? $matches[3] : null;
 
         $headers = $this->parseHeaders($headers);
 
-        try {
-            return new Response($code, $headers, $stream, $reason, $protocol);
-        } catch (InvalidArgumentException $exception) {
-            throw new MessageException('Invalid data in response.');
-        }
+        return new Response($code, $headers, $stream, $reason, $protocol);
     }
 
     /**
@@ -91,31 +87,18 @@ class Parser implements ParserInterface
 
         $headers = $this->parseHeaders($headers);
 
-        foreach ($headers as $name => $values) {
-            if (strtolower($name) === 'host') {
-                $host = $values[0];
-                break;
-            }
-        }
-
-        if (!isset($host)) {
-            throw new MissingHostException('No Host header in message.');
-        }
-
         if ('/' === $target[0]) { // origin-form
-            $uri = new Uri($host . $target);
+            $uri = new Uri($this->filterHost($this->findHost($headers)) . $target);
             $target = null; // null $target since it was a path.
-        } elseif ('*' === $target) {
-            $uri = new Uri($host); // asterisk-form
-        } else {
-            $uri = new Uri($target); // absolute-form or authority-form
+        } elseif ('*' === $target) { // asterisk-form
+            $uri = new Uri($this->filterHost($this->findHost($headers)));
+        } elseif (preg_match('/^https?:\/\//i', $target)) { // absolute-form
+            $uri = new Uri($target);
+        } else { // authority-form
+            $uri = new Uri($this->filterHost($target));
         }
 
-        try {
-            return new Request($method, $uri, $headers, $stream, $target, $protocol);
-        } catch (InvalidArgumentException $exception) {
-            throw new MessageException('Invalid data in request.');
-        }
+        return new Request($method, $uri, $headers, $stream, $target, $protocol);
     }
 
     /**
@@ -132,11 +115,6 @@ class Parser implements ParserInterface
         }
 
         $headers = $this->splitHeader($header);
-
-        if (empty($headers)) {
-            throw new ParseException('No start line in message.');
-        }
-
         $startLine = trim(array_shift($headers));
 
         return [$startLine, $headers, $body];
@@ -153,8 +131,13 @@ class Parser implements ParserInterface
 
         foreach ($lines as $line) {
             $parts = explode(':', $line, 2);
-            $name = trim($parts[0]);
-            $value = isset($parts[1]) ? trim($parts[1]) : '';
+
+            if (2 !== count($parts)) {
+                throw new ParseException('Found header without value.');
+            }
+
+            list($name, $value) = $parts;
+            $value = trim($value);
 
             // No check for case as Message class will automatically combine similarly named headers.
             if (!isset($headers[$name])) {
@@ -187,9 +170,41 @@ class Parser implements ParserInterface
         $parts = preg_split("/\r?\n\r?\n/", $message, 2);
 
         if (!isset($parts[1])) {
-            $parts[1] = '';
+            throw new ParseException('Header/body boundary not found.');
         }
 
         return $parts;
+    }
+
+    /**
+     * @param   string $host
+     *
+     * @return  string
+     */
+    protected function filterHost($host)
+    {
+        if (strrpos($host, ':', -1)) {
+            return $host;
+        }
+
+        return '//' . $host;
+    }
+
+    /**
+     * @param   string[][] $headers
+     *
+     * @return  string
+     *
+     * @throws  \Icicle\Http\Exception\MissingHostException If no host header is find.
+     */
+    protected function findHost(array $headers)
+    {
+        foreach ($headers as $name => $values) {
+            if (strtolower($name) === 'host') {
+                return implode(',', $values);
+            }
+        }
+
+        throw new MissingHostException('No host header in message.');
     }
 }

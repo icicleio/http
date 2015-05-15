@@ -1,0 +1,8 @@
+HTTP/1.1 200 OK
+Connection: close
+Content-Length: 14
+Content-Type: text/plain
+Set-Cookie: session_id=e42a5c21fa7b9012783de71b; expires=Fri, 15 May 2015 12:00:00 GMT; domain=example.com; secure
+Set-Cookie: user_id=917402; expires=Fri, 15 May 2015 12:00:00 GMT; domain=example.com; secure
+
+Response body.

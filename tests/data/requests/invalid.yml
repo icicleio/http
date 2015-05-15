@@ -1,0 +1,33 @@
+
+- file: requests/09.txt
+  exception: \Icicle\Http\Exception\ParseException
+
+- file: requests/10.txt
+  exception: \Icicle\Http\Exception\ParseException
+
+- file: requests/11.txt
+  exception: \Icicle\Http\Exception\ParseException
+
+- file: requests/12.txt
+  exception: \Icicle\Http\Exception\MissingHostException
+
+- file: requests/13.txt
+  exception: \Icicle\Http\Exception\ParseException
+
+- file: requests/14.txt
+  exception: \Icicle\Http\Exception\ParseException
+
+- file: requests/15.txt
+  exception: \Icicle\Http\Exception\ParseException
+
+- file: requests/16.txt
+  exception: \Icicle\Http\Exception\InvalidArgumentException
+
+- file: requests/17.txt
+  exception: \Icicle\Http\Exception\InvalidArgumentException
+
+- file: requests/18.txt
+  exception: \Icicle\Http\Exception\ParseException
+
+- file: requests/19.txt
+  exception: \Icicle\Http\Exception\InvalidArgumentException

@@ -357,6 +357,10 @@ class Uri implements UriInterface
     {
         $components = parse_url($uri);
 
+        if (!$components) {
+            throw new InvalidArgumentException('Invalid URI.');
+        }
+
         $this->scheme   = isset($components['scheme'])   ? $this->filterScheme($components['scheme']) : '';
         $this->host     = isset($components['host'])     ? $components['host'] : '';
         $this->port     = isset($components['port'])     ? $this->filterPort($components['port']) : null;

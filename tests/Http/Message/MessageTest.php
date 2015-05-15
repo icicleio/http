@@ -279,6 +279,38 @@ class MessageTest extends TestCase
     /**
      * @depends testWithHeader
      * @param   \Icicle\Http\Message\Message $message
+     * @expectedException \Icicle\Http\Exception\InvalidArgumentException
+     */
+    public function testWithHeaderInvalidName($message)
+    {
+        $message->withHeader('Invalid-∂', 'value');
+    }
+
+    /**
+     * @depends testWithHeader
+     * @param   \Icicle\Http\Message\Message $message
+     * @expectedException \Icicle\Http\Exception\InvalidArgumentException
+     */
+    public function testWithHeaderInvalidValue($message)
+    {
+        $message->withHeader('Invalid-Value', "va\0lue");
+    }
+
+    /**
+     * @depends testWithHeader
+     * @param   \Icicle\Http\Message\Message $message
+     */
+    public function testWithHeaderNumericValue($message)
+    {
+        $new = $message->withHeader('Content-Length', 123);
+
+        $this->assertSame(['123'], $new->getHeader('Content-Length'));
+        $this->assertSame('123', $new->getHeaderLine('Content-Length'));
+    }
+
+    /**
+     * @depends testWithHeader
+     * @param   \Icicle\Http\Message\Message $message
      */
     public function testWithAddedHeader($message)
     {
@@ -350,6 +382,38 @@ class MessageTest extends TestCase
         ];
 
         $this->assertSame($expected, $new->getHeaders());
+    }
+
+    /**
+     * @depends testWithHeader
+     * @param   \Icicle\Http\Message\Message $message
+     * @expectedException \Icicle\Http\Exception\InvalidArgumentException
+     */
+    public function testWithAddedHeaderInvalidName($message)
+    {
+        $message->withAddedHeader('Invalid-∂', 'value');
+    }
+
+    /**
+     * @depends testWithHeader
+     * @param   \Icicle\Http\Message\Message $message
+     * @expectedException \Icicle\Http\Exception\InvalidArgumentException
+     */
+    public function testWithAddedHeaderInvalidValue($message)
+    {
+        $message->withAddedHeader('Invalid-Value', "va\0lue");
+    }
+
+    /**
+     * @depends testWithHeader
+     * @param   \Icicle\Http\Message\Message $message
+     */
+    public function testWithAddedHeaderNumericValue($message)
+    {
+        $new = $message->withAddedHeader('Content-Length', 321);
+
+        $this->assertSame(['321'], $new->getHeader('Content-Length'));
+        $this->assertSame('321', $new->getHeaderLine('Content-Length'));
     }
 
     /**

@@ -20,7 +20,8 @@
     },
     "require-dev": {
         "phpunit/phpunit": "~4",
-        "satooshi/php-coveralls": "dev-master"
+        "satooshi/php-coveralls": "dev-master",
+        "symfony/yaml": "~2"
     },
     "autoload": {
         "psr-4": {

@@ -1,0 +1,6 @@
+PUT /invalid/header/value HTTP/1.1
+Host: example.com
+Content-Length: 39
+Invalid-value: value
+
+Invalid byte contained in header value.

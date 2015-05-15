@@ -1,0 +1,30 @@
+
+- file: responses/09.txt
+  exception: \Icicle\Http\Exception\ParseException
+
+- file: responses/10.txt
+  exception: \Icicle\Http\Exception\ParseException
+
+- file: responses/11.txt
+  exception: \Icicle\Http\Exception\ParseException
+
+- file: responses/12.txt
+  exception: \Icicle\Http\Exception\ParseException
+
+- file: responses/13.txt
+  exception: \Icicle\Http\Exception\ParseException
+
+- file: responses/14.txt
+  exception: \Icicle\Http\Exception\InvalidArgumentException
+
+- file: responses/15.txt
+  exception: \Icicle\Http\Exception\InvalidArgumentException
+
+- file: responses/16.txt
+  exception: \Icicle\Http\Exception\ParseException
+
+- file: responses/17.txt
+  exception: \Icicle\Http\Exception\InvalidArgumentException
+
+- file: responses/18.txt
+  exception: \Icicle\Http\Exception\ParseException

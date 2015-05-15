@@ -1,0 +1,5 @@
+HTTP/1.1 No Status Code
+Connection: close
+Content-Length: 6
+
+Error.
