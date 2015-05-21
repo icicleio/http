@@ -1,10 +1,13 @@
 <?php
 namespace Icicle\Tests\Http\Parser;
 
+use Icicle\Coroutine\Coroutine;
 use Icicle\Http\Parser\Parser;
 use Icicle\Loop\Loop;
+use Icicle\Promise\Promise;
 use Icicle\Stream\SeekableStreamInterface;
 use Icicle\Tests\TestCase;
+use Mockery;
 use Symfony\Component\Yaml\Yaml;
 
 class ParserTest extends TestCase
@@ -17,6 +20,14 @@ class ParserTest extends TestCase
     public function setUp()
     {
         $this->parser = new Parser();
+    }
+
+    /**
+     * @return  \Icicle\Stream\ReadableStreamInterface
+     */
+    public function createStream()
+    {
+        return $mock = Mockery::mock('Icicle\Stream\ReadableStreamInterface');
     }
 
     /**
@@ -99,6 +110,18 @@ class ParserTest extends TestCase
     }
 
     /**
+     * @depends testParseRequest
+     * @expectedException \Icicle\Http\Exception\LogicException
+     */
+    public function testParseRequestProvidingStreamWithBody()
+    {
+        $stream = $this->createStream();
+        $message = "POST / HTTP/1.1\r\nHost: example.com\r\n\r\nRequest body.";
+
+        $this->parser->parseRequest($message, $stream);
+    }
+
+    /**
      * @return array
      */
     public function getValidResponses()
@@ -165,5 +188,65 @@ class ParserTest extends TestCase
         $this->setExpectedException($exceptionClass);
 
         $this->parser->parseResponse($message);
+    }
+
+
+    /**
+     * @depends testParseResponse
+     * @expectedException \Icicle\Http\Exception\LogicException
+     */
+    public function testParseResponseProvidingStreamWithBody()
+    {
+        $stream = $this->createStream();
+        $message = "HTTP/1.1 200 OK\r\n\r\nResponse body.";
+
+        $this->parser->parseResponse($message, $stream);
+    }
+
+    public function testReadMessage()
+    {
+        $stream = $this->createStream();
+        $maxSize = 8192;
+        $parts = [
+            "HTTP/1.1 200 OK\r\n",
+            "Connection: close\r\n",
+            "\r\n"
+        ];
+        $promises = array_map(function ($value) { return Promise::resolve($value); }, $parts);
+
+        $stream->shouldReceive('read')
+            ->andReturnValues($promises);
+
+        $coroutine = new Coroutine($this->parser->readMessage($stream, $maxSize));
+
+        $callback = $this->createCallback(1);
+        $callback->method('__invoke')
+            ->with($this->identicalTo(implode('', $parts)));
+
+        $coroutine->done($callback, $this->createCallback(0));
+
+        Loop::run();
+    }
+
+    /**
+     * @depends testReadMessage
+     */
+    public function testReadMessageMaxSize()
+    {
+        $stream = $this->createStream();
+        $maxSize = 1;
+
+        $stream->shouldReceive('read')
+            ->andReturn(Promise::resolve("HTTP/1.1 200 OK\r\n\r\n"));
+
+        $coroutine = new Coroutine($this->parser->readMessage($stream, $maxSize));
+
+        $callback = $this->createCallback(1);
+        $callback->method('__invoke')
+            ->with($this->isInstanceOf('Icicle\Http\Exception\MessageHeaderSizeException'));
+
+        $coroutine->done($this->createCallback(0), $callback);
+
+        Loop::run();
     }
 }

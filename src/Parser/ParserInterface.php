@@ -1,7 +1,6 @@
 <?php
 namespace Icicle\Http\Parser;
 
-use Icicle\Socket\Client\ClientInterface;
 use Icicle\Stream\ReadableStreamInterface;
 
 interface ParserInterface
@@ -9,7 +8,7 @@ interface ParserInterface
     /**
      * @coroutine
      *
-     * @param   \Icicle\Socket\Client\ClientInterface $client
+     * @param   \Icicle\Stream\ReadableStreamInterface $stream
      * @param   int $maxSize
      * @param   float|int|null $timeout
      *
@@ -20,7 +19,7 @@ interface ParserInterface
      * @reject  \Icicle\Http\Exception\MessageHeaderSizeException
      * @reject  \Icicle\Socket\Exception\UnreadableException
      */
-    public function readMessage(ClientInterface $client, $maxSize, $timeout = null);
+    public function readMessage(ReadableStreamInterface $stream, $maxSize, $timeout = null);
 
     /**
      * @param   string $message

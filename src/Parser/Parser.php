@@ -1,16 +1,13 @@
 <?php
 namespace Icicle\Http\Parser;
 
-use Icicle\Http\Exception\InvalidArgumentException;
 use Icicle\Http\Exception\LogicException;
-use Icicle\Http\Exception\MessageException;
 use Icicle\Http\Exception\MessageHeaderSizeException;
 use Icicle\Http\Exception\MissingHostException;
 use Icicle\Http\Exception\ParseException;
 use Icicle\Http\Message\Request;
 use Icicle\Http\Message\Response;
 use Icicle\Http\Message\Uri;
-use Icicle\Socket\Client\ClientInterface;
 use Icicle\Stream\ReadableStreamInterface;
 use Icicle\Stream\Sink;
 
@@ -19,19 +16,19 @@ class Parser implements ParserInterface
     /**
      * @inheritdoc
      */
-    public function readMessage(ClientInterface $client, $maxSize, $timeout = null)
+    public function readMessage(ReadableStreamInterface $stream, $maxSize, $timeout = null)
     {
         $data = '';
 
         do {
-            $data .= (yield $client->read(null, "\n", $timeout));
+            $data .= (yield $stream->read(null, "\n", $timeout));
 
             if (strlen($data) > $maxSize) {
                 throw new MessageHeaderSizeException(
                     sprintf('Message header exceeded maximum size of %d bytes.', $maxSize)
                 );
             }
-        } while (!preg_match("/\r?\n\r?\n$/", $data));
+        } while (substr($data, -4) !== "\r\n\r\n");
 
         yield $data;
     }
@@ -157,7 +154,7 @@ class Parser implements ParserInterface
      */
     protected function splitHeader($header)
     {
-        return preg_split("/\r?\n/", $header, null, PREG_SPLIT_NO_EMPTY);
+        return explode("\r\n", $header);
     }
 
     /**
@@ -167,7 +164,7 @@ class Parser implements ParserInterface
      */
     protected function splitMessage($message)
     {
-        $parts = preg_split("/\r?\n\r?\n/", $message, 2);
+        $parts = explode("\r\n\r\n", $message, 2);
 
         if (!isset($parts[1])) {
             throw new ParseException('Header/body boundary not found.');
