@@ -37,7 +37,7 @@ class ParserTest extends TestCase
      */
     protected function readMessage($filename)
     {
-        return file_get_contents(dirname(dirname(__DIR__)) . '/data/' . $filename);
+        return file_get_contents(dirname(__DIR__) . '/data/' . $filename);
     }
 
     /**
@@ -45,7 +45,7 @@ class ParserTest extends TestCase
      */
     public function getValidRequests()
     {
-        return Yaml::parse(file_get_contents(dirname(dirname(__DIR__)) . '/data/requests/valid.yml'));
+        return Yaml::parse(file_get_contents(dirname(__DIR__) . '/data/requests/valid.yml'));
     }
 
     /**
@@ -93,7 +93,7 @@ class ParserTest extends TestCase
      */
     public function getInvalidRequests()
     {
-        return Yaml::parse(file_get_contents(dirname(dirname(__DIR__)) . '/data/requests/invalid.yml'));
+        return Yaml::parse(file_get_contents(dirname(__DIR__) . '/data/requests/invalid.yml'));
     }
 
     /**
@@ -126,7 +126,7 @@ class ParserTest extends TestCase
      */
     public function getValidResponses()
     {
-        return Yaml::parse(file_get_contents(dirname(dirname(__DIR__)) . '/data/responses/valid.yml'));
+        return Yaml::parse(file_get_contents(dirname(__DIR__) . '/data/responses/valid.yml'));
     }
 
     /**
@@ -174,7 +174,7 @@ class ParserTest extends TestCase
      */
     public function getInvalidResponses()
     {
-        return Yaml::parse(file_get_contents(dirname(dirname(__DIR__)) . '/data/responses/invalid.yml'));
+        return Yaml::parse(file_get_contents(dirname(__DIR__) . '/data/responses/invalid.yml'));
     }
 
     /**

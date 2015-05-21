@@ -15,7 +15,7 @@
         }
     ],
     "require": {
-        "icicleio/icicle": "~0.3",
+        "icicleio/icicle": "~0.4",
         "icicleio/dns": "~0.1"
     },
     "require-dev": {
@@ -27,6 +27,12 @@
     "autoload": {
         "psr-4": {
             "Icicle\\Http\\": "src"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Icicle\\Tests\\": "vendor/icicleio/icicle/tests",
+            "Icicle\\Tests\\Http\\": "tests"
         }
     }
 }
