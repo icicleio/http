@@ -3,7 +3,6 @@ namespace Icicle\Http\Server;
 
 use Exception;
 use Icicle\Coroutine\Coroutine;
-use Icicle\EventEmitter\EventEmitterTrait;
 use Icicle\Http\Builder\Builder;
 use Icicle\Http\Builder\BuilderInterface;
 use Icicle\Http\Encoder\Encoder;
@@ -31,8 +30,6 @@ use Icicle\Stream\Exception\ExceptionInterface as StreamException;
 
 class Server implements ServerInterface
 {
-    use EventEmitterTrait;
-
     const DEFAULT_ADDRESS = '127.0.0.1';
     const DEFAULT_MAX_HEADER_SIZE = 8192;
     const DEFAULT_TIMEOUT = 15;
@@ -136,12 +133,6 @@ class Server implements ServerInterface
             );
         }
 
-        $this
-            ->createEvent('connect-error')
-            ->createEvent('client-error')
-            ->createEvent('logic-error')
-            ->createEvent('fatal-error');
-
         $this->onRequest = $onRequest;
         $this->onError = $onError;
     }
@@ -224,15 +215,12 @@ class Server implements ServerInterface
 
                 (new Coroutine($this->process($client, $cryptoMethod)))->done();
             } catch (AcceptException $exception) {
-                $this->emit('connect-error', $exception);
                 // Ignore failed client accept.
             } catch (FailureException $exception) {
-                $this->emit('connect-error', $exception);
                 // Ignore failed client connections.
             } catch (Exception $exception) {
                 if ($this->isOpen()) {
                     $this->close();
-                    $this->emit('fatal-error', $exception);
                 }
             }
         }
@@ -296,14 +284,11 @@ class Server implements ServerInterface
                 $keepAlive = !$upgrade && $this->allowPersistent() && $connection === 'keep-alive';
             } while ($keepAlive && $client->isReadable() && $client->isWritable());
         } catch (SocketException $exception) {
-            $this->emit('client-error', $exception);
             // Ignore socket exceptions from client hang-ups.
         } catch (StreamException $exception) {
-            $this->emit('client-error', $exception);
             // Ignore stream exceptions from client read/write failures.
         } catch (Exception $exception) {
             $this->close();
-            $this->emit('fatal-error', $exception);
         } finally {
             if (!$upgrade) { // Only close if connection was not upgraded.
                 $client->close();
@@ -341,7 +326,6 @@ class Server implements ServerInterface
                 $this->allowPersistent()
             );
         } catch (Exception $exception) {
-            $this->emit('logic-error', $exception);
             yield $this->createDefaultErrorResponse(500, $exception);
         }
     }
@@ -376,7 +360,6 @@ class Server implements ServerInterface
 
             yield $this->builder->buildOutgoingResponse($response, null, $this->getTimeout(), false);
         } catch (Exception $exception) {
-            $this->emit('logic-error', $exception);
             yield $this->createDefaultErrorResponse(500, $exception);
         }
     }
