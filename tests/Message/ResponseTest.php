@@ -2,7 +2,7 @@
 namespace Icicle\Tests\Http\Message;
 
 use Icicle\Http\Message\Response;
-use Icicle\Tests\TestCase;
+use Icicle\Tests\Http\TestCase;
 
 class ResponseTest extends TestCase
 {
@@ -38,7 +38,7 @@ class ResponseTest extends TestCase
 
     /**
      * @dataProvider getInvalidStatusCodes
-     * @expectedException \Icicle\Http\Exception\InvalidArgumentException
+     * @expectedException \Icicle\Http\Exception\InvalidStatusException
      */
     public function testConstructWithInvalidStatus($code)
     {
@@ -97,7 +97,7 @@ class ResponseTest extends TestCase
 
     /**
      * @dataProvider getInvalidStatusCodes
-     * @expectedException \Icicle\Http\Exception\InvalidArgumentException
+     * @expectedException \Icicle\Http\Exception\InvalidStatusException
      */
     public function testWithStatusWithInvalidCode($code)
     {

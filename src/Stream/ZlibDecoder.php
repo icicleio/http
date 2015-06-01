@@ -3,7 +3,7 @@ namespace Icicle\Http\Stream;
 
 use Icicle\Http\Exception\LogicException;
 use Icicle\Http\Exception\MessageBodySizeException;
-use Icicle\Promise\Promise;
+use Icicle\Promise;
 use Icicle\Stream\Exception\RuntimeException;
 use Icicle\Stream\Stream;
 use Icicle\Stream\Structures\Buffer;
@@ -54,7 +54,7 @@ class ZlibDecoder extends Stream
         }
 
         if (!$end) {
-            return Promise::resolve(0);
+            return Promise\resolve(0);
         }
 
         // Error reporting suppressed since zlib_decode() emits a warning if decompressing fails. Checked below.

@@ -1,26 +1,13 @@
 <?php
 namespace Icicle\Http\Message;
 
-use Icicle\Http\Exception\InvalidArgumentException;
+use Icicle\Http\Exception\InvalidHeaderException;
+use Icicle\Http\Exception\InvalidMethodException;
+use Icicle\Http\Exception\MessageException;
 use Icicle\Stream\ReadableStreamInterface;
 
 class Request extends Message implements RequestInterface
 {
-    /**
-     * @var string[]
-     */
-    private static $methods = [
-        'GET',
-        'POST',
-        'PUT',
-        'DELETE',
-        'OPTIONS',
-        'HEAD',
-        'CONNECT',
-        'PATCH',
-        'TRACE',
-    ];
-
     /**
      * @var string
      */
@@ -196,38 +183,19 @@ class Request extends Message implements RequestInterface
     }
 
     /**
-     * Returns an array of allowed methods.
-     *
-     * @return  string[]
-     */
-    protected function allowedMethods()
-    {
-        return self::$methods;
-    }
-
-    /**
      * @param   string $method
      *
      * @return  string
      *
-     * @throws  \Icicle\Http\Exception\InvalidArgumentException If the method is not valid.
+     * @throws  \Icicle\Http\Exception\InvalidMethodException If the method is not valid.
      */
     protected function filterMethod($method)
     {
         if (!is_string($method)) {
-            throw new InvalidArgumentException('Request method must be a string.');
+            throw new InvalidMethodException('Request method must be a string.');
         }
 
-        $method = strtoupper($method);
-
-        if (!in_array($method, $this->allowedMethods(), true)) {
-            throw new InvalidArgumentException(sprintf(
-                'Unsupported request method. Must be in the set (%s)',
-                implode(', ', $this->allowedMethods())
-            ));
-        }
-
-        return $method;
+        return strtoupper($method);
     }
 
     /**
@@ -235,12 +203,12 @@ class Request extends Message implements RequestInterface
      *
      * @return  string
      *
-     * @throws  \Icicle\Http\Exception\InvalidArgumentException If the target contains whitespace.
+     * @throws  \Icicle\Http\Exception\InvalidHeaderException If the target contains whitespace.
      */
     protected function filterTarget($target)
     {
         if (preg_match('/\s/', $target)) {
-            throw new InvalidArgumentException('Request target cannot contain whitespace.');
+            throw new InvalidHeaderException('Request target cannot contain whitespace.');
         }
 
         return $target;

@@ -2,11 +2,11 @@
 namespace Icicle\Tests\Http\Server;
 
 use Icicle\Http\Server\Server;
-use Icicle\Loop\Loop;
-use Icicle\Promise\Promise;
+use Icicle\Loop;
+use Icicle\Promise;
 use Icicle\Socket\Client\ClientInterface;
 use Icicle\Socket\Server\ServerInterface;
-use Icicle\Tests\TestCase;
+use Icicle\Tests\Http\TestCase;
 use Mockery;
 use Symfony\Component\Yaml;
 
@@ -16,7 +16,7 @@ class ServerTest extends TestCase
 
     protected $client;
 
-    protected $parser;
+    protected $reader;
 
     protected $encoder;
 
@@ -29,7 +29,7 @@ class ServerTest extends TestCase
         $this->client = $this->createSocketClient();
         $this->server = $this->createSocketServer($this->client);
         $this->factory = $this->createFactory($this->server);
-        $this->parser = $this->createParser();
+        $this->reader = $this->createReader();
         $this->builder = $this->createBuilder();
         $this->encoder = $this->createEncoder();
     }
@@ -64,7 +64,7 @@ class ServerTest extends TestCase
         $mock->shouldReceive('close');
 
         $mock->shouldReceive('accept')
-            ->andReturn(Promise::resolve($client));
+            ->andReturn(Promise\resolve($client));
 
         return $mock;
     }
@@ -84,16 +84,13 @@ class ServerTest extends TestCase
     }
 
     /**
-     * @return  \Icicle\Http\Parser\ParserInterface
+     * @return  \Icicle\Http\Reader\ReaderInterface
      */
-    public function createParser()
+    public function createReader()
     {
-        $mock = Mockery::mock('Icicle\Http\Parser\ParserInterface');
+        $mock = Mockery::mock('Icicle\Http\Reader\ReaderInterface');
 
-        $mock->shouldReceive('readMessage')
-            ->andReturn(Promise::resolve('Encoded request.'));
-
-        $mock->shouldReceive('parseRequest')
+        $mock->shouldReceive('readRequest')
             ->andReturnUsing(function () {
                 return $this->createRequest();
             });
@@ -141,16 +138,7 @@ class ServerTest extends TestCase
      */
     public function createServer(callable $onRequest, callable $onError = null, array $options = null)
     {
-        $defaults = [
-            'factory' => $this->factory,
-            'parser' => $this->parser,
-            'encoder' => $this->encoder,
-            'builder' => $this->builder,
-        ];
-
-        $options = $options ? array_merge($defaults, $options) : $defaults;
-
-        return new Server($onRequest, $onError, $options);
+        return new Server($onRequest, $onError, $options, $this->reader, $this->builder, $this->encoder, $this->factory);
     }
 
     /**
@@ -182,6 +170,6 @@ class ServerTest extends TestCase
 
         $server->listen(8080);
 
-        Loop::run();
+        Loop\run();
     }
 }

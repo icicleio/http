@@ -1,7 +1,7 @@
 <?php
 namespace Icicle\Http\Builder;
 
-use Icicle\Http\Exception\LogicException;
+use Icicle\Http\Exception\LengthRequiredException;
 use Icicle\Http\Exception\MessageException;
 use Icicle\Http\Message\MessageInterface;
 use Icicle\Http\Message\RequestInterface;
@@ -128,7 +128,7 @@ class Builder implements BuilderInterface
             $request = $request->withoutHeader('Accept-Encoding');
         }
 
-        return $this->buildOutgoingStream($request);
+        return $this->buildOutgoingStream($request, $timeout);
     }
 
     /**
@@ -234,8 +234,7 @@ class Builder implements BuilderInterface
             !$message instanceof ResponseInterface // ResponseInterface may have no length on incoming stream.
             && strtolower($message->getHeaderLine('Connection')) !== 'close'
         ) {
-            $stream = new LimitStream(0); // Assume no body in message.
-            return $message->withBody($stream);
+            throw new LengthRequiredException('Content-Length header required.');
         }
 
         $contentEncoding = strtolower($message->getHeaderLine('Content-Encoding'));

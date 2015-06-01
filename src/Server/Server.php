@@ -7,8 +7,8 @@ use Icicle\Http\Builder\Builder;
 use Icicle\Http\Builder\BuilderInterface;
 use Icicle\Http\Encoder\Encoder;
 use Icicle\Http\Encoder\EncoderInterface;
-use Icicle\Http\Exception\InvalidArgumentException;
 use Icicle\Http\Exception\InvalidCallableException;
+use Icicle\Http\Exception\LengthRequiredException;
 use Icicle\Http\Exception\LogicException;
 use Icicle\Http\Exception\MessageBodySizeException;
 use Icicle\Http\Exception\MessageHeaderSizeException;
@@ -16,12 +16,10 @@ use Icicle\Http\Exception\UnexpectedValueException;
 use Icicle\Http\Message\RequestInterface;
 use Icicle\Http\Message\Response;
 use Icicle\Http\Message\ResponseInterface;
-use Icicle\Http\Parser\Parser;
-use Icicle\Http\Parser\ParserInterface;
+use Icicle\Http\Reader\Reader;
+use Icicle\Http\Reader\ReaderInterface;
 use Icicle\Socket\Client\ClientInterface as SocketClientInterface;
-use Icicle\Socket\Exception\AcceptException;
 use Icicle\Socket\Exception\ExceptionInterface as SocketException;
-use Icicle\Socket\Exception\FailureException;
 use Icicle\Socket\Exception\TimeoutException;
 use Icicle\Socket\Server\ServerFactory;
 use Icicle\Socket\Server\ServerFactoryInterface;
@@ -51,9 +49,9 @@ class Server implements ServerInterface
     private $encoder;
 
     /**
-     * @var \Icicle\Http\Parser\ParserInterface
+     * @var \Icicle\Http\Reader\ReaderInterface
      */
-    private $parser;
+    private $reader;
 
     /**
      * @var \Icicle\Socket\Server\ServerFactoryInterface
@@ -94,47 +92,33 @@ class Server implements ServerInterface
      * @param   callable $onRequest
      * @param   callable $onError
      * @param   mixed[] $options
-     *
-     * @throws  \Icicle\Http\Exception\InvalidArgumentException If one of the options given is of an incorrect type.
+     * @param   \Icicle\Http\Reader\ReaderInterface|null $reader
+     * @param   \Icicle\Http\Builder\BuilderInterface|null $builder
+     * @param   \Icicle\Http\Encoder\EncoderInterface|null $encoder
+     * @param   \Icicle\Socket\Server\ServerFactoryInterface|null $factory
      */
-    public function __construct(callable $onRequest, callable $onError = null, array $options = null)
-    {
+    public function __construct(
+        callable $onRequest,
+        callable $onError = null,
+        array $options = null,
+        ReaderInterface $reader = null,
+        BuilderInterface $builder = null,
+        EncoderInterface $encoder = null,
+        ServerFactoryInterface $factory = null
+    ) {
         $this->timeout = isset($options['timeout']) ? (float) $options['timeout'] : self::DEFAULT_TIMEOUT;
         $this->allowPersistent = isset($options['allow_persistent']) ? (bool) $options['allow_persistent'] : true;
         $this->maxHeaderSize = isset($options['max_header_size'])
             ? (int) $options['max_header_size']
             : self::DEFAULT_MAX_HEADER_SIZE;
 
-        $this->factory = isset($options['factory']) ? $options['factory'] : new ServerFactory();
-        if (!$this->factory instanceof ServerFactoryInterface) {
-            throw new InvalidArgumentException(
-                'Server factory must be an instance of Icicle\Socket\Server\ServerFactoryInterface'
-            );
-        }
-
-        $this->parser = isset($options['parser']) ? $options['parser'] : new Parser();
-        if (!$this->parser instanceof ParserInterface) {
-            throw new InvalidArgumentException(
-                'Message parser must be an instance of Icicle\Http\Parser\ParserInterface'
-            );
-        }
-
-        $this->encoder = isset($options['encoder']) ? $options['encoder'] : new Encoder();
-        if (!$this->encoder instanceof EncoderInterface) {
-            throw new InvalidArgumentException(
-                'Message encoder must be an instance of Icicle\Http\Encoder\EncoderInterface'
-            );
-        }
-
-        $this->builder = isset($options['builder']) ? $options['builder'] : new Builder();
-        if (!$this->builder instanceof BuilderInterface) {
-            throw new InvalidArgumentException(
-                'Message builder must be an instance of Icicle\Http\Builder\BuilderInterface'
-            );
-        }
-
         $this->onRequest = $onRequest;
         $this->onError = $onError;
+
+        $this->reader =  $reader  ?: new Reader();
+        $this->encoder = $encoder ?: new Encoder();
+        $this->builder = $builder ?: new Builder();
+        $this->factory = $factory ?: new ServerFactory();
     }
 
     /**
@@ -214,10 +198,6 @@ class Server implements ServerInterface
                 $client = (yield $server->accept());
 
                 (new Coroutine($this->process($client, $cryptoMethod)))->done();
-            } catch (AcceptException $exception) {
-                // Ignore failed client accept.
-            } catch (FailureException $exception) {
-                // Ignore failed client connections.
             } catch (Exception $exception) {
                 if ($this->isOpen()) {
                     $this->close();
@@ -246,10 +226,7 @@ class Server implements ServerInterface
 
             do {
                 try {
-                    $request = $this->parser->parseRequest(
-                        (yield $this->parser->readMessage($client, $this->maxHeaderSize, $this->timeout)),
-                        $client
-                    );
+                    $request = (yield $this->reader->readRequest($client, $this->maxHeaderSize, $this->timeout));
 
                     $request = $this->builder->buildIncomingRequest($request, $this->getTimeout());
 
@@ -267,6 +244,8 @@ class Server implements ServerInterface
                     $response = (yield $this->createErrorResponse(431, $client));
                 } catch (MessageBodySizeException $exception) { // Request body too large.
                     $response = (yield $this->createErrorResponse(413, $client));
+                } catch (LengthRequiredException $exception) { // Required content length missing.
+                    $response = (yield $this->createErrorResponse(411, $client));
                 } catch (UnexpectedValueException $exception) { // Bad request.
                     $response = (yield $this->createErrorResponse(400, $client));
                 }
@@ -274,7 +253,6 @@ class Server implements ServerInterface
                 yield $client->write($this->encoder->encodeResponse($response));
 
                 $stream = $response->getBody();
-
                 if ($stream->isReadable() && (!isset($request) || $request->getMethod() !== 'HEAD')) {
                     yield $stream->pipe($client, false);
                 }

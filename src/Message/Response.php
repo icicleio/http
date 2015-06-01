@@ -1,7 +1,7 @@
 <?php
 namespace Icicle\Http\Message;
 
-use Icicle\Http\Exception\InvalidArgumentException;
+use Icicle\Http\Exception\InvalidStatusException;
 use Icicle\Stream\ReadableStreamInterface;
 
 class Response extends Message implements ResponseInterface
@@ -142,12 +142,12 @@ class Response extends Message implements ResponseInterface
      *
      * @return  int
      *
-     * @throws  \Icicle\Http\Exception\InvalidArgumentException
+     * @throws  \Icicle\Http\Exception\InvalidStatusException
      */
     protected function validateStatusCode($code)
     {
         if (!is_numeric($code) || is_float($code) || 100 > $code || 599 < $code) {
-            throw new InvalidArgumentException(
+            throw new InvalidStatusException(
                 'Invalid status code. Must be an integer between 100 and 599, inclusive.'
             );
         }

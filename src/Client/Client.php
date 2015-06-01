@@ -1,7 +1,6 @@
 <?php
 namespace Icicle\Http\Client;
 
-use Icicle\Coroutine\Coroutine;
 use Icicle\Dns\Connector\Connector;
 use Icicle\Dns\Connector\ConnectorInterface;
 use Icicle\Dns\Executor\Executor;
@@ -14,6 +13,8 @@ use Icicle\Stream\ReadableStreamInterface;
 
 class Client implements ClientInterface
 {
+    const DEFAULT_CRYPTO_METHOD = STREAM_CRYPTO_METHOD_TLS_CLIENT;
+
     /**
      * @var \Icicle\Http\Client\RequesterInterface
      */
@@ -24,8 +25,25 @@ class Client implements ClientInterface
      */
     private $connector;
 
-    public function __construct(RequesterInterface $requester = null, ConnectorInterface $connector = null)
-    {
+    /**
+     * @var int
+     */
+    private $cryptoMethod = self::DEFAULT_CRYPTO_METHOD;
+
+    /**
+     * @param   \Icicle\Http\Client\RequesterInterface|null $requester
+     * @param   \Icicle\Dns\Connector\ConnectorInterface|null $connector
+     * @param   mixed[]|null $options
+     */
+    public function __construct(
+        RequesterInterface $requester = null,
+        ConnectorInterface $connector = null,
+        array $options = null
+    ) {
+        $this->cryptoMethod = isset($options['crypto_method'])
+            ? (int) $options['crypto_method']
+            : self::DEFAULT_CRYPTO_METHOD;
+
         $this->requester = $requester ?: new Requester();
 
         $this->connector = $connector;
@@ -61,23 +79,6 @@ class Client implements ClientInterface
         $timeout = RequesterInterface::DEFAULT_TIMEOUT,
         array $options = null
     ) {
-        $request = $request->withHeader('Connection', 'close');
-
-        return new Coroutine($this->run($request, $timeout, $options));
-    }
-
-    /**
-     * @param   \Icicle\Http\Message\RequestInterface $request
-     * @param   float|int|null $timeout
-     * @param   mixed[] $options
-     *
-     * @return  \Generator
-     *
-     * @throws  \Icicle\Http\Exception\MessageHeaderSizeException
-     * @throws  \Icicle\Http\Exception\RuntimeException
-     */
-    public function run(RequestInterface $request, $timeout = null, array $options = null)
-    {
         $uri = $request->getUri();
 
         /** @var \Icicle\Socket\Client\ClientInterface $client */
@@ -85,6 +86,10 @@ class Client implements ClientInterface
 
         if (!$client->isOpen()) {
             throw new RuntimeException('Could not connect to server.');
+        }
+
+        if ($uri->getScheme() === 'https') {
+            yield $client->enableCrypto($this->cryptoMethod);
         }
 
         yield $this->requester->request($client, $request, $timeout, $options);

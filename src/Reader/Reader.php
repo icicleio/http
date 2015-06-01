@@ -1,7 +1,6 @@
 <?php
-namespace Icicle\Http\Parser;
+namespace Icicle\Http\Reader;
 
-use Icicle\Http\Exception\LogicException;
 use Icicle\Http\Exception\MessageHeaderSizeException;
 use Icicle\Http\Exception\MissingHostException;
 use Icicle\Http\Exception\ParseException;
@@ -9,45 +8,23 @@ use Icicle\Http\Message\Request;
 use Icicle\Http\Message\Response;
 use Icicle\Http\Message\Uri;
 use Icicle\Stream\ReadableStreamInterface;
-use Icicle\Stream\Sink;
 
-class Parser implements ParserInterface
+class Reader implements ReaderInterface
 {
-    /**
-     * @inheritdoc
-     */
-    public function readMessage(ReadableStreamInterface $stream, $maxSize, $timeout = null)
-    {
-        $data = '';
-
-        do {
-            $data .= (yield $stream->read(null, "\n", $timeout));
-
-            if (strlen($data) > $maxSize) {
-                throw new MessageHeaderSizeException(
-                    sprintf('Message header exceeded maximum size of %d bytes.', $maxSize)
-                );
-            }
-        } while (substr($data, -4) !== "\r\n\r\n");
-
-        yield $data;
-    }
+    const DEFAULT_MAX_SIZE = 0x4000; // 16 kB
 
     /**
      * @inheritdoc
      */
-    public function parseResponse($message, ReadableStreamInterface $stream = null)
+    public function readResponse(ReadableStreamInterface $stream, $maxSize = self::DEFAULT_MAX_SIZE, $timeout = null)
     {
-        list($startLine, $headers, $body) = $this->parseMessage($message);
+        $message = (yield $this->readMessage($stream, $maxSize, $timeout));
 
-        if (null === $stream) {
-            $stream = new Sink();
-            $stream->write($body);
-        } elseif ('' !== $body) {
-            throw new LogicException('Body portion in message when stream provided for body.');
-        }
+        $headers = $this->splitHeader($message);
 
-        if (!preg_match('/^HTTP\/(\d+(?:\.\d+)?) (\d{3})(?: (.+))?$/i', $startLine, $matches)) {
+        $start = array_shift($headers);
+
+        if (!preg_match('/^HTTP\/(\d+(?:\.\d+)?) (\d{3})(?: (.+))?$/i', $start, $matches)) {
             throw new ParseException('Could not parse start line.');
         }
 
@@ -57,24 +34,21 @@ class Parser implements ParserInterface
 
         $headers = $this->parseHeaders($headers);
 
-        return new Response($code, $headers, $stream, $reason, $protocol);
+        yield new Response($code, $headers, $stream, $reason, $protocol);
     }
 
     /**
      * @inheritdoc
      */
-    public function parseRequest($message, ReadableStreamInterface $stream = null)
+    public function readRequest(ReadableStreamInterface $stream, $maxSize = self::DEFAULT_MAX_SIZE, $timeout = null)
     {
-        list($startLine, $headers, $body) = $this->parseMessage($message);
+        $message = (yield $this->readMessage($stream, $maxSize, $timeout));
 
-        if (null === $stream) {
-            $stream = new Sink();
-            $stream->write($body);
-        } elseif ('' !== $body) {
-            throw new LogicException('Body portion in message when stream provided for body.');
-        }
+        $headers = $this->splitHeader($message);
 
-        if (!preg_match('/^([A-Z]+) (\S+) HTTP\/(\d+(?:\.\d+)?)$/i', $startLine, $matches)) {
+        $start = array_shift($headers);
+
+        if (!preg_match('/^([A-Z]+) (\S+) HTTP\/(\d+(?:\.\d+)?)$/i', $start, $matches)) {
             throw new ParseException('Could not parse start line.');
         }
 
@@ -95,32 +69,46 @@ class Parser implements ParserInterface
             $uri = new Uri($this->filterHost($target));
         }
 
-        return new Request($method, $uri, $headers, $stream, $target, $protocol);
+        yield new Request($method, $uri, $headers, $stream, $target, $protocol);
     }
 
     /**
-     * @param   string $message
+     * @coroutine
      *
-     * @return  array
+     * @param   \Icicle\Stream\ReadableStreamInterface $stream
+     * @param   int $maxSize
+     * @param   float|int|null $timeout
+     *
+     * @return  \Generator
+     *
+     * @resolve string
+     *
+     * @reject  \Icicle\Http\Exception\MessageHeaderSizeException
+     * @reject  \Icicle\Socket\Exception\UnreadableException
      */
-    protected function parseMessage($message)
+    protected function readMessage(ReadableStreamInterface $stream, $maxSize = self::DEFAULT_MAX_SIZE, $timeout = null)
     {
-        list($header, $body) = $this->splitMessage($message);
+        $data = '';
 
-        if (empty($header)) {
-            throw new ParseException('No header found in message.');
-        }
+        do {
+            $data .= (yield $stream->read(null, "\n", $timeout));
 
-        $headers = $this->splitHeader($header);
-        $startLine = trim(array_shift($headers));
+            if (strlen($data) > $maxSize) {
+                throw new MessageHeaderSizeException(
+                    sprintf('Message header exceeded maximum size of %d bytes.', $maxSize)
+                );
+            }
+        } while (substr($data, -4) !== "\r\n\r\n");
 
-        return [$startLine, $headers, $body];
+        yield substr($data, 0, -4);
     }
 
     /**
      * @param   string[] $lines
      *
      * @return  string[][]
+     *
+     * @throws  \Icicle\Http\Exception\ParseException
      */
     protected function parseHeaders(array $lines)
     {
@@ -155,22 +143,6 @@ class Parser implements ParserInterface
     protected function splitHeader($header)
     {
         return explode("\r\n", $header);
-    }
-
-    /**
-     * @param   string $message
-     *
-     * @return  string[]
-     */
-    protected function splitMessage($message)
-    {
-        $parts = explode("\r\n\r\n", $message, 2);
-
-        if (!isset($parts[1])) {
-            throw new ParseException('Header/body boundary not found.');
-        }
-
-        return $parts;
     }
 
     /**

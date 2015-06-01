@@ -18,16 +18,16 @@
   exception: \Icicle\Http\Exception\ParseException
 
 - file: requests/15.txt
-  exception: \Icicle\Http\Exception\ParseException
+  exception: \Icicle\Stream\Exception\UnreadableException
 
 - file: requests/16.txt
-  exception: \Icicle\Http\Exception\InvalidArgumentException
+  exception: \Icicle\Http\Exception\InvalidHeaderException
 
 - file: requests/17.txt
-  exception: \Icicle\Http\Exception\InvalidArgumentException
+  exception: \Icicle\Http\Exception\InvalidHeaderException
 
 - file: requests/18.txt
   exception: \Icicle\Http\Exception\ParseException
 
 - file: requests/19.txt
-  exception: \Icicle\Http\Exception\InvalidArgumentException
+  exception: \Icicle\Http\Exception\InvalidHeaderException

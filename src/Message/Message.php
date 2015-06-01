@@ -1,7 +1,8 @@
 <?php
 namespace Icicle\Http\Message;
 
-use Icicle\Http\Exception\InvalidArgumentException;
+use Icicle\Http\Exception\InvalidHeaderException;
+use Icicle\Http\Exception\UnsupportedVersionException;
 use Icicle\Stream\ReadableStreamInterface;
 use Icicle\Stream\Sink;
 
@@ -188,12 +189,12 @@ abstract class Message implements MessageInterface
      *
      * @return  $this
      *
-     * @throws  \Icicle\Http\Exception\InvalidArgumentException If the header name or value is invalid.
+     * @throws  \Icicle\Http\Exception\InvalidHeaderException If the header name or value is invalid.
      */
     protected function setHeader($name, $value)
     {
         if (!$this->isHeaderNameValid($name)) {
-            throw new InvalidArgumentException('Header name is invalid.');
+            throw new InvalidHeaderException('Header name is invalid.');
         }
 
         $normalized = strtolower($name);
@@ -218,12 +219,12 @@ abstract class Message implements MessageInterface
      *
      * @return  $this
      *
-     * @throws  \Icicle\Http\Exception\InvalidArgumentException If the header name or value is invalid.
+     * @throws  \Icicle\Http\Exception\InvalidHeaderException If the header name or value is invalid.
      */
     protected function addHeader($name, $value)
     {
         if (!$this->isHeaderNameValid($name)) {
-            throw new InvalidArgumentException('Header name is invalid.');
+            throw new InvalidHeaderException('Header name is invalid.');
         }
 
         $normalized = strtolower($name);
@@ -264,7 +265,7 @@ abstract class Message implements MessageInterface
      *
      * @return  string
      *
-     * @throws  \Icicle\Http\Exception\InvalidArgumentException If the protocol is not valid.
+     * @throws  \Icicle\Http\Exception\UnsupportedVersionException If the protocol is not valid.
      */
     private function filterProtocolVersion($protocol)
     {
@@ -274,7 +275,7 @@ abstract class Message implements MessageInterface
                 return $protocol;
 
             default:
-                throw new InvalidArgumentException('Invalid protocol version.');
+                throw new UnsupportedVersionException('Invalid protocol version.');
         }
     }
 
@@ -295,7 +296,7 @@ abstract class Message implements MessageInterface
      *
      * @return  string[]
      *
-     * @throws  \Icicle\Http\Exception\InvalidArgumentException If the given value cannot be converted to a string and
+     * @throws  \Icicle\Http\Exception\InvalidHeaderException If the given value cannot be converted to a string and
      *          is not an array of values that can be converted to strings.
      */
     private function filterHeader($value)
@@ -312,18 +313,18 @@ abstract class Message implements MessageInterface
      *
      * @return  string
      *
-     * @throws  \Icicle\Http\Exception\InvalidArgumentException If the given value cannot be converted to a string.
+     * @throws  \Icicle\Http\Exception\InvalidHeaderException If the given value cannot be converted to a string.
      */
     private function filterHeaderValue($value)
     {
         if (is_numeric($value) || (is_object($value) && method_exists($value, '__toString'))) {
             $value = (string) $value;
         } elseif (!is_string($value)) {
-            throw new InvalidArgumentException('Header values must be strings or an array of strings.');
+            throw new InvalidHeaderException('Header values must be strings or an array of strings.');
         }
 
         if (!preg_match("/^[\t\x20-\x7e\x80-\xfe]+$/", $value)) {
-            throw new InvalidArgumentException('Invalid character in header value.');
+            throw new InvalidHeaderException('Invalid character in header value.');
         }
 
         return $value;
@@ -334,7 +335,7 @@ abstract class Message implements MessageInterface
      *
      * @return  string[]
      *
-     * @throws  \Icicle\Http\Exception\InvalidArgumentException If the given value is not an array of values that can
+     * @throws  \Icicle\Http\Exception\InvalidHeaderException If the given value is not an array of values that can
      *          be converted to strings.
      */
     private function filterHeaderArray(array $values)

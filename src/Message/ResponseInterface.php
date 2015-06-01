@@ -25,6 +25,8 @@ interface ResponseInterface extends MessageInterface
      *          status code given.
      *
      * @return  static
+     *
+     * @throws  \Icicle\Http\Exception\InvalidStatusException
      */
     public function withStatus($code, $reason = null);
 }

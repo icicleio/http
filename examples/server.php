@@ -5,7 +5,7 @@ require dirname(__DIR__) . '/vendor/autoload.php';
 use Icicle\Http\Message\RequestInterface;
 use Icicle\Http\Message\Response;
 use Icicle\Http\Server\Server;
-use Icicle\Loop\Loop;
+use Icicle\Loop;
 use Icicle\Socket\Client\ClientInterface;
 
 $server = new Server(function (RequestInterface $request, ClientInterface $client) {
@@ -28,8 +28,4 @@ $server = new Server(function (RequestInterface $request, ClientInterface $clien
 $server->listen(8080);
 $server->listen(8888);
 
-$server->on('client-error', function (Exception $exception) {
-    printf("Client error: %s\n", $exception->getMessage());
-});
-
-Loop::run();
+Loop\run();

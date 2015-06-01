@@ -2,7 +2,7 @@
 namespace Icicle\Tests\Http\Message;
 
 use Icicle\Http\Message\Uri;
-use Icicle\Tests\TestCase;
+use Icicle\Tests\Http\TestCase;
 
 class UriTest extends TestCase
 {

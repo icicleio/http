@@ -3,7 +3,7 @@ namespace Icicle\Tests\Http\Message;
 
 use Icicle\Http\Message\Request;
 use Icicle\Http\Message\Uri;
-use Icicle\Tests\TestCase;
+use Icicle\Tests\Http\TestCase;
 
 class RequestTest extends TestCase
 {
@@ -13,7 +13,6 @@ class RequestTest extends TestCase
             [null], // null
             [100], // integer
             [3.14], // float
-            ['UNDEFINED'], // invalid name
             [['GET']], // array
             [new \stdClass()], // object
         ];
@@ -35,7 +34,7 @@ class RequestTest extends TestCase
     }
 
     /**
-     * @expectedException \Icicle\Http\Exception\InvalidArgumentException
+     * @expectedException \Icicle\Http\Exception\InvalidMethodException
      * @dataProvider getInvalidMethods
      * @param string $method
      */
@@ -55,7 +54,7 @@ class RequestTest extends TestCase
     }
 
     /**
-     * @expectedException \Icicle\Http\Exception\InvalidArgumentException
+     * @expectedException \Icicle\Http\Exception\InvalidMethodException
      * @dataProvider getInvalidMethods
      * @param string $method
      */
@@ -185,7 +184,7 @@ class RequestTest extends TestCase
     }
 
     /**
-     * @expectedException \Icicle\Http\Exception\InvalidArgumentException
+     * @expectedException \Icicle\Http\Exception\InvalidHeaderException
      */
     public function testConstructWithInvalidTarget()
     {

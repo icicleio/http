@@ -7,34 +7,48 @@ use Icicle\Stream\ReadableStreamInterface;
 interface ClientInterface
 {
     /**
-     * @param string $method
-     * @param string|\Icicle\Http\Message\UriInterface $uri
-     * @param string[]|null $headers
-     * @param \Icicle\Stream\ReadableStreamInterface|null $body
-     * @param float|int|null $timeout
-     * @param mixed[] $options
+     * @coroutine
      *
-     * @return mixed
+     * @param   string $method
+     * @param   string|\Icicle\Http\Message\UriInterface $uri
+     * @param   string[]|null $headers
+     * @param   \Icicle\Stream\ReadableStreamInterface|null $body
+     * @param   float|int|null $timeout
+     * @param   mixed[] $options
+     *
+     * @return  \Generator
+     *
+     * @resolve \Icicle\Http\Message\ResponseInterface
+     *
+     * @reject  \Icicle\Http\Exception\MessageException
+     * @reject  \Icicle\Http\Exception\ParseException
      */
     public function request(
         $method,
         $uri,
         array $headers = null,
         ReadableStreamInterface $body = null,
-        $timeout = ExecutorInterface::DEFAULT_TIMEOUT,
+        $timeout = RequesterInterface::DEFAULT_TIMEOUT,
         array $options = null
     );
 
     /**
+     * @coroutine
+     *
      * @param   \Icicle\Http\Message\RequestInterface $request
      * @param   float|int|null $timeout
      * @param   mixed[] $options
      *
-     * @return  \Icicle\Promise\PromiseInterface
+     * @return  \Generator
+     *
+     * @resolve \Icicle\Http\Message\ResponseInterface
+     *
+     * @reject  \Icicle\Http\Exception\MessageException
+     * @reject  \Icicle\Http\Exception\ParseException
      */
     public function send(
         RequestInterface $request,
-        $timeout = ExecutorInterface::DEFAULT_TIMEOUT,
+        $timeout = RequesterInterface::DEFAULT_TIMEOUT,
         array $options = null
     );
 }

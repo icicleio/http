@@ -3,7 +3,7 @@ namespace Icicle\Http\Stream;
 
 use Icicle\Http\Exception\InvalidArgumentException;
 use Icicle\Http\Exception\LogicException;
-use Icicle\Promise\Promise;
+use Icicle\Promise;
 use Icicle\Stream\Stream;
 use Icicle\Stream\Structures\Buffer;
 
@@ -69,7 +69,7 @@ class ZlibEncoder extends Stream
         $this->buffer->push($data);
 
         if (!$end) {
-            return Promise::resolve(0);
+            return Promise\resolve(0);
         }
 
         $data = zlib_encode($this->buffer, $this->type, $this->level);

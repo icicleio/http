@@ -1,27 +1,23 @@
 <?php
 namespace Icicle\Http\Client;
 
-use Icicle\Coroutine\Coroutine;
 use Icicle\Http\Builder\Builder;
 use Icicle\Http\Builder\BuilderInterface;
 use Icicle\Http\Encoder\Encoder;
 use Icicle\Http\Encoder\EncoderInterface;
-use Icicle\Http\Exception\InvalidArgumentException;
-use Icicle\Http\Exception\MessageHeaderSizeException;
 use Icicle\Http\Message\RequestInterface;
-use Icicle\Http\Parser\Parser;
-use Icicle\Http\Parser\ParserInterface;
+use Icicle\Http\Reader\Reader;
+use Icicle\Http\Reader\ReaderInterface;
 use Icicle\Socket\Client\ClientInterface as SocketClientInterface;
 
 class Requester implements RequesterInterface
 {
     const DEFAULT_MAX_HEADER_SIZE = 8192;
-    const DEFAULT_CRYPTO_METHOD = STREAM_CRYPTO_METHOD_TLS_CLIENT;
 
     /**
-     * @var \Icicle\Http\Parser\ParserInterface
+     * @var \Icicle\Http\Reader\ReaderInterface
      */
-    private $parser;
+    private $reader;
 
     /**
      * @var \Icicle\Http\Encoder\EncoderInterface
@@ -34,53 +30,41 @@ class Requester implements RequesterInterface
     private $builder;
 
     /**
+     * @var bool
+     */
+    private $allowPersistent = true;
+
+    /**
      * @var int
      */
     private $maxHeaderSize = self::DEFAULT_MAX_HEADER_SIZE;
 
     /**
-     * @var int
+     * @var float|int
      */
     private $timeout = self::DEFAULT_TIMEOUT;
 
     /**
-     * @var int
-     */
-    private $cryptoMethod = self::DEFAULT_CRYPTO_METHOD;
-
-    /**
      * @param   mixed[] $options
+     * @param   \Icicle\Http\Reader\ReaderInterface|null $reader
+     * @param   \Icicle\Http\Builder\BuilderInterface|null $builder
+     * @param   \Icicle\Http\Encoder\EncoderInterface|null $encoder
      */
-    public function __construct(array $options = null)
-    {
+    public function __construct(
+        array $options = null,
+        ReaderInterface $reader = null,
+        BuilderInterface $builder = null,
+        EncoderInterface $encoder = null
+    ) {
         $this->timeout = isset($options['timeout']) ? (float) $options['timeout'] : self::DEFAULT_TIMEOUT;
+        $this->allowPersistent = isset($options['allow_persistent']) ? (bool) $options['allow_persistent'] : true;
         $this->maxHeaderSize = isset($options['max_header_size'])
             ? (int) $options['max_header_size']
             : self::DEFAULT_MAX_HEADER_SIZE;
-        $this->cryptoMethod = isset($options['crypto_method'])
-            ? (int) $options['crypto_method']
-            : self::DEFAULT_CRYPTO_METHOD;
 
-        $this->parser = isset($options['parser']) ? $options['parser'] : new Parser();
-        if (!$this->parser instanceof ParserInterface) {
-            throw new InvalidArgumentException(
-                'Message parser must be an instance of Icicle\Http\Parser\ParserInterface'
-            );
-        }
-
-        $this->encoder = isset($options['encoder']) ? $options['encoder'] : new Encoder();
-        if (!$this->encoder instanceof EncoderInterface) {
-            throw new InvalidArgumentException(
-                'Message encoder must be an instance of Icicle\Http\Encoder\EncoderInterface'
-            );
-        }
-
-        $this->builder = isset($options['builder']) ? $options['builder'] : new Builder();
-        if (!$this->builder instanceof BuilderInterface) {
-            throw new InvalidArgumentException(
-                'Message builder must be an instance of Icicle\Http\Builder\BuilderInterface'
-            );
-        }
+        $this->reader =  $reader  ?: new Reader();
+        $this->encoder = $encoder ?: new Encoder();
+        $this->builder = $builder ?: new Builder();
     }
 
     /**
@@ -88,25 +72,7 @@ class Requester implements RequesterInterface
      */
     public function request(SocketClientInterface $client, RequestInterface $request, $timeout = self::DEFAULT_TIMEOUT)
     {
-        return new Coroutine($this->run($client, $request, $timeout));
-    }
-
-    /**
-     * @param   \Icicle\Socket\Client\ClientInterface $client
-     * @param   \Icicle\Http\Message\RequestInterface $request
-     * @param   float|null $timeout
-     *
-     * @return  \Generator
-     *
-     * @throws  \Icicle\Http\Exception\MessageHeaderSizeException
-     */
-    public function run(SocketClientInterface $client, RequestInterface $request, $timeout = null)
-    {
-        if ($request->getUri()->getScheme() === 'https') {
-            yield $client->enableCrypto($this->cryptoMethod);
-        }
-
-        $request = $this->builder->buildOutgoingRequest($request);
+        $request = $this->builder->buildOutgoingRequest($request, $this->timeout, $this->allowPersistent);
 
         yield $client->write($this->encoder->encodeRequest($request));
 
@@ -116,10 +82,7 @@ class Requester implements RequesterInterface
             yield $stream->pipe($client, false);
         }
 
-        $response = $this->parser->parseResponse(
-            (yield $this->parser->readMessage($client, $this->maxHeaderSize, $this->timeout)),
-            $client
-        );
+        $response = (yield $this->reader->readResponse($client, $this->maxHeaderSize, $this->timeout));
 
         yield $this->builder->buildIncomingResponse($response);
     }

@@ -9,22 +9,22 @@
   exception: \Icicle\Http\Exception\ParseException
 
 - file: responses/12.txt
-  exception: \Icicle\Http\Exception\ParseException
+  exception: \Icicle\Stream\Exception\UnreadableException
 
 - file: responses/13.txt
   exception: \Icicle\Http\Exception\ParseException
 
 - file: responses/14.txt
-  exception: \Icicle\Http\Exception\InvalidArgumentException
+  exception: \Icicle\Http\Exception\InvalidHeaderException
 
 - file: responses/15.txt
-  exception: \Icicle\Http\Exception\InvalidArgumentException
+  exception: \Icicle\Http\Exception\InvalidHeaderException
 
 - file: responses/16.txt
   exception: \Icicle\Http\Exception\ParseException
 
 - file: responses/17.txt
-  exception: \Icicle\Http\Exception\InvalidArgumentException
+  exception: \Icicle\Http\Exception\InvalidHeaderException
 
 - file: responses/18.txt
   exception: \Icicle\Http\Exception\ParseException
