@@ -164,7 +164,7 @@ class Server implements ServerInterface
      *
      * @throws  \Icicle\Http\Exception\LogicException If the server has been closed.
      *
-     * @see     \Icicle\Socket\Server\ServerFactoryInterface::create()
+     * @see     \Icicle\Socket\Server\ServerFactoryInterface::create() Options are the same as this method.
      */
     public function listen($port, $address = self::DEFAULT_ADDRESS, array $options = null)
     {
@@ -195,12 +195,11 @@ class Server implements ServerInterface
     {
         while ($server->isOpen()) {
             try {
-                $client = (yield $server->accept());
-
-                (new Coroutine($this->process($client, $cryptoMethod)))->done();
+                (new Coroutine($this->process((yield $server->accept()), $cryptoMethod)))->done();
             } catch (Exception $exception) {
-                if ($this->isOpen()) {
+                if ($this->open) {
                     $this->close();
+                    throw $exception;
                 }
             }
         }
@@ -228,7 +227,7 @@ class Server implements ServerInterface
                 try {
                     $request = (yield $this->reader->readRequest($client, $this->maxHeaderSize, $this->timeout));
 
-                    $request = $this->builder->buildIncomingRequest($request, $this->getTimeout());
+                    $request = $this->builder->buildIncomingRequest($request, $this->timeout);
 
                     ++$count;
 
@@ -265,8 +264,6 @@ class Server implements ServerInterface
             // Ignore socket exceptions from client hang-ups.
         } catch (StreamException $exception) {
             // Ignore stream exceptions from client read/write failures.
-        } catch (Exception $exception) {
-            $this->close();
         } finally {
             if (!$upgrade) { // Only close if connection was not upgraded.
                 $client->close();
@@ -284,7 +281,7 @@ class Server implements ServerInterface
      *
      * @resolve \Icicle\Http\Message|ResponseInterface
      */
-    protected function createResponse(RequestInterface $request, SocketClientInterface $client)
+    private function createResponse(RequestInterface $request, SocketClientInterface $client)
     {
         try {
             $onRequest = $this->onRequest;
@@ -296,16 +293,16 @@ class Server implements ServerInterface
                     $this->onRequest
                 );
             }
-
-            yield $this->builder->buildOutgoingResponse(
-                $response,
-                $request,
-                $this->getTimeout(),
-                $this->allowPersistent()
-            );
         } catch (Exception $exception) {
-            yield $this->createDefaultErrorResponse(500, $exception);
+            $response = (yield $this->createDefaultErrorResponse(500, $exception));
         }
+
+        yield $this->builder->buildOutgoingResponse(
+            $response,
+            $request,
+            $this->timeout,
+            $this->allowPersistent
+        );
     }
 
     /**
@@ -318,35 +315,36 @@ class Server implements ServerInterface
      *
      * @resolve \Icicle\Http\Message|ResponseInterface
      */
-    protected function createErrorResponse($code, SocketClientInterface $client)
+    private function createErrorResponse($code, SocketClientInterface $client)
     {
         try {
             if (null === $this->onError) {
-                yield $this->createDefaultErrorResponse($code);
-                return;
+                $response = (yield $this->createDefaultErrorResponse($code));
+            } else {
+                $onError = $this->onError;
+                $response = (yield $onError($code, $client));
+
+                if (!$response instanceof ResponseInterface) {
+                    throw new InvalidCallableException(
+                        'An \Icicle\Http\Message\ResponseInterface object was not returned from the error callback.',
+                        $this->onError
+                    );
+                }
             }
-
-            $onError = $this->onError;
-            $response = (yield $onError($code, $client));
-
-            if (!$response instanceof ResponseInterface) {
-                throw new InvalidCallableException(
-                    'An \Icicle\Http\Message\ResponseInterface object was not returned from the error callback.',
-                    $this->onError
-                );
-            }
-
-            yield $this->builder->buildOutgoingResponse($response, null, $this->getTimeout(), false);
         } catch (Exception $exception) {
-            yield $this->createDefaultErrorResponse(500, $exception);
+            $response = (yield $this->createDefaultErrorResponse(500, $exception));
         }
+
+        yield $this->builder->buildOutgoingResponse($response, null, $this->timeout, false);
     }
 
     /**
      * @param   int $code
      * @param   \Exception|null $exception
      *
-     * @return  \Icicle\Http\Message\ResponseInterface
+     * @return  \Generator
+     *
+     * @resolve \Icicle\Http\Message\ResponseInterface
      */
     protected function createDefaultErrorResponse($code, Exception $exception = null)
     {
@@ -355,6 +353,6 @@ class Server implements ServerInterface
             'Content-Length' => '0',
         ];
 
-        return new Response($code, $headers);
+        yield new Response($code, $headers);
     }
 }

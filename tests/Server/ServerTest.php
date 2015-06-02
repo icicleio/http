@@ -1,10 +1,14 @@
 <?php
 namespace Icicle\Tests\Http\Server;
 
+use Icicle\Http\Builder\BuilderInterface;
+use Icicle\Http\Encoder\EncoderInterface;
+use Icicle\Http\Reader\ReaderInterface;
 use Icicle\Http\Server\Server;
 use Icicle\Loop;
 use Icicle\Promise;
 use Icicle\Socket\Client\ClientInterface;
+use Icicle\Socket\Server\ServerFactoryInterface;
 use Icicle\Socket\Server\ServerInterface;
 use Icicle\Tests\Http\TestCase;
 use Mockery;
@@ -12,28 +16,6 @@ use Symfony\Component\Yaml;
 
 class ServerTest extends TestCase
 {
-    protected $factory;
-
-    protected $client;
-
-    protected $reader;
-
-    protected $encoder;
-
-    protected $builder;
-
-    protected $server;
-
-    public function setUp()
-    {
-        $this->client = $this->createSocketClient();
-        $this->server = $this->createSocketServer($this->client);
-        $this->factory = $this->createFactory($this->server);
-        $this->reader = $this->createReader();
-        $this->builder = $this->createBuilder();
-        $this->encoder = $this->createEncoder();
-    }
-
     /**
      * @param   \Icicle\Socket\Server\ServerInterface
      *
@@ -78,7 +60,8 @@ class ServerTest extends TestCase
 
         $mock->shouldReceive('close');
 
-        $mock->shouldReceive('write');
+        $mock->shouldReceive('write')
+            ->with(Mockery::mustBe('Encoded response.'));
 
         return $mock;
     }
@@ -90,10 +73,12 @@ class ServerTest extends TestCase
     {
         $mock = Mockery::mock('Icicle\Http\Reader\ReaderInterface');
 
+        $generator = function () {
+            yield $this->createRequest();
+        };
+
         $mock->shouldReceive('readRequest')
-            ->andReturnUsing(function () {
-                return $this->createRequest();
-            });
+            ->andReturn($generator());
 
         return $mock;
     }
@@ -107,6 +92,8 @@ class ServerTest extends TestCase
 
         $mock->shouldReceive('encodeResponse')
             ->andReturn('Encoded response.');
+
+        return $mock;
     }
 
     /**
@@ -133,20 +120,43 @@ class ServerTest extends TestCase
      * @param   callable $onRequest
      * @param   callable|null $onError
      * @param   mixed[]|null $options
+     * @param   \Icicle\Http\Reader\ReaderInterface|null $reader
+     * @param   \Icicle\Http\Builder\BuilderInterface|null $builder
+     * @param   \Icicle\Http\Encoder\EncoderInterface|null $encoder
+     * @param   \Icicle\Socket\Server\ServerFactoryInterface|null $factory
      *
      * @return  \Icicle\Http\Server\Server
      */
-    public function createServer(callable $onRequest, callable $onError = null, array $options = null)
-    {
-        return new Server($onRequest, $onError, $options, $this->reader, $this->builder, $this->encoder, $this->factory);
+    public function createServer(
+        callable $onRequest,
+        callable $onError = null,
+        array $options = null,
+        ReaderInterface $reader = null,
+        BuilderInterface $builder = null,
+        EncoderInterface $encoder = null,
+        ServerFactoryInterface $factory = null
+    ) {
+        $reader = $reader ?: $this->createReader();
+        $builder = $builder ?: $this->createBuilder();
+        $encoder = $encoder ?: $this->createEncoder();
+        $factory = $factory ?: $this->createFactory($this->createSocketServer($this->createSocketClient()));
+
+        return new Server($onRequest, $onError, $options, $reader, $builder, $encoder, $factory);
     }
 
     /**
+     * @param   string $method
+     *
      * @return  \Icicle\Http\Message\RequestInterface
      */
-    public function createRequest()
+    public function createRequest($method = 'GET')
     {
-        return Mockery::mock('Icicle\Http\Message\RequestInterface');
+        $mock = Mockery::mock('Icicle\Http\Message\RequestInterface');
+
+        $mock->shouldReceive('getMethod')
+            ->andReturn($method);
+
+        return $mock;
     }
 
     /**
@@ -154,19 +164,264 @@ class ServerTest extends TestCase
      */
     public function createResponse()
     {
-        return Mockery::mock('Icicle\Http\Message\ResponseInterface');
+        $mock = Mockery::mock('Icicle\Http\Message\ResponseInterface');
+
+        $mock->shouldReceive('getBody')
+            ->andReturn(Mockery::mock('Icicle\Stream\ReadableStreamInterface'));
+
+        return $mock;
+    }
+
+    public function testClose()
+    {
+        $server = $this->getMock('Icicle\Socket\Server\ServerInterface');
+        $server->expects($this->exactly(2))
+            ->method('close');
+
+        $factory = $this->createFactory($server);
+
+        $server = $this->createServer($this->createCallback(0), $this->createCallback(0), null, null, null, null, $factory);
+
+        $this->assertTrue($server->isOpen());
+
+        $server->listen(8080);
+        $server->listen(8888);
+
+        $server->close();
+
+        $this->assertFalse($server->isOpen());
+
+        Loop\run();
+    }
+
+    /**
+     * @depends testClose
+     * @expectedException \Icicle\Http\Exception\LogicException
+     */
+    public function testListenAfterClose()
+    {
+        $server = $this->createServer($this->createCallback(0), $this->createCallback(0));
+
+        $server->close();
+
+        $server->listen(8080);
     }
 
     public function testOnRequest()
     {
-        $response = $this->createResponse();
+        $callback = function ($request) {
+            $this->assertInstanceOf('Icicle\Http\Message\RequestInterface', $request);
 
-        $callback = $this->createCallback(1);
-        $callback->method('__invoke')
-            ->with($this->isInstanceOf('Icicle\Http\Message\RequestInterface'))
-            ->will($this->returnValue($response));
+            $response = $this->createResponse();
+
+            $response->shouldReceive('getHeaderLine')
+                ->with(Mockery::mustBe('Connection'))
+                ->andReturn('close');
+
+            $response->getBody()
+                ->shouldReceive('isReadable')
+                ->andReturn(true);
+
+            $response->getBody()
+                ->shouldReceive('pipe')
+                ->with(Mockery::type('Icicle\Socket\Client\ClientInterface'), Mockery::type('bool'))
+                ->andReturn(Promise\resolve(0));
+
+            return $response;
+        };
 
         $server = $this->createServer($callback, $this->createCallback(0));
+
+        $server->listen(8080);
+
+        Loop\run();
+    }
+
+    /**
+     * @depends testOnRequest
+     */
+    public function testOnRequestReturnsNonResponse()
+    {
+        $encoder = Mockery::mock('Icicle\Http\Encoder\EncoderInterface');
+        $encoder->shouldReceive('encodeResponse')
+            ->andReturnUsing(function ($response) {
+                $this->assertInstanceOf('Icicle\Http\Message\ResponseInterface', $response);
+                $this->assertSame(500, $response->getStatusCode());
+                return 'Encoded response.';
+            });
+
+        $callback = function ($request) {
+            return false;
+        };
+
+        $server = $this->createServer($callback, $this->createCallback(0), null, null, null, $encoder);
+
+        $server->listen(8080);
+
+        Loop\run();
+    }
+
+    /**
+     * @depends testOnRequest
+     */
+    public function testOnRequestThrowsException()
+    {
+        $encoder = Mockery::mock('Icicle\Http\Encoder\EncoderInterface');
+        $encoder->shouldReceive('encodeResponse')
+            ->andReturnUsing(function ($response) {
+                $this->assertInstanceOf('Icicle\Http\Message\ResponseInterface', $response);
+                $this->assertSame(500, $response->getStatusCode());
+                return 'Encoded response.';
+            });
+
+        $callback = function ($request) {
+            throw new \Exception();
+        };
+
+        $server = $this->createServer($callback, $this->createCallback(0), null, null, null, $encoder);
+
+        $server->listen(8080);
+
+        Loop\run();
+    }
+
+    public function testCryptoMethod()
+    {
+        $cryptoMethod = -1;
+
+        $client = $this->createSocketClient();
+        $client->shouldReceive('enableCrypto')
+            ->with(Mockery::mustBe($cryptoMethod), Mockery::any())
+            ->andReturn($client);
+
+        $factory = $this->createFactory($this->createSocketServer($client));
+
+        $server = $this->createServer($this->createCallback(1), $this->createCallback(0), null, null, null, null, $factory);
+
+        $server->listen(8080, Server::DEFAULT_ADDRESS, ['crypto_method' => $cryptoMethod]);
+
+        Loop\run();
+    }
+
+    public function invalidRequestExceptions()
+    {
+        return [
+            ['Icicle\Http\Exception\MessageHeaderSizeException', 431],
+            ['Icicle\Http\Exception\MessageBodySizeException', 413],
+            ['Icicle\Http\Exception\LengthRequiredException', 411],
+            ['Icicle\Http\Exception\UnexpectedValueException', 400],
+            ['Icicle\Socket\Exception\TimeoutException', 408],
+        ];
+    }
+
+    /**
+     * @dataProvider invalidRequestExceptions
+     * @param   string $exceptionName
+     * @param   int $statusCode
+     */
+    public function testInvalidRequest($exceptionName, $statusCode)
+    {
+        $reader = Mockery::mock('Icicle\Http\Reader\ReaderInterface');
+        $reader->shouldReceive('readRequest')
+            ->andThrow($exceptionName);
+
+        $callback = function ($code) use ($statusCode) {
+            $this->assertSame($statusCode, $code);
+
+            $response = $this->createResponse();
+
+            $response->shouldReceive('getHeaderLine')
+                ->with(Mockery::mustBe('Connection'))
+                ->andReturn('close');
+
+            $response->getBody()
+                ->shouldReceive('isReadable')
+                ->andReturn(false);
+
+            return $response;
+        };
+
+        $server = $this->createServer($this->createCallback(0), $callback, null, $reader);
+
+        $server->listen(8080);
+
+        Loop\run();
+    }
+
+    /**
+     * @depends testInvalidRequest
+     */
+    public function testOnErrorReturnsNonResponse()
+    {
+        $reader = Mockery::mock('Icicle\Http\Reader\ReaderInterface');
+        $reader->shouldReceive('readRequest')
+            ->andThrow('Icicle\Http\Exception\UnexpectedValueException');
+
+        $encoder = Mockery::mock('Icicle\Http\Encoder\EncoderInterface');
+        $encoder->shouldReceive('encodeResponse')
+            ->andReturnUsing(function ($response) {
+                $this->assertInstanceOf('Icicle\Http\Message\ResponseInterface', $response);
+                $this->assertSame(500, $response->getStatusCode());
+                return 'Encoded response.';
+            });
+
+        $callback = function ($code) {
+            return false;
+        };
+
+        $server = $this->createServer($this->createCallback(0), $callback, null, $reader, null, $encoder);
+
+        $server->listen(8080);
+
+        Loop\run();
+    }
+
+    /**
+     * @depends testInvalidRequest
+     */
+    public function testOnErrorThrowsException()
+    {
+        $reader = Mockery::mock('Icicle\Http\Reader\ReaderInterface');
+        $reader->shouldReceive('readRequest')
+            ->andThrow('Icicle\Http\Exception\UnexpectedValueException');
+
+        $encoder = Mockery::mock('Icicle\Http\Encoder\EncoderInterface');
+        $encoder->shouldReceive('encodeResponse')
+            ->andReturnUsing(function ($response) {
+                $this->assertInstanceOf('Icicle\Http\Message\ResponseInterface', $response);
+                $this->assertSame(500, $response->getStatusCode());
+                return 'Encoded response.';
+            });
+
+        $callback = function ($code) {
+            throw new \Exception();
+        };
+
+        $server = $this->createServer($this->createCallback(0), $callback, null, $reader, null, $encoder);
+
+        $server->listen(8080);
+
+        Loop\run();
+    }
+
+    /**
+     * @depends testInvalidRequest
+     */
+    public function testInvalidRequestWithNoOnErrorCallback()
+    {
+        $reader = Mockery::mock('Icicle\Http\Reader\ReaderInterface');
+        $reader->shouldReceive('readRequest')
+            ->andThrow('Icicle\Http\Exception\UnexpectedValueException');
+
+        $encoder = Mockery::mock('Icicle\Http\Encoder\EncoderInterface');
+        $encoder->shouldReceive('encodeResponse')
+            ->andReturnUsing(function ($response) {
+                $this->assertInstanceOf('Icicle\Http\Message\ResponseInterface', $response);
+                $this->assertSame(400, $response->getStatusCode());
+                return 'Encoded response.';
+            });
+
+        $server = $this->createServer($this->createCallback(0), null, null, $reader, null, $encoder);
 
         $server->listen(8080);
 
