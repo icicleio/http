@@ -118,30 +118,35 @@ class ServerTest extends TestCase
 
     /**
      * @param   callable $onRequest
+     * @param   callable|null $onUpgrade
      * @param   callable|null $onError
      * @param   mixed[]|null $options
-     * @param   \Icicle\Http\Reader\ReaderInterface|null $reader
-     * @param   \Icicle\Http\Builder\BuilderInterface|null $builder
-     * @param   \Icicle\Http\Encoder\EncoderInterface|null $encoder
-     * @param   \Icicle\Socket\Server\ServerFactoryInterface|null $factory
      *
      * @return  \Icicle\Http\Server\Server
      */
     public function createServer(
         callable $onRequest,
         callable $onError = null,
-        array $options = null,
-        ReaderInterface $reader = null,
-        BuilderInterface $builder = null,
-        EncoderInterface $encoder = null,
-        ServerFactoryInterface $factory = null
+        callable $onUpgrade = null,
+        array $options = null
     ) {
-        $reader = $reader ?: $this->createReader();
-        $builder = $builder ?: $this->createBuilder();
-        $encoder = $encoder ?: $this->createEncoder();
-        $factory = $factory ?: $this->createFactory($this->createSocketServer($this->createSocketClient()));
+        if (!isset($options['reader'])) {
+            $options['reader'] = $this->createReader();
+        }
 
-        return new Server($onRequest, $onError, $options, $reader, $builder, $encoder, $factory);
+        if (!isset($options['builder'])) {
+            $options['builder'] = $this->createBuilder();
+        }
+
+        if (!isset($options['encoder'])) {
+            $options['encoder'] = $this->createEncoder();
+        }
+
+        if (!isset($options['factory'])) {
+            $options['factory'] = $this->createFactory($this->createSocketServer($this->createSocketClient()));
+        }
+
+        return new Server($onRequest, $onError, $onUpgrade, $options);
     }
 
     /**
@@ -180,7 +185,12 @@ class ServerTest extends TestCase
 
         $factory = $this->createFactory($server);
 
-        $server = $this->createServer($this->createCallback(0), $this->createCallback(0), null, null, null, null, $factory);
+        $server = $this->createServer(
+            $this->createCallback(0),
+            $this->createCallback(0),
+            $this->createCallback(0),
+            ['factory' => $factory]
+        );
 
         $this->assertTrue($server->isOpen());
 
@@ -254,7 +264,12 @@ class ServerTest extends TestCase
             return false;
         };
 
-        $server = $this->createServer($callback, $this->createCallback(0), null, null, null, $encoder);
+        $server = $this->createServer(
+            $callback,
+            $this->createCallback(0),
+            $this->createCallback(0),
+            ['encoder' => $encoder]
+        );
 
         $server->listen(8080);
 
@@ -278,7 +293,12 @@ class ServerTest extends TestCase
             throw new \Exception();
         };
 
-        $server = $this->createServer($callback, $this->createCallback(0), null, null, null, $encoder);
+        $server = $this->createServer(
+            $callback,
+            $this->createCallback(0),
+            $this->createCallback(0),
+            ['encoder' => $encoder]
+        );
 
         $server->listen(8080);
 
@@ -296,7 +316,12 @@ class ServerTest extends TestCase
 
         $factory = $this->createFactory($this->createSocketServer($client));
 
-        $server = $this->createServer($this->createCallback(1), $this->createCallback(0), null, null, null, null, $factory);
+        $server = $this->createServer(
+            $this->createCallback(1),
+            $this->createCallback(0),
+            $this->createCallback(0),
+            ['factory' => $factory]
+        );
 
         $server->listen(8080, Server::DEFAULT_ADDRESS, ['crypto_method' => $cryptoMethod]);
 
@@ -341,7 +366,12 @@ class ServerTest extends TestCase
             return $response;
         };
 
-        $server = $this->createServer($this->createCallback(0), $callback, null, $reader);
+        $server = $this->createServer(
+            $this->createCallback(0),
+            $callback,
+            $this->createCallback(0),
+            ['reader' => $reader]
+        );
 
         $server->listen(8080);
 
@@ -369,7 +399,12 @@ class ServerTest extends TestCase
             return false;
         };
 
-        $server = $this->createServer($this->createCallback(0), $callback, null, $reader, null, $encoder);
+        $server = $this->createServer(
+            $this->createCallback(0),
+            $callback,
+            $this->createCallback(0),
+            ['reader' => $reader, 'encoder' => $encoder]
+        );
 
         $server->listen(8080);
 
@@ -397,7 +432,12 @@ class ServerTest extends TestCase
             throw new \Exception();
         };
 
-        $server = $this->createServer($this->createCallback(0), $callback, null, $reader, null, $encoder);
+        $server = $this->createServer(
+            $this->createCallback(0),
+            $callback,
+            $this->createCallback(0),
+            ['reader' => $reader, 'encoder' => $encoder]
+        );
 
         $server->listen(8080);
 
@@ -421,7 +461,12 @@ class ServerTest extends TestCase
                 return 'Encoded response.';
             });
 
-        $server = $this->createServer($this->createCallback(0), null, null, $reader, null, $encoder);
+        $server = $this->createServer(
+            $this->createCallback(0),
+            null,
+            null,
+            ['reader' => $reader, 'encoder' => $encoder]
+        );
 
         $server->listen(8080);
 

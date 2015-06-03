@@ -39,9 +39,14 @@ class Server implements ServerInterface
     private $onRequest;
 
     /**
-     * @var callable
+     * @var callable|null
      */
     private $onError;
+
+    /**
+     * @var callable|null
+     */
+    private $onUpgrade;
 
     /**
      * @var \Icicle\Http\Encoder\EncoderInterface
@@ -90,21 +95,15 @@ class Server implements ServerInterface
 
     /**
      * @param   callable $onRequest
-     * @param   callable $onError
-     * @param   mixed[] $options
-     * @param   \Icicle\Http\Reader\ReaderInterface|null $reader
-     * @param   \Icicle\Http\Builder\BuilderInterface|null $builder
-     * @param   \Icicle\Http\Encoder\EncoderInterface|null $encoder
-     * @param   \Icicle\Socket\Server\ServerFactoryInterface|null $factory
+     * @param   callable|null $onError
+     * @param   callable|null $onUpgrade
+     * @param   mixed[]|null $options
      */
     public function __construct(
         callable $onRequest,
         callable $onError = null,
-        array $options = null,
-        ReaderInterface $reader = null,
-        BuilderInterface $builder = null,
-        EncoderInterface $encoder = null,
-        ServerFactoryInterface $factory = null
+        callable $onUpgrade = null,
+        array $options = null
     ) {
         $this->timeout = isset($options['timeout']) ? (float) $options['timeout'] : self::DEFAULT_TIMEOUT;
         $this->allowPersistent = isset($options['allow_persistent']) ? (bool) $options['allow_persistent'] : true;
@@ -112,13 +111,25 @@ class Server implements ServerInterface
             ? (int) $options['max_header_size']
             : self::DEFAULT_MAX_HEADER_SIZE;
 
-        $this->onRequest = $onRequest;
-        $this->onError = $onError;
+        $this->reader = isset($options['reader']) && $options['reader'] instanceof ReaderInterface
+            ? $options['reader']
+            : new Reader();
 
-        $this->reader =  $reader  ?: new Reader();
-        $this->encoder = $encoder ?: new Encoder();
-        $this->builder = $builder ?: new Builder();
-        $this->factory = $factory ?: new ServerFactory();
+        $this->builder = isset($options['builder']) && $options['builder'] instanceof BuilderInterface
+            ? $options['builder']
+            : new Builder();
+
+        $this->encoder = isset($options['encoder']) && $options['encoder'] instanceof EncoderInterface
+            ? $options['encoder']
+            : new Encoder();
+
+        $this->factory = isset($options['factory']) && $options['factory'] instanceof ServerFactoryInterface
+            ? $options['factory']
+            : new ServerFactory();
+
+        $this->onRequest = $onRequest;
+        $this->onError =   $onError;
+        $this->onUpgrade = $onUpgrade;
     }
 
     /**
@@ -164,7 +175,8 @@ class Server implements ServerInterface
      *
      * @throws  \Icicle\Http\Exception\LogicException If the server has been closed.
      *
-     * @see     \Icicle\Socket\Server\ServerFactoryInterface::create() Options are the same as this method.
+     * @see     \Icicle\Socket\Server\ServerFactoryInterface::create() Options are similar to this method with the
+     *          addition of the crypto_method option.
      */
     public function listen($port, $address = self::DEFAULT_ADDRESS, array $options = null)
     {
@@ -191,7 +203,7 @@ class Server implements ServerInterface
      *
      * @return  \Generator
      */
-    protected function accept(SocketServerInterface $server, $cryptoMethod)
+    private function accept(SocketServerInterface $server, $cryptoMethod)
     {
         while ($server->isOpen()) {
             try {
@@ -213,10 +225,9 @@ class Server implements ServerInterface
      *
      * @return  \Generator
      */
-    protected function process(SocketClientInterface $client, $cryptoMethod)
+    private function process(SocketClientInterface $client, $cryptoMethod)
     {
         $count = 0;
-        $upgrade = false;
 
         try {
             if (0 !== $cryptoMethod) {
@@ -225,9 +236,7 @@ class Server implements ServerInterface
 
             do {
                 try {
-                    $request = (yield $this->reader->readRequest($client, $this->maxHeaderSize, $this->timeout));
-
-                    $request = $this->builder->buildIncomingRequest($request, $this->timeout);
+                    $request = (yield $this->readRequest($client, $this->maxHeaderSize, $this->timeout));
 
                     ++$count;
 
@@ -257,18 +266,55 @@ class Server implements ServerInterface
                 }
 
                 $connection = strtolower($response->getHeaderLine('Connection'));
-                $upgrade = $connection === 'upgrade';
-                $keepAlive = !$upgrade && $this->allowPersistent() && $connection === 'keep-alive';
-            } while ($keepAlive && $client->isReadable() && $client->isWritable());
+
+                if ($connection === 'upgrade') {
+                    yield $this->upgrade($client);
+                    return;
+                }
+            } while (
+                $this->allowPersistent
+                && $connection === 'keep-alive'
+                && $client->isReadable()
+                && $client->isWritable()
+            );
         } catch (SocketException $exception) {
             // Ignore socket exceptions from client hang-ups.
         } catch (StreamException $exception) {
             // Ignore stream exceptions from client read/write failures.
         } finally {
-            if (!$upgrade) { // Only close if connection was not upgraded.
-                $client->close();
-            }
+            $client->close();
         }
+    }
+
+    /**
+     * @coroutine
+     *
+     * @param   \Icicle\Socket\Client\ClientInterface $client
+     *
+     * @return  \Generator
+     */
+    private function upgrade(SocketClientInterface $client)
+    {
+        if (null === $this->onUpgrade) {
+            throw new LogicException('No callback given for upgrade responses.');
+        }
+
+        $onUpgrade = $this->onUpgrade;
+        yield $onUpgrade($client);
+    }
+
+    /**
+     * @coroutine
+     *
+     * @param \Icicle\Socket\Client\ClientInterface $client
+     *
+     * @return \Generator
+     */
+    private function readRequest(SocketClientInterface $client)
+    {
+        $request = (yield $this->reader->readRequest($client, $this->maxHeaderSize, $this->timeout));
+
+        yield $this->builder->buildIncomingRequest($request, $this->timeout);
     }
 
     /**
@@ -339,6 +385,8 @@ class Server implements ServerInterface
     }
 
     /**
+     * @coroutine
+     *
      * @param   int $code
      * @param   \Exception|null $exception
      *
@@ -348,11 +396,9 @@ class Server implements ServerInterface
      */
     protected function createDefaultErrorResponse($code, Exception $exception = null)
     {
-        $headers = [
+        yield new Response($code, [
             'Connection' => 'close',
-            'Content-Length' => '0',
-        ];
-
-        yield new Response($code, $headers);
+            'Content-Length' => 0,
+        ]);
     }
 }

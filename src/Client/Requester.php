@@ -46,15 +46,9 @@ class Requester implements RequesterInterface
 
     /**
      * @param   mixed[] $options
-     * @param   \Icicle\Http\Reader\ReaderInterface|null $reader
-     * @param   \Icicle\Http\Builder\BuilderInterface|null $builder
-     * @param   \Icicle\Http\Encoder\EncoderInterface|null $encoder
      */
     public function __construct(
-        array $options = null,
-        ReaderInterface $reader = null,
-        BuilderInterface $builder = null,
-        EncoderInterface $encoder = null
+        array $options = null
     ) {
         $this->timeout = isset($options['timeout']) ? (float) $options['timeout'] : self::DEFAULT_TIMEOUT;
         $this->allowPersistent = isset($options['allow_persistent']) ? (bool) $options['allow_persistent'] : true;
@@ -62,9 +56,17 @@ class Requester implements RequesterInterface
             ? (int) $options['max_header_size']
             : self::DEFAULT_MAX_HEADER_SIZE;
 
-        $this->reader =  $reader  ?: new Reader();
-        $this->encoder = $encoder ?: new Encoder();
-        $this->builder = $builder ?: new Builder();
+        $this->reader = isset($options['reader']) && $options['reader'] instanceof ReaderInterface
+            ? $options['reader']
+            : new Reader();
+
+        $this->builder = isset($options['builder']) && $options['builder'] instanceof BuilderInterface
+            ? $options['builder']
+            : new Builder();
+
+        $this->encoder = isset($options['encoder']) && $options['encoder'] instanceof EncoderInterface
+            ? $options['encoder']
+            : new Encoder();
     }
 
     /**
