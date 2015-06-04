@@ -267,8 +267,8 @@ class Server implements ServerInterface
 
                 $connection = strtolower($response->getHeaderLine('Connection'));
 
-                if ($connection === 'upgrade') {
-                    yield $this->upgrade($client);
+                if (isset($request) && $connection === 'upgrade') {
+                    yield $this->upgrade($request, $response, $client);
                     return;
                 }
             } while (
@@ -289,18 +289,20 @@ class Server implements ServerInterface
     /**
      * @coroutine
      *
+     * @param   \Icicle\Http\Message\RequestInterface $request
+     * @param   \Icicle\Http\Message\ResponseInterface $response
      * @param   \Icicle\Socket\Client\ClientInterface $client
      *
      * @return  \Generator
      */
-    private function upgrade(SocketClientInterface $client)
+    private function upgrade(RequestInterface $request, ResponseInterface $response, SocketClientInterface $client)
     {
         if (null === $this->onUpgrade) {
             throw new LogicException('No callback given for upgrade responses.');
         }
 
         $onUpgrade = $this->onUpgrade;
-        yield $onUpgrade($client);
+        yield $onUpgrade($request, $response, $client);
     }
 
     /**
