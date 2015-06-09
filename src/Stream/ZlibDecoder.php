@@ -3,8 +3,8 @@ namespace Icicle\Http\Stream;
 
 use Icicle\Http\Exception\LogicException;
 use Icicle\Http\Exception\MessageBodySizeException;
+use Icicle\Http\Exception\MessageException;
 use Icicle\Promise;
-use Icicle\Stream\Exception\RuntimeException;
 use Icicle\Stream\Stream;
 use Icicle\Stream\Structures\Buffer;
 
@@ -62,7 +62,7 @@ class ZlibDecoder extends Stream
 
         if (false === $data) {
             return parent::send('', true)->then(function () {
-                throw new RuntimeException('Could not decode compressed stream.');
+                throw new MessageException('Could not decode compressed stream.');
             });
         }
 

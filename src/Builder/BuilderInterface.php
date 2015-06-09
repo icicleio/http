@@ -25,7 +25,9 @@ interface BuilderInterface
      * @param   \Icicle\Http\Message\RequestInterface $request
      * @param   float|null $timeout
      *
-     * @return  \Icicle\Http\Message\RequestInterface
+     * @return  \Generator
+     *
+     * @resolve \Icicle\Http\Message\RequestInterface
      */
     public function buildOutgoingRequest(RequestInterface $request, $timeout = null);
 

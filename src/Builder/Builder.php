@@ -65,28 +65,21 @@ class Builder implements BuilderInterface
             $response = $response->withProtocolVersion($request->getProtocolVersion());
         }
 
-        if ($response->getProtocolVersion() === '1.1') {
-            if (!$response->hasHeader('Connection')) {
-                if (
-                    $allowPersistent
-                    && null !== $request
-                    && strtolower($request->getHeaderLine('Connection')) === 'keep-alive'
-                ) {
-                    $response = $response
-                        ->withHeader('Connection', 'keep-alive')
-                        ->withHeader('Keep-Alive', sprintf('timeout=%d', $timeout));
-                } else {
-                    $response = $response->withHeader('Connection', 'close');
-                }
-            }
+        if ($response->getProtocolVersion() === '1.1'
+            && !$response->hasHeader('Connection')
+            && $allowPersistent
+            && strtolower($request->getHeaderLine('Connection')) === 'keep-alive'
+        ) {
+            $response = $response
+                ->withHeader('Connection', 'keep-alive')
+                ->withHeader('Keep-Alive', sprintf('timeout=%d', $timeout));
         } else {
             $response = $response->withHeader('Connection', 'close');
         }
 
         $response = $response->withoutHeader('Content-Encoding');
 
-        if (
-            $this->compressionEnabled
+        if ($this->compressionEnabled
             && null !== $request
             && $request->hasHeader('Accept-Encoding')
             && $response->hasHeader('Content-Type')
@@ -103,7 +96,7 @@ class Builder implements BuilderInterface
             }
         }
 
-        return $this->buildOutgoingStream($response, $timeout);
+        yield $this->buildOutgoingStream($response, $timeout);
     }
 
     /**
@@ -128,7 +121,7 @@ class Builder implements BuilderInterface
             $request = $request->withoutHeader('Accept-Encoding');
         }
 
-        return $this->buildOutgoingStream($request, $timeout);
+        yield $this->buildOutgoingStream($request, $timeout);
     }
 
     /**
@@ -137,10 +130,11 @@ class Builder implements BuilderInterface
     public function buildIncomingRequest(RequestInterface $request, $timeout = null)
     {
         if ($request->getMethod() === 'POST' || $request->getMethod() === 'PUT') {
-            return $this->buildIncomingStream($request, $timeout);
+            yield $this->buildIncomingStream($request, $timeout);
+            return;
         }
 
-        return $request->withBody(new LimitStream(0)); // No body in other requests.
+        yield $request->withBody(new LimitStream(0)); // No body in other requests.
     }
 
     /**
@@ -148,16 +142,18 @@ class Builder implements BuilderInterface
      */
     public function buildIncomingResponse(ResponseInterface $response, $timeout = null)
     {
-        return $this->buildIncomingStream($response, $timeout);
+        yield $this->buildIncomingStream($response, $timeout);
     }
 
     /**
      * @param   \Icicle\Http\Message\MessageInterface $message
      * @param   float|null $timeout
      *
-     * @return  \Icicle\Http\Message\MessageInterface
+     * @return  \Generator
+     *
+     * @resolve \Icicle\Http\Message\MessageInterface
      */
-    protected function buildOutgoingStream(MessageInterface $message, $timeout = null)
+    private function buildOutgoingStream(MessageInterface $message, $timeout = null)
     {
         $stream = $message->getBody();
 
@@ -165,8 +161,9 @@ class Builder implements BuilderInterface
             $stream->seek(0);
         }
 
-        if (!$stream->isReadable()) {
-            return $message;
+        if (!$stream->isReadable() || strtolower($message->getHeaderLine('Connection')) === 'upgrade') {
+            yield $message;
+            return;
         }
 
         $contentEncoding = strtolower($message->getHeaderLine('Content-Encoding'));
@@ -187,7 +184,7 @@ class Builder implements BuilderInterface
                     );
             }
 
-            $message->getBody()->pipe($stream);
+            yield $message->getBody()->pipe($stream, true, null, null, $timeout);
             $message = $message
                 ->withBody($stream)
                 ->withoutHeader('Content-Length');
@@ -196,21 +193,25 @@ class Builder implements BuilderInterface
         if ($message->getProtocolVersion() === '1.1' && !$message->hasHeader('Content-Length')) {
             $stream = new ChunkedEncoder($this->hwm);
             $message->getBody()->pipe($stream, true, null, null, $timeout);
-            return $message
+            yield $message
                 ->withBody($stream)
                 ->withHeader('Transfer-Encoding', 'chunked');
+            return;
         }
 
-        return $message;
+        yield $message;
+        return;
     }
 
     /**
      * @param   \Icicle\Http\Message\MessageInterface $message
      * @param   float|null $timeout
      *
-     * @return  \Icicle\Http\Message\MessageInterface
+     * @return  \Generator
+     *
+     * @resolve \Icicle\Http\Message\MessageInterface
      */
-    protected function buildIncomingStream(MessageInterface $message, $timeout = null)
+    private function buildIncomingStream(MessageInterface $message, $timeout = null)
     {
         $stream = $message->getBody();
 
@@ -218,8 +219,9 @@ class Builder implements BuilderInterface
             $stream->seek(0);
         }
 
-        if (!$stream->isReadable()) {
-            return $message;
+        if (!$stream->isReadable() || strtolower($message->getHeaderLine('Connection') === 'upgrade')) {
+            yield $message;
+            return;
         }
 
         if (strtolower($message->getHeaderLine('Transfer-Encoding') === 'chunked')) {
@@ -243,11 +245,13 @@ class Builder implements BuilderInterface
             case 'deflate':
             case 'gzip':
                 $stream = new ZlibDecoder();
-                $message->getBody()->pipe($stream);
-                return $message->withBody($stream);
+                yield $message->getBody()->pipe($stream, true, null, null, $timeout);
+                yield $message->withBody($stream);
+                return;
 
             case '':
-                return $message;
+                yield $message;
+                return;
 
             default:
                 throw new MessageException(

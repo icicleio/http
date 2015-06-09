@@ -323,8 +323,8 @@ abstract class Message implements MessageInterface
             throw new InvalidHeaderException('Header values must be strings or an array of strings.');
         }
 
-        if (!preg_match("/^[\t\x20-\x7e\x80-\xfe]+$/", $value)) {
-            throw new InvalidHeaderException('Invalid character in header value.');
+        if (preg_match("/[^\t\r\n\x20-\x7e\x80-\xfe]|\r\n/", $value)) {
+            throw new InvalidHeaderException('Invalid character(s) in header value.');
         }
 
         return $value;

@@ -1,6 +1,7 @@
 <?php
 namespace Icicle\Http\Stream;
 
+use Icicle\Http\Exception\MessageException;
 use Icicle\Stream\Stream;
 use Icicle\Stream\Structures\Buffer;
 
@@ -48,6 +49,12 @@ class ChunkedDecoder extends Stream
 
                 if ($position = strpos($length, ';')) {
                     $length = substr($length, 0, $position);
+                }
+
+                if (!preg_match('/^[a-f0-9]+$/i', $length)) {
+                    return parent::send('', true)->then(function () {
+                        throw new MessageException('Invalid chunk length.');
+                    });
                 }
 
                 $this->length = hexdec($length) + 2;
