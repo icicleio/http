@@ -29,14 +29,14 @@ class Request extends Message implements RequestInterface
     private $target;
 
     /**
-     * @param   string $method
-     * @param   string|\Icicle\Http\Message\UriInterface $uri
-     * @param   \Icicle\Stream\ReadableStreamInterface|null $stream
-     * @param   string[]|null $headers
-     * @param   string|null $target
-     * @param   string $protocol
+     * @param string $method
+     * @param string|\Icicle\Http\Message\UriInterface $uri
+     * @param \Icicle\Stream\ReadableStreamInterface|null $stream
+     * @param string[]|null $headers
+     * @param string|null $target
+     * @param string $protocol
      *
-     * @throws  \Icicle\Http\Exception\InvalidArgumentException If one of the arguments is invalid.
+     * @throws \Icicle\Http\Exception\InvalidArgumentException If one of the arguments is invalid.
      */
     public function __construct(
         $method,
@@ -61,7 +61,7 @@ class Request extends Message implements RequestInterface
     }
 
     /**
-     * @inheritdoc
+     * {@inheritdoc}
      */
     public function getRequestTarget()
     {
@@ -84,7 +84,7 @@ class Request extends Message implements RequestInterface
     }
 
     /**
-     * @inheritdoc
+     * {@inheritdoc}
      */
     public function getUri()
     {
@@ -92,7 +92,7 @@ class Request extends Message implements RequestInterface
     }
 
     /**
-     * @inheritdoc
+     * {@inheritdoc}
      */
     public function getMethod()
     {
@@ -100,7 +100,7 @@ class Request extends Message implements RequestInterface
     }
 
     /**
-     * @inheritdoc
+     * {@inheritdoc}
      */
     public function withRequestTarget($target)
     {
@@ -110,7 +110,7 @@ class Request extends Message implements RequestInterface
     }
 
     /**
-     * @inheritdoc
+     * {@inheritdoc}
      */
     public function withMethod($method)
     {
@@ -120,7 +120,7 @@ class Request extends Message implements RequestInterface
     }
 
     /**
-     * @inheritdoc
+     * {@inheritdoc}
      */
     public function withHeader($name, $value)
     {
@@ -134,7 +134,7 @@ class Request extends Message implements RequestInterface
     }
 
     /**
-     * @inheritdoc
+     * {@inheritdoc}
      */
     public function withAddedHeader($name, $value)
     {
@@ -150,7 +150,7 @@ class Request extends Message implements RequestInterface
     }
 
     /**
-     * @inheritdoc
+     * {@inheritdoc}
      */
     public function withoutHeader($name)
     {
@@ -164,7 +164,7 @@ class Request extends Message implements RequestInterface
     }
 
     /**
-     * @inheritdoc
+     * {@inheritdoc}
      */
     public function withUri($uri)
     {
@@ -183,11 +183,11 @@ class Request extends Message implements RequestInterface
     }
 
     /**
-     * @param   string $method
+     * @param string $method
      *
-     * @return  string
+     * @return string
      *
-     * @throws  \Icicle\Http\Exception\InvalidMethodException If the method is not valid.
+     * @throws \Icicle\Http\Exception\InvalidMethodException If the method is not valid.
      */
     protected function filterMethod($method)
     {
@@ -199,11 +199,11 @@ class Request extends Message implements RequestInterface
     }
 
     /**
-     * @param   string $target
+     * @param string $target
      *
-     * @return  string
+     * @return string
      *
-     * @throws  \Icicle\Http\Exception\InvalidHeaderException If the target contains whitespace.
+     * @throws \Icicle\Http\Exception\InvalidHeaderException If the target contains whitespace.
      */
     protected function filterTarget($target)
     {

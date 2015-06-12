@@ -30,10 +30,10 @@ class ZlibEncoder extends Stream
     private $level;
 
     /**
-     * @param   int $type Compression type. Use GZIP or DEFLATE constants.
-     * @param   int $level Compression level.
+     * @param int $type Compression type. Use GZIP or DEFLATE constants.
+     * @param int $level Compression level.
      *
-     * @throws  \Icicle\Http\Exception\LogicException If the zlib extension is not loaded.
+     * @throws \Icicle\Http\Exception\LogicException If the zlib extension is not loaded.
      */
     public function __construct($type, $level = self::DEFAULT_LEVEL)
     {
@@ -59,10 +59,10 @@ class ZlibEncoder extends Stream
     }
 
     /**
-     * @param   string $data
-     * @param   bool $end
+     * @param string $data
+     * @param bool $end
      *
-     * @return  \Icicle\Promise\PromiseInterface
+     * @return \Icicle\Promise\PromiseInterface
      */
     public function send($data, $end = false)
     {

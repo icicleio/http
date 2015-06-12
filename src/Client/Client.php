@@ -31,9 +31,9 @@ class Client implements ClientInterface
     private $cryptoMethod = self::DEFAULT_CRYPTO_METHOD;
 
     /**
-     * @param   \Icicle\Http\Client\RequesterInterface|null $requester
-     * @param   \Icicle\Dns\Connector\ConnectorInterface|null $connector
-     * @param   mixed[]|null $options
+     * @param \Icicle\Http\Client\RequesterInterface|null $requester
+     * @param \Icicle\Dns\Connector\ConnectorInterface|null $connector
+     * @param mixed[]|null $options
      */
     public function __construct(
         RequesterInterface $requester = null,
@@ -58,7 +58,7 @@ class Client implements ClientInterface
     }
 
     /**
-     * @inheritdoc
+     * {@inheritdoc}
      */
     public function request(
         $method,
@@ -72,7 +72,7 @@ class Client implements ClientInterface
     }
 
     /**
-     * @inheritdoc
+     * {@inheritdoc}
      */
     public function send(
         RequestInterface $request,

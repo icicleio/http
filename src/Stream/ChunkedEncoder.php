@@ -6,10 +6,10 @@ use Icicle\Stream\Stream;
 class ChunkedEncoder extends Stream
 {
     /**
-     * @param   string $data
-     * @param   bool $end
+     * @param string $data
+     * @param bool $end
      *
-     * @return  \Icicle\Promise\PromiseInterface
+     * @return \Icicle\Promise\PromiseInterface
      */
     protected function send($data, $end = false)
     {

@@ -7,7 +7,7 @@ use Icicle\Tests\Http\TestCase;
 class ResponseTest extends TestCase
 {
     /**
-     * @return  array Array of arrays of invalid status codes.
+     * @return array Array of arrays of invalid status codes.
      */
     public function getInvalidStatusCodes()
     {
@@ -24,7 +24,7 @@ class ResponseTest extends TestCase
     }
 
     /**
-     * @return  array Array of arrays of valid status codes and associated reasons.
+     * @return array Array of arrays of valid status codes and associated reasons.
      */
     public function getValidStatusCodes()
     {

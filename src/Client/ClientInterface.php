@@ -9,19 +9,19 @@ interface ClientInterface
     /**
      * @coroutine
      *
-     * @param   string $method
-     * @param   string|\Icicle\Http\Message\UriInterface $uri
-     * @param   string[]|null $headers
-     * @param   \Icicle\Stream\ReadableStreamInterface|null $body
-     * @param   float|int|null $timeout
-     * @param   mixed[] $options
+     * @param string $method
+     * @param string|\Icicle\Http\Message\UriInterface $uri
+     * @param string[]|null $headers
+     * @param \Icicle\Stream\ReadableStreamInterface|null $body
+     * @param float|int|null $timeout
+     * @param mixed[] $options
      *
-     * @return  \Generator
+     * @return \Generator
      *
      * @resolve \Icicle\Http\Message\ResponseInterface
      *
-     * @reject  \Icicle\Http\Exception\MessageException
-     * @reject  \Icicle\Http\Exception\ParseException
+     * @reject \Icicle\Http\Exception\MessageException
+     * @reject \Icicle\Http\Exception\ParseException
      */
     public function request(
         $method,
@@ -35,16 +35,16 @@ interface ClientInterface
     /**
      * @coroutine
      *
-     * @param   \Icicle\Http\Message\RequestInterface $request
-     * @param   float|int|null $timeout
-     * @param   mixed[] $options
+     * @param \Icicle\Http\Message\RequestInterface $request
+     * @param float|int|null $timeout
+     * @param mixed[] $options
      *
-     * @return  \Generator
+     * @return \Generator
      *
      * @resolve \Icicle\Http\Message\ResponseInterface
      *
-     * @reject  \Icicle\Http\Exception\MessageException
-     * @reject  \Icicle\Http\Exception\ParseException
+     * @reject \Icicle\Http\Exception\MessageException
+     * @reject \Icicle\Http\Exception\ParseException
      */
     public function send(
         RequestInterface $request,

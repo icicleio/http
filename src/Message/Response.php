@@ -85,13 +85,13 @@ class Response extends Message implements ResponseInterface
     private $reason;
 
     /**
-     * @param   int $code Status code.
-     * @param   \Icicle\Stream\ReadableStreamInterface|null $stream
-     * @param   string[][] $headers
-     * @param   string|null $reason Status code reason.
-     * @param   string $protocol
+     * @param int $code Status code.
+     * @param \Icicle\Stream\ReadableStreamInterface|null $stream
+     * @param string[][] $headers
+     * @param string|null $reason Status code reason.
+     * @param string $protocol
      *
-     * @throws  \Icicle\Http\Exception\InvalidArgumentException If one of the arguments is invalid.
+     * @throws \Icicle\Http\Exception\InvalidArgumentException If one of the arguments is invalid.
      */
     public function __construct(
         $code = 200,
@@ -107,7 +107,7 @@ class Response extends Message implements ResponseInterface
     }
 
     /**
-     * @inheritdoc
+     * {@inheritdoc}
      */
     public function getStatusCode()
     {
@@ -115,7 +115,7 @@ class Response extends Message implements ResponseInterface
     }
 
     /**
-     * @inheritdoc
+     * {@inheritdoc}
      */
     public function getReasonPhrase()
     {
@@ -127,7 +127,7 @@ class Response extends Message implements ResponseInterface
     }
 
     /**
-     * @inheritdoc
+     * {@inheritdoc}
      */
     public function withStatus($code, $reason = null)
     {
@@ -138,11 +138,11 @@ class Response extends Message implements ResponseInterface
     }
 
     /**
-     * @param   string|int $code
+     * @param string|int $code
      *
-     * @return  int
+     * @return int
      *
-     * @throws  \Icicle\Http\Exception\InvalidStatusException
+     * @throws \Icicle\Http\Exception\InvalidStatusException
      */
     protected function validateStatusCode($code)
     {
@@ -156,9 +156,9 @@ class Response extends Message implements ResponseInterface
     }
 
     /**
-     * @param   string $reason
+     * @param string $reason
      *
-     * @return  string|null
+     * @return string|null
      */
     protected function filterReason($reason)
     {

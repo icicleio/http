@@ -29,11 +29,11 @@ abstract class Message implements MessageInterface
     private $stream;
 
     /**
-     * @param   \Icicle\Stream\ReadableStreamInterface|null $stream
-     * @param   string[][]|null $headers
-     * @param   string $protocol
+     * @param \Icicle\Stream\ReadableStreamInterface|null $stream
+     * @param string[][]|null $headers
+     * @param string $protocol
      *
-     * @throws  \Icicle\Http\Exception\InvalidArgumentException
+     * @throws \Icicle\Http\Exception\InvalidArgumentException
      */
     public function __construct(array $headers = null, ReadableStreamInterface $stream = null, $protocol = '1.1')
     {
@@ -46,7 +46,7 @@ abstract class Message implements MessageInterface
     }
 
     /**
-     * @inheritdoc
+     * {@inheritdoc}
      */
     public function getProtocolVersion()
     {
@@ -54,7 +54,7 @@ abstract class Message implements MessageInterface
     }
 
     /**
-     * @inheritdoc
+     * {@inheritdoc}
      */
     public function getHeaders()
     {
@@ -62,7 +62,7 @@ abstract class Message implements MessageInterface
     }
 
     /**
-     * @inheritdoc
+     * {@inheritdoc}
      */
     public function hasHeader($name)
     {
@@ -70,7 +70,7 @@ abstract class Message implements MessageInterface
     }
 
     /**
-     * @inheritdoc
+     * {@inheritdoc}
      */
     public function getHeader($name)
     {
@@ -86,7 +86,7 @@ abstract class Message implements MessageInterface
     }
 
     /**
-     * @inheritdoc
+     * {@inheritdoc}
      */
     public function getHeaderLine($name)
     {
@@ -96,7 +96,7 @@ abstract class Message implements MessageInterface
     }
 
     /**
-     * @inheritdoc
+     * {@inheritdoc}
      */
     public function getBody()
     {
@@ -104,7 +104,7 @@ abstract class Message implements MessageInterface
     }
 
     /**
-     * @inheritdoc
+     * {@inheritdoc}
      */
     public function withProtocolVersion($version)
     {
@@ -114,7 +114,7 @@ abstract class Message implements MessageInterface
     }
 
     /**
-     * @inheritdoc
+     * {@inheritdoc}
      */
     public function withHeader($name, $value)
     {
@@ -123,7 +123,7 @@ abstract class Message implements MessageInterface
     }
 
     /**
-     * @inheritdoc
+     * {@inheritdoc}
      */
     public function withAddedHeader($name, $value)
     {
@@ -132,7 +132,7 @@ abstract class Message implements MessageInterface
     }
 
     /**
-     * @inheritdoc
+     * {@inheritdoc}
      */
     public function withoutHeader($name)
     {
@@ -141,7 +141,7 @@ abstract class Message implements MessageInterface
     }
 
     /**
-     * @inheritdoc
+     * {@inheritdoc}
      */
     public function withBody(ReadableStreamInterface $stream)
     {
@@ -153,9 +153,9 @@ abstract class Message implements MessageInterface
     /**
      * Sets the headers from the given array.
      *
-     * @param   string[] $headers
+     * @param string[] $headers
      *
-     * @return  $this
+     * @return $this
      */
     protected function setHeaders(array $headers)
     {
@@ -168,9 +168,9 @@ abstract class Message implements MessageInterface
     /**
      * Adds headers from the given array.
      *
-     * @param   string[] $headers
+     * @param string[] $headers
      *
-     * @return  $this
+     * @return $this
      */
     protected function addHeaders(array $headers)
     {
@@ -184,12 +184,12 @@ abstract class Message implements MessageInterface
     /**
      * Sets the named header to the given value.
      *
-     * @param   string $name
-     * @param   string|string[] $value
+     * @param string $name
+     * @param string|string[] $value
      *
-     * @return  $this
+     * @return $this
      *
-     * @throws  \Icicle\Http\Exception\InvalidHeaderException If the header name or value is invalid.
+     * @throws \Icicle\Http\Exception\InvalidHeaderException If the header name or value is invalid.
      */
     protected function setHeader($name, $value)
     {
@@ -214,12 +214,12 @@ abstract class Message implements MessageInterface
     /**
      * Adds the value to the named header, or creates the header with the given value if it did not exist.
      *
-     * @param   string $name
-     * @param   string|string[] $value
+     * @param string $name
+     * @param string|string[] $value
      *
-     * @return  $this
+     * @return $this
      *
-     * @throws  \Icicle\Http\Exception\InvalidHeaderException If the header name or value is invalid.
+     * @throws \Icicle\Http\Exception\InvalidHeaderException If the header name or value is invalid.
      */
     protected function addHeader($name, $value)
     {
@@ -244,9 +244,9 @@ abstract class Message implements MessageInterface
     /**
      * Removes the given header if it exists.
      *
-     * @param   string $name
+     * @param string $name
      *
-     * @return  $this
+     * @return $this
      */
     protected function removeHeader($name)
     {
@@ -261,11 +261,11 @@ abstract class Message implements MessageInterface
     }
 
     /**
-     * @param   string $protocol
+     * @param string $protocol
      *
-     * @return  string
+     * @return string
      *
-     * @throws  \Icicle\Http\Exception\UnsupportedVersionException If the protocol is not valid.
+     * @throws \Icicle\Http\Exception\UnsupportedVersionException If the protocol is not valid.
      */
     private function filterProtocolVersion($protocol)
     {
@@ -280,9 +280,9 @@ abstract class Message implements MessageInterface
     }
 
     /**
-     * @param   string $name
+     * @param string $name
      *
-     * @return  bool
+     * @return bool
      */
     private function isHeaderNameValid($name)
     {
@@ -292,12 +292,12 @@ abstract class Message implements MessageInterface
     /**
      * Converts a given header value to an integer-indexed array of strings.
      *
-     * @param   mixed|mixed[] $values
+     * @param mixed|mixed[] $values
      *
-     * @return  string[]
+     * @return string[]
      *
-     * @throws  \Icicle\Http\Exception\InvalidHeaderException If the given value cannot be converted to a string and
-     *          is not an array of values that can be converted to strings.
+     * @throws \Icicle\Http\Exception\InvalidHeaderException If the given value cannot be converted to a string and
+     *     is not an array of values that can be converted to strings.
      */
     private function filterHeader($values)
     {

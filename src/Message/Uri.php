@@ -66,7 +66,7 @@ class Uri implements UriInterface
     private $fragment;
 
     /**
-     * @param   string $uri
+     * @param string $uri
      */
     public function __construct($uri = '')
     {
@@ -74,7 +74,7 @@ class Uri implements UriInterface
     }
 
     /**
-     * @inheritdoc
+     * {@inheritdoc}
      */
     public function getScheme()
     {
@@ -82,7 +82,7 @@ class Uri implements UriInterface
     }
 
     /**
-     * @inheritdoc
+     * {@inheritdoc}
      */
     public function getAuthority()
     {
@@ -105,7 +105,7 @@ class Uri implements UriInterface
     }
 
     /**
-     * @inheritdoc
+     * {@inheritdoc}
      */
     public function getUserInfo()
     {
@@ -117,7 +117,7 @@ class Uri implements UriInterface
     }
 
     /**
-     * @inheritdoc
+     * {@inheritdoc}
      */
     public function getHost()
     {
@@ -125,7 +125,7 @@ class Uri implements UriInterface
     }
 
     /**
-     * @inheritdoc
+     * {@inheritdoc}
      */
     public function getPort()
     {
@@ -137,7 +137,7 @@ class Uri implements UriInterface
     }
 
     /**
-     * @inheritdoc
+     * {@inheritdoc}
      */
     public function getPath()
     {
@@ -145,7 +145,7 @@ class Uri implements UriInterface
     }
 
     /**
-     * @inheritdoc
+     * {@inheritdoc}
      */
     public function getQuery()
     {
@@ -167,7 +167,7 @@ class Uri implements UriInterface
     }
 
     /**
-     * @inheritdoc
+     * {@inheritdoc}
      */
     public function getQueryValues()
     {
@@ -175,7 +175,7 @@ class Uri implements UriInterface
     }
 
     /**
-     * @inheritdoc
+     * {@inheritdoc}
      */
     public function getQueryValue($name)
     {
@@ -185,7 +185,7 @@ class Uri implements UriInterface
     }
 
     /**
-     * @inheritdoc
+     * {@inheritdoc}
      */
     public function getFragment()
     {
@@ -193,7 +193,7 @@ class Uri implements UriInterface
     }
 
     /**
-     * @inheritdoc
+     * {@inheritdoc}
      */
     public function withScheme($scheme)
     {
@@ -204,7 +204,7 @@ class Uri implements UriInterface
     }
 
     /**
-     * @inheritdoc
+     * {@inheritdoc}
      */
     public function withUserInfo($user, $password = null)
     {
@@ -222,7 +222,7 @@ class Uri implements UriInterface
     }
 
     /**
-     * @inheritdoc
+     * {@inheritdoc}
      */
     public function withHost($host)
     {
@@ -233,7 +233,7 @@ class Uri implements UriInterface
     }
 
     /**
-     * @inheritdoc
+     * {@inheritdoc}
      */
     public function withPort($port)
     {
@@ -244,7 +244,7 @@ class Uri implements UriInterface
     }
 
     /**
-     * @inheritdoc
+     * {@inheritdoc}
      */
     public function withPath($path)
     {
@@ -255,7 +255,7 @@ class Uri implements UriInterface
     }
 
     /**
-     * @inheritdoc
+     * {@inheritdoc}
      */
     public function withQuery($query)
     {
@@ -266,7 +266,7 @@ class Uri implements UriInterface
     }
 
     /**
-     * @inheritdoc
+     * {@inheritdoc}
      */
     public function withFragment($fragment)
     {
@@ -277,7 +277,7 @@ class Uri implements UriInterface
     }
 
     /**
-     * @inheritdoc
+     * {@inheritdoc}
      */
     public function withQueryValue($name, $value)
     {
@@ -292,7 +292,7 @@ class Uri implements UriInterface
     }
 
     /**
-     * @inheritdoc
+     * {@inheritdoc}
      */
     public function withoutQueryValue($name)
     {
@@ -306,7 +306,7 @@ class Uri implements UriInterface
     }
 
     /**
-     * @inheritdoc
+     * {@inheritdoc}
      */
     public function __toString()
     {
@@ -337,7 +337,7 @@ class Uri implements UriInterface
     /**
      * Returns the default port for the current scheme or null if no scheme is set.
      *
-     * @return  int|null
+     * @return int|null
      */
     protected function getPortForScheme()
     {
@@ -351,7 +351,7 @@ class Uri implements UriInterface
     }
 
     /**
-     * @param   string $uri
+     * @param string $uri
      */
     private function parseUri($uri)
     {
@@ -372,7 +372,7 @@ class Uri implements UriInterface
     }
 
     /**
-     * @return  int[] Array indexed by valid scheme names to their corresponding ports.
+     * @return int[] Array indexed by valid scheme names to their corresponding ports.
      */
     protected function allowedSchemes()
     {
@@ -380,9 +380,9 @@ class Uri implements UriInterface
     }
 
     /**
-     * @param   string $scheme
+     * @param string $scheme
      *
-     * @return  string
+     * @return string
      */
     protected function filterScheme($scheme)
     {
@@ -405,9 +405,9 @@ class Uri implements UriInterface
     }
 
     /**
-     * @param   int|null $port
+     * @param int|null $port
      *
-     * @return  int|null
+     * @return int|null
      */
     protected function filterPort($port)
     {
@@ -424,9 +424,9 @@ class Uri implements UriInterface
     }
 
     /**
-     * @param   string|null $path
+     * @param string|null $path
      *
-     * @return  string
+     * @return string
      */
     protected function parsePath($path)
     {
@@ -442,9 +442,9 @@ class Uri implements UriInterface
     }
 
     /**
-     * @param   string|null $query
+     * @param string|null $query
      *
-     * @return  string[]
+     * @return string[]
      */
     protected function parseQuery($query)
     {
@@ -465,9 +465,9 @@ class Uri implements UriInterface
     }
 
     /**
-     * @param   string $data
+     * @param string $data
      *
-     * @return  string
+     * @return string
      */
     protected function parseQueryPair($data)
     {
@@ -479,9 +479,9 @@ class Uri implements UriInterface
     }
 
     /**
-     * @param   string $fragment
+     * @param string $fragment
      *
-     * @return  string
+     * @return string
      */
     protected function parseFragment($fragment)
     {
@@ -493,9 +493,9 @@ class Uri implements UriInterface
     /**
      * Escapes all reserved chars and sub delimiters.
      *
-     * @param   string $string
+     * @param string $string
      *
-     * @return  string
+     * @return string
      */
     protected function encodePath($string)
     {
@@ -511,9 +511,9 @@ class Uri implements UriInterface
     /**
      * Escapes all reserved chars.
      *
-     * @param   string $string
+     * @param string $string
      *
-     * @return  string
+     * @return string
      */
     protected function encodeValue($string)
     {

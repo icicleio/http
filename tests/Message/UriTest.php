@@ -7,7 +7,7 @@ use Icicle\Tests\Http\TestCase;
 class UriTest extends TestCase
 {
     /**
-     * @return  array
+     * @return array
      */
     public function getUris()
     {
@@ -106,15 +106,15 @@ class UriTest extends TestCase
     /**
      * @dataProvider getUris
      *
-     * @param   string $uri
-     * @param   string $scheme
-     * @param   string $user
-     * @param   string $host
-     * @param   int|null $port
-     * @param   string $authority
-     * @param   string $path
-     * @param   string $query
-     * @param   string $fragment
+     * @param string $uri
+     * @param string $scheme
+     * @param string $user
+     * @param string $host
+     * @param int|null $port
+     * @param string $authority
+     * @param string $path
+     * @param string $query
+     * @param string $fragment
      */
     public function testConstructor($uri, $scheme, $user, $host, $port, $authority, $path, $query, $fragment)
     {
@@ -167,7 +167,7 @@ class UriTest extends TestCase
     }
 
     /**
-     * @return  array
+     * @return array
      */
     public function getValidPorts()
     {
@@ -188,9 +188,9 @@ class UriTest extends TestCase
      * @depends testConstructor
      * @dataProvider getValidPorts
      *
-     * @param   string $uri
-     * @param   int|string|null $port
-     * @param   int $expected
+     * @param string $uri
+     * @param int|string|null $port
+     * @param int $expected
      */
     public function testWithPort($uri, $port, $expected)
     {
@@ -203,7 +203,7 @@ class UriTest extends TestCase
     }
 
     /**
-     * @return  array
+     * @return array
      */
     public function getInvalidPorts()
     {
@@ -218,7 +218,7 @@ class UriTest extends TestCase
      * @dataProvider getInvalidPorts
      * @expectedException \Icicle\Http\Exception\InvalidArgumentException
      *
-     * @param   int|string|null $port
+     * @param int|string|null $port
      */
     public function testWithInvalidPort($port)
     {
@@ -273,7 +273,7 @@ class UriTest extends TestCase
     }
 
     /**
-     * @return  array
+     * @return array
      */
     public function getAuthorities()
     {
@@ -292,8 +292,8 @@ class UriTest extends TestCase
     /**
      * @dataProvider getAuthorities
      *
-     * @param   string $uri
-     * @param   string $expected
+     * @param string $uri
+     * @param string $expected
      */
     public function testGetAuthority($uri, $expected)
     {
@@ -408,8 +408,8 @@ class UriTest extends TestCase
     /**
      * @dataProvider getPaths
      *
-     * @param   string|null $path
-     * @param   string $expected
+     * @param string|null $path
+     * @param string $expected
      */
     public function testWithPath($path, $expected)
     {
@@ -441,8 +441,8 @@ class UriTest extends TestCase
     /**
      * @dataProvider getFragments
      *
-     * @param   string|null $path
-     * @param   string $expected
+     * @param string|null $path
+     * @param string $expected
      */
     public function testWithFragment($path, $expected)
     {

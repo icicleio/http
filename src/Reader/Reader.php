@@ -14,7 +14,7 @@ class Reader implements ReaderInterface
     const DEFAULT_MAX_SIZE = 0x4000; // 16 kB
 
     /**
-     * @inheritdoc
+     * {@inheritdoc}
      */
     public function readResponse(ReadableStreamInterface $stream, $maxSize = self::DEFAULT_MAX_SIZE, $timeout = null)
     {
@@ -38,7 +38,7 @@ class Reader implements ReaderInterface
     }
 
     /**
-     * @inheritdoc
+     * {@inheritdoc}
      */
     public function readRequest(ReadableStreamInterface $stream, $maxSize = self::DEFAULT_MAX_SIZE, $timeout = null)
     {
@@ -75,16 +75,16 @@ class Reader implements ReaderInterface
     /**
      * @coroutine
      *
-     * @param   \Icicle\Stream\ReadableStreamInterface $stream
-     * @param   int $maxSize
-     * @param   float|int|null $timeout
+     * @param \Icicle\Stream\ReadableStreamInterface $stream
+     * @param int $maxSize
+     * @param float|int|null $timeout
      *
-     * @return  \Generator
+     * @return \Generator
      *
      * @resolve string
      *
-     * @reject  \Icicle\Http\Exception\MessageHeaderSizeException
-     * @reject  \Icicle\Socket\Exception\UnreadableException
+     * @reject \Icicle\Http\Exception\MessageHeaderSizeException
+     * @reject \Icicle\Socket\Exception\UnreadableException
      */
     protected function readMessage(ReadableStreamInterface $stream, $maxSize = self::DEFAULT_MAX_SIZE, $timeout = null)
     {
@@ -104,11 +104,11 @@ class Reader implements ReaderInterface
     }
 
     /**
-     * @param   string[] $lines
+     * @param string[] $lines
      *
-     * @return  string[][]
+     * @return string[][]
      *
-     * @throws  \Icicle\Http\Exception\ParseException
+     * @throws \Icicle\Http\Exception\ParseException
      */
     protected function parseHeaders(array $lines)
     {
@@ -136,9 +136,9 @@ class Reader implements ReaderInterface
     }
 
     /**
-     * @param   string $header
+     * @param string $header
      *
-     * @return  string[]
+     * @return string[]
      */
     protected function splitHeader($header)
     {
@@ -146,9 +146,9 @@ class Reader implements ReaderInterface
     }
 
     /**
-     * @param   string $host
+     * @param string $host
      *
-     * @return  string
+     * @return string
      */
     protected function filterHost($host)
     {
@@ -160,11 +160,11 @@ class Reader implements ReaderInterface
     }
 
     /**
-     * @param   string[][] $headers
+     * @param string[][] $headers
      *
-     * @return  string
+     * @return string
      *
-     * @throws  \Icicle\Http\Exception\MissingHostException If no host header is find.
+     * @throws \Icicle\Http\Exception\MissingHostException If no host header is find.
      */
     protected function findHost(array $headers)
     {

@@ -35,7 +35,7 @@ class Builder implements BuilderInterface
     private $hwm = self::DEFAULT_STREAM_HWM;
 
     /**
-     * @param   mixed[] $options
+     * @param mixed[] $options
      */
     public function __construct(array $options = null)
     {
@@ -51,7 +51,7 @@ class Builder implements BuilderInterface
     }
 
     /**
-     * @inheritdoc
+     * {@inheritdoc}
      */
     public function buildOutgoingResponse(
         ResponseInterface $response,
@@ -100,7 +100,7 @@ class Builder implements BuilderInterface
     }
 
     /**
-     * @inheritdoc
+     * {@inheritdoc}
      */
     public function buildOutgoingRequest(
         RequestInterface $request,
@@ -125,7 +125,7 @@ class Builder implements BuilderInterface
     }
 
     /**
-     * @inheritdoc
+     * {@inheritdoc}
      */
     public function buildIncomingRequest(RequestInterface $request, $timeout = null)
     {
@@ -138,7 +138,7 @@ class Builder implements BuilderInterface
     }
 
     /**
-     * @inheritdoc
+     * {@inheritdoc}
      */
     public function buildIncomingResponse(ResponseInterface $response, $timeout = null)
     {
@@ -146,10 +146,10 @@ class Builder implements BuilderInterface
     }
 
     /**
-     * @param   \Icicle\Http\Message\MessageInterface $message
-     * @param   float|null $timeout
+     * @param \Icicle\Http\Message\MessageInterface $message
+     * @param float|null $timeout
      *
-     * @return  \Generator
+     * @return \Generator
      *
      * @resolve \Icicle\Http\Message\MessageInterface
      */
@@ -204,10 +204,10 @@ class Builder implements BuilderInterface
     }
 
     /**
-     * @param   \Icicle\Http\Message\MessageInterface $message
-     * @param   float|null $timeout
+     * @param \Icicle\Http\Message\MessageInterface $message
+     * @param float|null $timeout
      *
-     * @return  \Generator
+     * @return \Generator
      *
      * @resolve \Icicle\Http\Message\MessageInterface
      */

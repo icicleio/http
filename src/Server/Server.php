@@ -97,11 +97,11 @@ class Server implements ServerInterface
     private $open = true;
 
     /**
-     * @param   callable $onRequest
-     * @param   callable|null $onInvalidRequest
-     * @param   callable|null $onError
-     * @param   callable|null $onUpgrade
-     * @param   mixed[]|null $options
+     * @param callable $onRequest
+     * @param callable|null $onInvalidRequest
+     * @param callable|null $onError
+     * @param callable|null $onUpgrade
+     * @param mixed[]|null $options
      */
     public function __construct(
         callable $onRequest,
@@ -139,7 +139,7 @@ class Server implements ServerInterface
     }
 
     /**
-     * @return  bool
+     * @return bool
      */
     public function isOpen()
     {
@@ -159,7 +159,7 @@ class Server implements ServerInterface
     }
 
     /**
-     * @return  float|int
+     * @return float|int
      */
     public function getTimeout()
     {
@@ -167,7 +167,7 @@ class Server implements ServerInterface
     }
 
     /**
-     * @return  bool
+     * @return bool
      */
     public function allowPersistent()
     {
@@ -175,14 +175,14 @@ class Server implements ServerInterface
     }
 
     /**
-     * @param   string|int $address
-     * @param   int $port
-     * @param   mixed[] $options
+     * @param string|int $address
+     * @param int $port
+     * @param mixed[] $options
      *
-     * @throws  \Icicle\Http\Exception\LogicException If the server has been closed.
+     * @throws \Icicle\Http\Exception\LogicException If the server has been closed.
      *
-     * @see     \Icicle\Socket\Server\ServerFactoryInterface::create() Options are similar to this method with the
-     *          addition of the crypto_method option.
+     * @see \Icicle\Socket\Server\ServerFactoryInterface::create() Options are similar to this method with the
+     *     addition of the crypto_method option.
      */
     public function listen($port, $address = self::DEFAULT_ADDRESS, array $options = null)
     {
@@ -205,10 +205,10 @@ class Server implements ServerInterface
     /**
      * @coroutine
      *
-     * @param   \Icicle\Socket\Server\ServerInterface $server
-     * @param   int $cryptoMethod
+     * @param \Icicle\Socket\Server\ServerInterface $server
+     * @param int $cryptoMethod
      *
-     * @return  \Generator
+     * @return \Generator
      */
     private function accept(SocketServerInterface $server, $cryptoMethod)
     {
@@ -228,10 +228,10 @@ class Server implements ServerInterface
     /**
      * @coroutine
      *
-     * @param   \Icicle\Socket\Client\ClientInterface $client
-     * @param   int $cryptoMethod
+     * @param \Icicle\Socket\Client\ClientInterface $client
+     * @param int $cryptoMethod
      *
-     * @return  \Generator
+     * @return \Generator
      */
     private function process(SocketClientInterface $client, $cryptoMethod)
     {
@@ -299,11 +299,11 @@ class Server implements ServerInterface
     /**
      * @coroutine
      *
-     * @param   \Icicle\Http\Message\RequestInterface $request
-     * @param   \Icicle\Http\Message\ResponseInterface $response
-     * @param   \Icicle\Socket\Client\ClientInterface $client
+     * @param \Icicle\Http\Message\RequestInterface $request
+     * @param \Icicle\Http\Message\ResponseInterface $response
+     * @param \Icicle\Socket\Client\ClientInterface $client
      *
-     * @return  \Generator
+     * @return \Generator
      */
     private function upgrade(RequestInterface $request, ResponseInterface $response, SocketClientInterface $client)
     {
@@ -348,10 +348,10 @@ class Server implements ServerInterface
     /**
      * @coroutine
      *
-     * @param   \Icicle\Http\Message\RequestInterface $request
-     * @param   \Icicle\Socket\Client\ClientInterface $client
+     * @param \Icicle\Http\Message\RequestInterface $request
+     * @param \Icicle\Socket\Client\ClientInterface $client
      *
-     * @return  \Generator
+     * @return \Generator
      *
      * @resolve \Icicle\Http\Message|ResponseInterface
      */
@@ -383,10 +383,10 @@ class Server implements ServerInterface
     /**
      * @coroutine
      *
-     * @param   int $code
-     * @param   \Icicle\Socket\Client\ClientInterface $client
+     * @param int $code
+     * @param \Icicle\Socket\Client\ClientInterface $client
      *
-     * @return  \Generator
+     * @return \Generator
      *
      * @resolve \Icicle\Http\Message|ResponseInterface
      */
@@ -417,9 +417,9 @@ class Server implements ServerInterface
     /**
      * @coroutine
      *
-     * @param   int $code
+     * @param int $code
      *
-     * @return  \Generator
+     * @return \Generator
      *
      * @resolve \Icicle\Http\Message\ResponseInterface
      */

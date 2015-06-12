@@ -7,7 +7,7 @@ use Icicle\Tests\Http\TestCase;
 class MessageTest extends TestCase
 {
     /**
-     * @return  \Icicle\Stream\ReadableStreamInterface
+     * @return \Icicle\Stream\ReadableStreamInterface
      */
     public function createStream()
     {
@@ -15,11 +15,11 @@ class MessageTest extends TestCase
     }
 
     /**
-     * @param   \Icicle\Stream\ReadableStreamInterface|null $stream
-     * @param   array|null $headers
-     * @param   string $protocol
+     * @param \Icicle\Stream\ReadableStreamInterface|null $stream
+     * @param array|null $headers
+     * @param string $protocol
      *
-     * @return  \Icicle\Http\Message\Message
+     * @return \Icicle\Http\Message\Message
      */
     public function createMessage(ReadableStreamInterface $stream = null, array $headers = null, $protocol = '1.1')
     {
@@ -133,7 +133,7 @@ class MessageTest extends TestCase
 
     /**
      * @depends testHeaderCreationWithArrayOfStrings
-     * @param   \Icicle\Http\Message\Message $message
+     * @param \Icicle\Http\Message\Message $message
      */
     public function testHasHeaderCaseInsensitive($message)
     {
@@ -145,7 +145,7 @@ class MessageTest extends TestCase
 
     /**
      * @depends testHeaderCreationWithArrayOfStrings
-     * @param   \Icicle\Http\Message\Message $message
+     * @param \Icicle\Http\Message\Message $message
      */
     public function testGetHeaderCaseInsensitive($message)
     {
@@ -157,7 +157,7 @@ class MessageTest extends TestCase
 
     /**
      * @depends testHeaderCreationWithArrayOfStrings
-     * @param   \Icicle\Http\Message\Message $message
+     * @param \Icicle\Http\Message\Message $message
      */
     public function testGetHeaderLineCaseInsensitive($message)
     {
@@ -263,7 +263,7 @@ class MessageTest extends TestCase
 
     /**
      * @depends testWithHeader
-     * @param   \Icicle\Http\Message\Message $message
+     * @param \Icicle\Http\Message\Message $message
      */
     public function testWithHeaderUsesLastCase($message)
     {
@@ -278,7 +278,7 @@ class MessageTest extends TestCase
 
     /**
      * @depends testWithHeader
-     * @param   \Icicle\Http\Message\Message $message
+     * @param \Icicle\Http\Message\Message $message
      * @expectedException \Icicle\Http\Exception\InvalidHeaderException
      */
     public function testWithHeaderInvalidName($message)
@@ -288,7 +288,7 @@ class MessageTest extends TestCase
 
     /**
      * @depends testWithHeader
-     * @param   \Icicle\Http\Message\Message $message
+     * @param \Icicle\Http\Message\Message $message
      * @expectedException \Icicle\Http\Exception\InvalidHeaderException
      */
     public function testWithHeaderInvalidValue($message)
@@ -298,7 +298,7 @@ class MessageTest extends TestCase
 
     /**
      * @depends testWithHeader
-     * @param   \Icicle\Http\Message\Message $message
+     * @param \Icicle\Http\Message\Message $message
      */
     public function testWithHeaderNumericValue($message)
     {
@@ -310,7 +310,7 @@ class MessageTest extends TestCase
 
     /**
      * @depends testWithHeader
-     * @param   \Icicle\Http\Message\Message $message
+     * @param \Icicle\Http\Message\Message $message
      */
     public function testWithAddedHeader($message)
     {
@@ -328,7 +328,7 @@ class MessageTest extends TestCase
 
     /**
      * @depends testWithHeader
-     * @param   \Icicle\Http\Message\Message $message
+     * @param \Icicle\Http\Message\Message $message
      * @expectedException \Icicle\Http\Exception\InvalidHeaderException
      */
     public function testWithAddedHeaderNonStringValue($message)
@@ -351,7 +351,7 @@ class MessageTest extends TestCase
 
     /**
      * @depends testWithHeader
-     * @param   \Icicle\Http\Message\Message $message
+     * @param \Icicle\Http\Message\Message $message
      */
     public function testWithAddedHeaderKeepsOriginalCase($message)
     {
@@ -370,7 +370,7 @@ class MessageTest extends TestCase
 
     /**
      * @depends testWithHeader
-     * @param   \Icicle\Http\Message\Message $message
+     * @param \Icicle\Http\Message\Message $message
      */
     public function testWithAddedHeaderOnPreviouslyUnsetHeader($message)
     {
@@ -386,7 +386,7 @@ class MessageTest extends TestCase
 
     /**
      * @depends testWithHeader
-     * @param   \Icicle\Http\Message\Message $message
+     * @param \Icicle\Http\Message\Message $message
      * @expectedException \Icicle\Http\Exception\InvalidHeaderException
      */
     public function testWithAddedHeaderInvalidName($message)
@@ -396,7 +396,7 @@ class MessageTest extends TestCase
 
     /**
      * @depends testWithHeader
-     * @param   \Icicle\Http\Message\Message $message
+     * @param \Icicle\Http\Message\Message $message
      * @expectedException \Icicle\Http\Exception\InvalidHeaderException
      */
     public function testWithAddedHeaderInvalidValue($message)
@@ -406,7 +406,7 @@ class MessageTest extends TestCase
 
     /**
      * @depends testWithHeader
-     * @param   \Icicle\Http\Message\Message $message
+     * @param \Icicle\Http\Message\Message $message
      */
     public function testWithAddedHeaderNumericValue($message)
     {
@@ -418,7 +418,7 @@ class MessageTest extends TestCase
 
     /**
      * @depends testWithHeader
-     * @param   \Icicle\Http\Message\Message $message
+     * @param \Icicle\Http\Message\Message $message
      */
     public function testWithoutHeader($message)
     {
@@ -429,7 +429,7 @@ class MessageTest extends TestCase
 
     /**
      * @depends testWithHeader
-     * @param   \Icicle\Http\Message\Message $message
+     * @param \Icicle\Http\Message\Message $message
      */
     public function testWithoutHeaderIsCaseInsensitive($message)
     {
@@ -440,7 +440,7 @@ class MessageTest extends TestCase
 
     /**
      * @depends testWithHeader
-     * @param   \Icicle\Http\Message\Message $message
+     * @param \Icicle\Http\Message\Message $message
      */
     public function testWithoutHeaderOnPreviouslyUnsetHeader($message)
     {

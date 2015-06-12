@@ -7,7 +7,7 @@ use Icicle\Http\Message\ResponseInterface;
 class Encoder implements EncoderInterface
 {
     /**
-     * @inheritdoc
+     * {@inheritdoc}
      */
     public function encodeResponse(ResponseInterface $response)
     {
@@ -21,7 +21,7 @@ class Encoder implements EncoderInterface
     }
 
     /**
-     * @inheritdoc
+     * {@inheritdoc}
      */
     public function encodeRequest(RequestInterface $request)
     {
@@ -35,9 +35,9 @@ class Encoder implements EncoderInterface
     }
 
     /**
-     * @param   string[][] $headers
+     * @param string[][] $headers
      *
-     * @return  string
+     * @return string
      */
     protected function encodeHeaders(array $headers)
     {

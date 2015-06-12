@@ -7,16 +7,16 @@ use Icicle\Http\Message\ResponseInterface;
 interface EncoderInterface
 {
     /**
-     * @param   \Icicle\Http\Message\ResponseInterface $response
+     * @param \Icicle\Http\Message\ResponseInterface $response
      *
-     * @return  string
+     * @return string
      */
     public function encodeResponse(ResponseInterface $response);
 
     /**
-     * @param   \Icicle\Http\Message\RequestInterface $request
+     * @param \Icicle\Http\Message\RequestInterface $request
      *
-     * @return  string
+     * @return string
      */
     public function encodeRequest(RequestInterface $request);
 }

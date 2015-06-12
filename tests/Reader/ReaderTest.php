@@ -26,7 +26,7 @@ class ReaderTest extends TestCase
     }
 
     /**
-     * @return  \Icicle\Stream\ReadableStreamInterface
+     * @return \Icicle\Stream\ReadableStreamInterface
      */
     protected function createStream()
     {
@@ -34,9 +34,9 @@ class ReaderTest extends TestCase
     }
 
     /**
-     * @param   string $filename
+     * @param string $filename
      *
-     * @return  \Icicle\Stream\ReadableStreamInterface
+     * @return \Icicle\Stream\ReadableStreamInterface
      */
     protected function readMessage($filename)
     {
@@ -58,12 +58,12 @@ class ReaderTest extends TestCase
 
     /**
      * @dataProvider getValidRequests
-     * @param   string $filename
-     * @param   string $method
-     * @param   string $target
-     * @param   string $protocolVersion
-     * @param   string[][] $headers
-     * @param   string|null $body
+     * @param string $filename
+     * @param string $method
+     * @param string $target
+     * @param string $protocolVersion
+     * @param string[][] $headers
+     * @param string|null $body
      */
     public function testReadRequest($filename, $method, $target, $protocolVersion, $headers, $body = null)
     {
@@ -112,8 +112,8 @@ class ReaderTest extends TestCase
 
     /**
      * @dataProvider getInvalidRequests
-     * @param   string $filename
-     * @param   string $exceptionClass
+     * @param string $filename
+     * @param string $exceptionClass
      */
     public function testReadInvalidRequest($filename, $exceptionClass)
     {
@@ -140,12 +140,12 @@ class ReaderTest extends TestCase
 
     /**
      * @dataProvider getValidResponses
-     * @param   string $filename
-     * @param   int $code
-     * @param   string $reason
-     * @param   string $protocolVersion
-     * @param   string[][] $headers
-     * @param   string|null $body
+     * @param string $filename
+     * @param int $code
+     * @param string $reason
+     * @param string $protocolVersion
+     * @param string[][] $headers
+     * @param string|null $body
      */
     public function testReadResponse($filename, $code, $reason, $protocolVersion, $headers, $body = null)
     {
@@ -192,8 +192,8 @@ class ReaderTest extends TestCase
 
     /**
      * @dataProvider getInvalidResponses
-     * @param   string $filename
-     * @param   string $exceptionClass
+     * @param string $filename
+     * @param string $exceptionClass
      */
     public function testReadInvalidResponse($filename, $exceptionClass)
     {

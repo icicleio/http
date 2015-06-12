@@ -22,9 +22,9 @@ use Symfony\Component\Yaml;
 class ServerTest extends TestCase
 {
     /**
-     * @param   \Icicle\Socket\Server\ServerInterface
+     * @param \Icicle\Socket\Server\ServerInterface
      *
-     * @return  \Icicle\Socket\Server\ServerFactoryInterface
+     * @return \Icicle\Socket\Server\ServerFactoryInterface
      */
     public function createFactory(ServerInterface $server)
     {
@@ -37,9 +37,9 @@ class ServerTest extends TestCase
     }
 
     /**
-     * @param   \Icicle\Socket\Client\ClientInterface
+     * @param \Icicle\Socket\Client\ClientInterface
      *
-     * @return  \Icicle\Socket\Server\ServerInterface
+     * @return \Icicle\Socket\Server\ServerInterface
      */
     public function createSocketServer(ClientInterface $client)
     {
@@ -57,7 +57,7 @@ class ServerTest extends TestCase
     }
 
     /**
-     * @return  \Icicle\Socket\Client\ClientInterface
+     * @return \Icicle\Socket\Client\ClientInterface
      */
     public function createSocketClient()
     {
@@ -72,7 +72,7 @@ class ServerTest extends TestCase
     }
 
     /**
-     * @return  \Icicle\Http\Reader\ReaderInterface
+     * @return \Icicle\Http\Reader\ReaderInterface
      */
     public function createReader()
     {
@@ -89,7 +89,7 @@ class ServerTest extends TestCase
     }
 
     /**
-     * @return  \Icicle\Http\Encoder\EncoderInterface
+     * @return \Icicle\Http\Encoder\EncoderInterface
      */
     public function createEncoder()
     {
@@ -102,7 +102,7 @@ class ServerTest extends TestCase
     }
 
     /**
-     * @return  \Icicle\Http\Builder\BuilderInterface
+     * @return \Icicle\Http\Builder\BuilderInterface
      */
     public function createBuilder()
     {
@@ -122,13 +122,13 @@ class ServerTest extends TestCase
     }
 
     /**
-     * @param   callable $onRequest
-     * @param   callable|null $onInvalidRequest
-     * @param   callable|null $onError
-     * @param   callable|null $onUpgrade
-     * @param   mixed[]|null $options
+     * @param callable $onRequest
+     * @param callable|null $onInvalidRequest
+     * @param callable|null $onError
+     * @param callable|null $onUpgrade
+     * @param mixed[]|null $options
      *
-     * @return  \Icicle\Http\Server\Server
+     * @return \Icicle\Http\Server\Server
      */
     public function createServer(
         callable $onRequest,
@@ -157,9 +157,9 @@ class ServerTest extends TestCase
     }
 
     /**
-     * @param   string $method
+     * @param string $method
      *
-     * @return  \Icicle\Http\Message\RequestInterface
+     * @return \Icicle\Http\Message\RequestInterface
      */
     public function createRequest($method = 'GET')
     {
@@ -172,7 +172,7 @@ class ServerTest extends TestCase
     }
 
     /**
-     * @return  \Icicle\Http\Message\ResponseInterface
+     * @return \Icicle\Http\Message\ResponseInterface
      */
     public function createResponse()
     {
@@ -363,8 +363,8 @@ class ServerTest extends TestCase
 
     /**
      * @dataProvider invalidRequestExceptions
-     * @param   string $exceptionName
-     * @param   int $statusCode
+     * @param string $exceptionName
+     * @param int $statusCode
      */
     public function testInvalidRequest($exceptionName, $statusCode)
     {

@@ -9,7 +9,8 @@ class InvalidCallableException extends LogicException
     private $callable;
 
     /**
-     * @param   callable $callable
+     * @param string $message
+     * @param callable $callable
      */
     public function __construct($message, callable $callable)
     {
@@ -19,7 +20,7 @@ class InvalidCallableException extends LogicException
     }
 
     /**
-     * @return  callable
+     * @return callable
      */
     public function getCallable()
     {

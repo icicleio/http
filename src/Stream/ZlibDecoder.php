@@ -21,9 +21,9 @@ class ZlibDecoder extends Stream
     private $maxLength;
 
     /**
-     * @param   int|null $maxLength Maximum length of compressed data; null for no max length.
+     * @param int|null $maxLength Maximum length of compressed data; null for no max length.
      *
-     * @throws  \Icicle\Http\Exception\LogicException If the zlib extension is not loaded.
+     * @throws \Icicle\Http\Exception\LogicException If the zlib extension is not loaded.
      */
     public function __construct($maxLength = null)
     {
@@ -38,10 +38,10 @@ class ZlibDecoder extends Stream
     }
 
     /**
-     * @param   string $data
-     * @param   bool $end
+     * @param string $data
+     * @param bool $end
      *
-     * @return  \Icicle\Promise\PromiseInterface
+     * @return \Icicle\Promise\PromiseInterface
      */
     public function send($data, $end = false)
     {

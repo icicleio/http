@@ -4,14 +4,14 @@ namespace Icicle\Http\Server;
 interface ServerInterface
 {
     /**
-     * @param   int|string $port Port number or socket.
+     * @param int|string $port Port number or socket.
      */
     public function listen($port);
 
     /**
      * Determines if the server is open, accepting connections.
      *
-     * @return  bool
+     * @return bool
      */
     public function isOpen();
 
@@ -21,12 +21,12 @@ interface ServerInterface
     public function close();
 
     /**
-     * @return  float|int
+     * @return float|int
      */
     public function getTimeout();
 
     /**
-     * @return  bool
+     * @return bool
      */
     public function allowPersistent();
 }

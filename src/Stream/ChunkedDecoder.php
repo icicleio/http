@@ -18,7 +18,7 @@ class ChunkedDecoder extends Stream
     private $buffer;
 
     /**
-     * @param   int|null $hwm
+     * @param int|null $hwm
      */
     public function __construct($hwm = null)
     {
@@ -28,10 +28,10 @@ class ChunkedDecoder extends Stream
     }
 
     /**
-     * @param   string $data
-     * @param   bool $end
+     * @param string $data
+     * @param bool $end
      *
-     * @return  \Icicle\Promise\PromiseInterface
+     * @return \Icicle\Promise\PromiseInterface
      */
     public function send($data, $end = false)
     {

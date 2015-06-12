@@ -45,7 +45,7 @@ class Requester implements RequesterInterface
     private $timeout = self::DEFAULT_TIMEOUT;
 
     /**
-     * @param   mixed[] $options
+     * @param mixed[] $options
      */
     public function __construct(
         array $options = null
@@ -70,7 +70,7 @@ class Requester implements RequesterInterface
     }
 
     /**
-     * @inheritdoc
+     * {@inheritdoc}
      */
     public function request(SocketClientInterface $client, RequestInterface $request, $timeout = self::DEFAULT_TIMEOUT)
     {
