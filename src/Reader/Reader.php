@@ -118,7 +118,7 @@ class Reader implements ReaderInterface
             $parts = explode(':', $line, 2);
 
             if (2 !== count($parts)) {
-                throw new ParseException('Found header without value.');
+                throw new ParseException('Found header without colon.');
             }
 
             list($name, $value) = $parts;

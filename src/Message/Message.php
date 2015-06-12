@@ -290,60 +290,35 @@ abstract class Message implements MessageInterface
     }
 
     /**
-     * Converts a given header value to an array of strings.
+     * Converts a given header value to an integer-indexed array of strings.
      *
-     * @param   mixed|mixed[] $value
+     * @param   mixed|mixed[] $values
      *
      * @return  string[]
      *
      * @throws  \Icicle\Http\Exception\InvalidHeaderException If the given value cannot be converted to a string and
      *          is not an array of values that can be converted to strings.
      */
-    private function filterHeader($value)
+    private function filterHeader($values)
     {
-        if (is_array($value)) {
-            return $this->filterHeaderArray($value);
+        if (!is_array($values)) {
+            $values = [$values];
         }
 
-        return [$this->filterHeaderValue($value)];
-    }
-
-    /**
-     * @param   string|float|int|null $value
-     *
-     * @return  string
-     *
-     * @throws  \Icicle\Http\Exception\InvalidHeaderException If the given value cannot be converted to a string.
-     */
-    private function filterHeaderValue($value)
-    {
-        if (is_numeric($value) || (is_object($value) && method_exists($value, '__toString'))) {
-            $value = (string) $value;
-        } elseif (!is_string($value)) {
-            throw new InvalidHeaderException('Header values must be strings or an array of strings.');
-        }
-
-        if (preg_match("/[^\t\r\n\x20-\x7e\x80-\xfe]|\r\n/", $value)) {
-            throw new InvalidHeaderException('Invalid character(s) in header value.');
-        }
-
-        return $value;
-    }
-
-    /**
-     * @param   mixed[] $values
-     *
-     * @return  string[]
-     *
-     * @throws  \Icicle\Http\Exception\InvalidHeaderException If the given value is not an array of values that can
-     *          be converted to strings.
-     */
-    private function filterHeaderArray(array $values)
-    {
         $lines = [];
 
         foreach ($values as $value) {
-            $lines[] = $this->filterHeaderValue($value);
+            if (is_numeric($value) || (is_object($value) && method_exists($value, '__toString'))) {
+                $value = (string) $value;
+            } elseif (!is_string($value)) {
+                throw new InvalidHeaderException('Header values must be strings or an array of strings.');
+            }
+
+            if (preg_match("/[^\t\r\n\x20-\x7e\x80-\xfe]|\r\n/", $value)) {
+                throw new InvalidHeaderException('Invalid character(s) in header value.');
+            }
+
+            $lines[] = $value;
         }
 
         return $lines;
