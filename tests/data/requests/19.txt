@@ -1,5 +1,4 @@
-GET /header/without/value HTTP/1.1
+GET /invalid/start/line HT/1.1
 Host: example.com
-Value-less-Header:
 Connection: close
 

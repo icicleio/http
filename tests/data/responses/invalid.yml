@@ -24,7 +24,7 @@
   exception: \Icicle\Http\Exception\ParseException
 
 - file: responses/17.txt
-  exception: \Icicle\Http\Exception\InvalidHeaderException
+  exception: \Icicle\Http\Exception\ParseException
 
 - file: responses/18.txt
   exception: \Icicle\Http\Exception\ParseException

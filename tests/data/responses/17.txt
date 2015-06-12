@@ -1,4 +1,4 @@
-HTTP/1.1 404 Not Found
-Value-less-Header:
+HT/1.1 404 Not Found
 Connection: close
 
+Invalid start line.
