@@ -7,11 +7,12 @@ class ChunkedEncoder extends Stream
 {
     /**
      * @param string $data
+     * @param float|int $timeout
      * @param bool $end
      *
      * @return \Icicle\Promise\PromiseInterface
      */
-    protected function send($data, $end = false)
+    protected function send($data, $timeout = 0, $end = false)
     {
         $length = strlen($data);
 
@@ -23,6 +24,6 @@ class ChunkedEncoder extends Stream
             $data .= "0\r\n\r\n";
         }
 
-        return parent::send($data, $end);
+        return parent::send($data, $timeout, $end);
     }
 }

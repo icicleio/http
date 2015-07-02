@@ -9,7 +9,6 @@ interface ReaderInterface
      * @coroutine
      *
      * @param \Icicle\Stream\ReadableStreamInterface $stream
-     * @param int $maxSize
      * @param float|int|null $timeout
      *
      * @return \Generator
@@ -19,13 +18,12 @@ interface ReaderInterface
      * @reject \Icicle\Http\Exception\MessageHeaderSizeException
      * @reject \Icicle\Socket\Exception\UnreadableException
      */
-    public function readResponse(ReadableStreamInterface $stream, $maxSize, $timeout = null);
+    public function readResponse(ReadableStreamInterface $stream, $timeout = null);
 
     /**
      * @coroutine
      *
      * @param \Icicle\Stream\ReadableStreamInterface $stream
-     * @param int $maxSize
      * @param float|int|null $timeout
      *
      * @return \Generator
@@ -35,5 +33,5 @@ interface ReaderInterface
      * @reject \Icicle\Http\Exception\MessageHeaderSizeException
      * @reject \Icicle\Socket\Exception\UnreadableException
      */
-    public function readRequest(ReadableStreamInterface $stream, $maxSize, $timeout = null);
+    public function readRequest(ReadableStreamInterface $stream, $timeout = null);
 }

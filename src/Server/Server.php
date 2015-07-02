@@ -18,8 +18,8 @@ use Icicle\Http\Message\Response;
 use Icicle\Http\Message\ResponseInterface;
 use Icicle\Http\Reader\Reader;
 use Icicle\Http\Reader\ReaderInterface;
+use Icicle\Promise\Exception\TimeoutException;
 use Icicle\Socket\Client\ClientInterface as SocketClientInterface;
-use Icicle\Socket\Exception\TimeoutException;
 use Icicle\Socket\Server\ServerFactory;
 use Icicle\Socket\Server\ServerFactoryInterface;
 use Icicle\Socket\Server\ServerInterface as SocketServerInterface;
@@ -27,7 +27,6 @@ use Icicle\Socket\Server\ServerInterface as SocketServerInterface;
 class Server implements ServerInterface
 {
     const DEFAULT_ADDRESS = '127.0.0.1';
-    const DEFAULT_MAX_HEADER_SIZE = 8192;
     const DEFAULT_TIMEOUT = 15;
     const DEFAULT_CRYPTO_METHOD = STREAM_CRYPTO_METHOD_TLS_SERVER;
 
@@ -87,42 +86,26 @@ class Server implements ServerInterface
     private $allowPersistent = true;
 
     /**
-     * @var int
-     */
-    private $maxHeaderSize = self::DEFAULT_MAX_HEADER_SIZE;
-
-    /**
      * @var bool
      */
     private $open = true;
 
     /**
      * @param callable $onRequest
-     * @param callable|null $onInvalidRequest
-     * @param callable|null $onError
-     * @param callable|null $onUpgrade
      * @param mixed[]|null $options
      */
-    public function __construct(
-        callable $onRequest,
-        callable $onInvalidRequest = null,
-        callable $onError = null,
-        callable $onUpgrade = null,
-        array $options = null
-    ) {
+    public function __construct(callable $onRequest, array $options = null)
+    {
         $this->timeout = isset($options['timeout']) ? (float) $options['timeout'] : self::DEFAULT_TIMEOUT;
         $this->allowPersistent = isset($options['allow_persistent']) ? (bool) $options['allow_persistent'] : true;
-        $this->maxHeaderSize = isset($options['max_header_size'])
-            ? (int) $options['max_header_size']
-            : self::DEFAULT_MAX_HEADER_SIZE;
 
         $this->reader = isset($options['reader']) && $options['reader'] instanceof ReaderInterface
             ? $options['reader']
-            : new Reader();
+            : new Reader($options);
 
         $this->builder = isset($options['builder']) && $options['builder'] instanceof BuilderInterface
             ? $options['builder']
-            : new Builder();
+            : new Builder($options);
 
         $this->encoder = isset($options['encoder']) && $options['encoder'] instanceof EncoderInterface
             ? $options['encoder']
@@ -133,8 +116,31 @@ class Server implements ServerInterface
             : new ServerFactory();
 
         $this->onRequest = $onRequest;
+    }
+
+    public function setRequestHandler(callable $onRequest)
+    {
+        $this->onRequest = $onRequest;
+    }
+
+    public function setInvalidRequestHandler(callable $onInvalidRequest)
+    {
         $this->onInvalidRequest = $onInvalidRequest;
+    }
+
+    /**
+     * @param callable $onError
+     */
+    public function setErrorHandler(callable $onError)
+    {
         $this->onError = $onError;
+    }
+
+    /**
+     * @param callable $onUpgrade
+     */
+    public function setUpgradeHandler(callable $onUpgrade)
+    {
         $this->onUpgrade = $onUpgrade;
     }
 
@@ -166,12 +172,25 @@ class Server implements ServerInterface
         return $this->timeout;
     }
 
+    public function setTimeout($timeout)
+    {
+        $this->timeout = $timeout;
+    }
+
     /**
      * @return bool
      */
     public function allowPersistent()
     {
         return $this->allowPersistent;
+    }
+
+    /**
+     * @param bool $allow
+     */
+    public function setAllowPersistent($allow = true)
+    {
+        $this->allowPersistent = (bool) $allow;
     }
 
     /**
@@ -245,7 +264,7 @@ class Server implements ServerInterface
             do {
                 try {
                     /** @var \Icicle\Http\Message\RequestInterface $request */
-                    $request = (yield $this->readRequest($client, $this->maxHeaderSize, $this->timeout));
+                    $request = (yield $this->readRequest($client));
                     ++$count;
 
                     /** @var \Icicle\Http\Message\ResponseInterface $response */
@@ -283,8 +302,7 @@ class Server implements ServerInterface
                     yield $this->upgrade($request, $response, $client);
                     return;
                 }
-            } while (
-                $this->allowPersistent
+            } while ($this->allowPersistent
                 && $connection === 'keep-alive'
                 && $client->isReadable()
                 && $client->isWritable()
@@ -340,7 +358,7 @@ class Server implements ServerInterface
      */
     private function readRequest(SocketClientInterface $client)
     {
-        $request = (yield $this->reader->readRequest($client, $this->maxHeaderSize, $this->timeout));
+        $request = (yield $this->reader->readRequest($client, $this->timeout));
 
         yield $this->builder->buildIncomingRequest($request, $this->timeout);
     }

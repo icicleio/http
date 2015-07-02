@@ -60,11 +60,12 @@ class ZlibEncoder extends Stream
 
     /**
      * @param string $data
+     * @param float|int $timeout
      * @param bool $end
      *
      * @return \Icicle\Promise\PromiseInterface
      */
-    public function send($data, $end = false)
+    public function send($data, $timeout = 0, $end = false)
     {
         $this->buffer->push($data);
 
@@ -72,8 +73,6 @@ class ZlibEncoder extends Stream
             return Promise\resolve(0);
         }
 
-        $data = zlib_encode($this->buffer, $this->type, $this->level);
-
-        return parent::send($data, true);
+        return parent::send(zlib_encode($this->buffer, $this->type, $this->level), $timeout, true);
     }
 }

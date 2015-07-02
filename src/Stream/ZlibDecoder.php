@@ -39,16 +39,17 @@ class ZlibDecoder extends Stream
 
     /**
      * @param string $data
+     * @param float|int $timeout
      * @param bool $end
      *
      * @return \Icicle\Promise\PromiseInterface
      */
-    public function send($data, $end = false)
+    public function send($data, $timeout = 0, $end = false)
     {
         $this->buffer->push($data);
 
         if (null !== $this->maxLength && $this->buffer->getLength() > $this->maxLength) {
-            return parent::send('', true)->then(function () {
+            return parent::send('', $timeout, true)->then(function () {
                 throw new MessageBodySizeException('Message body too long.');
             });
         }
@@ -61,11 +62,11 @@ class ZlibDecoder extends Stream
         $data = @zlib_decode($this->buffer->drain());
 
         if (false === $data) {
-            return parent::send('', true)->then(function () {
+            return parent::send('', $timeout, true)->then(function () {
                 throw new MessageException('Could not decode compressed stream.');
             });
         }
 
-        return parent::send($data, true);
+        return parent::send($data, $timeout, true);
     }
 }

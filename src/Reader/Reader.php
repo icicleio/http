@@ -13,12 +13,21 @@ class Reader implements ReaderInterface
 {
     const DEFAULT_MAX_SIZE = 0x4000; // 16 kB
 
+    private $maxHeaderSize = self::DEFAULT_MAX_SIZE;
+
+    public function __construct(array $options = null)
+    {
+        $this->maxHeaderSize = isset($options['max_header_size'])
+            ? (int) $options['max_header_size']
+            : self::DEFAULT_MAX_SIZE;
+    }
+
     /**
      * {@inheritdoc}
      */
-    public function readResponse(ReadableStreamInterface $stream, $maxSize = self::DEFAULT_MAX_SIZE, $timeout = null)
+    public function readResponse(ReadableStreamInterface $stream, $timeout = null)
     {
-        $message = (yield $this->readMessage($stream, $maxSize, $timeout));
+        $message = (yield $this->readMessage($stream, $timeout));
 
         $headers = $this->splitHeader($message);
 
@@ -40,9 +49,9 @@ class Reader implements ReaderInterface
     /**
      * {@inheritdoc}
      */
-    public function readRequest(ReadableStreamInterface $stream, $maxSize = self::DEFAULT_MAX_SIZE, $timeout = null)
+    public function readRequest(ReadableStreamInterface $stream, $timeout = null)
     {
-        $message = (yield $this->readMessage($stream, $maxSize, $timeout));
+        $message = (yield $this->readMessage($stream, $timeout));
 
         $headers = $this->splitHeader($message);
 
@@ -86,14 +95,14 @@ class Reader implements ReaderInterface
      * @reject \Icicle\Http\Exception\MessageHeaderSizeException
      * @reject \Icicle\Socket\Exception\UnreadableException
      */
-    protected function readMessage(ReadableStreamInterface $stream, $maxSize = self::DEFAULT_MAX_SIZE, $timeout = null)
+    protected function readMessage(ReadableStreamInterface $stream, $timeout = null)
     {
         $data = '';
 
         do {
             $data .= (yield $stream->read(null, "\n", $timeout));
 
-            if (strlen($data) > $maxSize) {
+            if (strlen($data) > $this->maxHeaderSize) {
                 throw new MessageHeaderSizeException(
                     sprintf('Message header exceeded maximum size of %d bytes.', $maxSize)
                 );

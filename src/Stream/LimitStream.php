@@ -7,6 +7,10 @@ class LimitStream extends Stream
 {
     private $remaining;
 
+    /**
+     * @param int $length
+     * @param int $hwm
+     */
     public function __construct($length, $hwm = null)
     {
         parent::__construct($hwm);
@@ -17,7 +21,14 @@ class LimitStream extends Stream
         }
     }
 
-    protected function send($data, $end = false)
+    /**
+     * @param string $data
+     * @param float|int $timeout
+     * @param bool $end
+     *
+     * @return \Icicle\Promise\PromiseInterface
+     */
+    protected function send($data, $timeout = 0, $end = false)
     {
         $this->remaining -= strlen($data);
 
@@ -26,9 +37,9 @@ class LimitStream extends Stream
         }
 
         if (0 >= $this->remaining) {
-            return parent::send($data, true);
+            return parent::send($data, $timeout, true);
         }
 
-        return parent::send($data, $end);
+        return parent::send($data, $timeout, $end);
     }
 }

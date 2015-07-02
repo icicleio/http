@@ -4,6 +4,9 @@ namespace Icicle\Tests\Http\Server;
 use Icicle\Http\Builder\BuilderInterface;
 use Icicle\Http\Encoder\EncoderInterface;
 use Icicle\Http\Exception\InvalidCallableException;
+use Icicle\Http\Exception\LengthRequiredException;
+use Icicle\Http\Exception\MessageBodySizeException;
+use Icicle\Http\Exception\MessageHeaderSizeException;
 use Icicle\Http\Exception\UnexpectedValueException;
 use Icicle\Http\Message\RequestInterface;
 use Icicle\Http\Message\ResponseInterface;
@@ -11,6 +14,7 @@ use Icicle\Http\Reader\ReaderInterface;
 use Icicle\Http\Server\Server;
 use Icicle\Loop;
 use Icicle\Promise;
+use Icicle\Promise\Exception\TimeoutException;
 use Icicle\Socket\Client\ClientInterface;
 use Icicle\Socket\Server\ServerFactoryInterface;
 use Icicle\Socket\Server\ServerInterface;
@@ -353,11 +357,11 @@ class ServerTest extends TestCase
     public function invalidRequestExceptions()
     {
         return [
-            ['Icicle\Http\Exception\MessageHeaderSizeException', 431],
-            ['Icicle\Http\Exception\MessageBodySizeException', 413],
-            ['Icicle\Http\Exception\LengthRequiredException', 411],
-            ['Icicle\Http\Exception\UnexpectedValueException', 400],
-            ['Icicle\Socket\Exception\TimeoutException', 408],
+            [MessageHeaderSizeException::class, 431],
+            [MessageBodySizeException::class, 413],
+            [LengthRequiredException::class, 411],
+            [UnexpectedValueException::class, 400],
+            [TimeoutException::class, 408],
         ];
     }
 

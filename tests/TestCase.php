@@ -1,6 +1,8 @@
 <?php
 namespace Icicle\Tests\Http;
 
+use Icicle\Tests\Http\Stub\CallbackStub;
+
 /**
  * Abstract test class with method for creating callbacks.
  */
@@ -15,7 +17,7 @@ abstract class TestCase extends \PHPUnit_Framework_TestCase
      */
     public function createCallback($count)
     {
-        $mock = $this->getMock('Icicle\Tests\Http\Stub\CallbackStub');
+        $mock = $this->getMock(CallbackStub::class);
         
         $mock->expects($this->exactly($count))
              ->method('__invoke');

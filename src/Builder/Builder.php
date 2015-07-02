@@ -1,6 +1,8 @@
 <?php
 namespace Icicle\Http\Builder;
 
+use Icicle\Coroutine\Coroutine;
+use Icicle\Http\Exception\InvalidHeaderException;
 use Icicle\Http\Exception\LengthRequiredException;
 use Icicle\Http\Exception\MessageException;
 use Icicle\Http\Message\MessageInterface;
@@ -8,10 +10,10 @@ use Icicle\Http\Message\RequestInterface;
 use Icicle\Http\Message\ResponseInterface;
 use Icicle\Http\Stream\ChunkedDecoder;
 use Icicle\Http\Stream\ChunkedEncoder;
-use Icicle\Http\Stream\LimitStream;
 use Icicle\Http\Stream\ZlibDecoder;
 use Icicle\Http\Stream\ZlibEncoder;
 use Icicle\Stream\SeekableStreamInterface;
+use Icicle\Stream\Stream;
 
 class Builder implements BuilderInterface
 {
@@ -134,7 +136,10 @@ class Builder implements BuilderInterface
             return;
         }
 
-        yield $request->withBody(new LimitStream(0)); // No body in other requests.
+        $stream = new Stream();
+        $stream->end(); // No body in other requests.
+
+        yield $request->withBody($stream);
     }
 
     /**
@@ -184,7 +189,7 @@ class Builder implements BuilderInterface
                     );
             }
 
-            yield $message->getBody()->pipe($stream, true, null, null, $timeout);
+            yield $message->getBody()->pipe($stream, true, 0, null, $timeout);
             $message = $message
                 ->withBody($stream)
                 ->withoutHeader('Content-Length');
@@ -192,7 +197,12 @@ class Builder implements BuilderInterface
 
         if ($message->getProtocolVersion() === '1.1' && !$message->hasHeader('Content-Length')) {
             $stream = new ChunkedEncoder($this->hwm);
-            $message->getBody()->pipe($stream, true, null, null, $timeout);
+            $body = $message->getBody();
+            $coroutine = new Coroutine($body->pipe($stream, true, 0, null, $timeout));
+            $coroutine->done(null, function () use ($body) {
+                $body->close();
+            });
+
             yield $message
                 ->withBody($stream)
                 ->withHeader('Transfer-Encoding', 'chunked');
@@ -226,11 +236,23 @@ class Builder implements BuilderInterface
 
         if (strtolower($message->getHeaderLine('Transfer-Encoding') === 'chunked')) {
             $stream = new ChunkedDecoder($this->hwm);
-            $message->getBody()->pipe($stream, true, null, null, $timeout);
+            $body = $message->getBody();
+            $coroutine = new Coroutine($body->pipe($stream, true, 0, null, $timeout));
+            $coroutine->done(null, function () use ($body) {
+                $body->close();
+            });
             $message = $message->withBody($stream);
         } elseif ($message->hasHeader('Content-Length')) {
-            $stream = new LimitStream((int) $message->getHeaderLine('Content-Length'), $this->hwm);
-            $message->getBody()->pipe($stream, true, null, null, $timeout);
+            $length = (int) $message->getHeaderLine('Content-Length');
+            if (0 >= $length) {
+                throw new InvalidHeaderException('Content-Length header invalid.');
+            }
+            $stream = new Stream($this->hwm);
+            $body = $message->getBody();
+            $coroutine = new Coroutine($body->pipe($stream, true, $length, null, $timeout));
+            $coroutine->done(null, function () use ($body) {
+                $body->close();
+            });
             $message = $message->withBody($stream);
         } elseif (
             !$message instanceof ResponseInterface // ResponseInterface may have no length on incoming stream.
@@ -245,7 +267,7 @@ class Builder implements BuilderInterface
             case 'deflate':
             case 'gzip':
                 $stream = new ZlibDecoder();
-                yield $message->getBody()->pipe($stream, true, null, null, $timeout);
+                yield $message->getBody()->pipe($stream, true, 0, null, $timeout);
                 yield $message->withBody($stream);
                 return;
 

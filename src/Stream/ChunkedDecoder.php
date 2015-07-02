@@ -29,11 +29,12 @@ class ChunkedDecoder extends Stream
 
     /**
      * @param string $data
+     * @param float|int $timeout
      * @param bool $end
      *
      * @return \Icicle\Promise\PromiseInterface
      */
-    public function send($data, $end = false)
+    public function send($data, $timeout = 0, $end = false)
     {
         $this->buffer->push($data);
 
@@ -42,7 +43,7 @@ class ChunkedDecoder extends Stream
         while (!$this->buffer->isEmpty()) {
             if (0 === $this->length) { // Read chunk length.
                 if (false === ($position = $this->buffer->search("\n"))) {
-                    return parent::send($data, $end);
+                    return parent::send($data, $timeout, $end);
                 }
 
                 $length = rtrim($this->buffer->remove($position + 1), "\r\n");
@@ -52,7 +53,7 @@ class ChunkedDecoder extends Stream
                 }
 
                 if (!preg_match('/^[a-f0-9]+$/i', $length)) {
-                    return parent::send('', true)->then(function () {
+                    return parent::send('', $timeout, true)->then(function () {
                         throw new MessageException('Invalid chunk length.');
                     });
                 }
@@ -75,6 +76,6 @@ class ChunkedDecoder extends Stream
             }
         }
 
-        return parent::send($data, $end);
+        return parent::send($data, $timeout, $end);
     }
 }
