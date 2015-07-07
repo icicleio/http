@@ -85,7 +85,6 @@ class Reader implements ReaderInterface
      * @coroutine
      *
      * @param \Icicle\Stream\ReadableStreamInterface $stream
-     * @param int $maxSize
      * @param float|int|null $timeout
      *
      * @return \Generator
@@ -104,7 +103,7 @@ class Reader implements ReaderInterface
 
             if (strlen($data) > $this->maxHeaderSize) {
                 throw new MessageHeaderSizeException(
-                    sprintf('Message header exceeded maximum size of %d bytes.', $maxSize)
+                    sprintf('Message header exceeded maximum size of %d bytes.', $this->maxHeaderSize)
                 );
             }
         } while (substr($data, -4) !== "\r\n\r\n");

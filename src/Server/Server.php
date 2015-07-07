@@ -118,28 +118,34 @@ class Server implements ServerInterface
         $this->onRequest = $onRequest;
     }
 
+    /**
+     * @param callable $onRequest
+     */
     public function setRequestHandler(callable $onRequest)
     {
         $this->onRequest = $onRequest;
     }
 
-    public function setInvalidRequestHandler(callable $onInvalidRequest)
+    /**
+     * @param callable|null $onInvalidRequest
+     */
+    public function setInvalidRequestHandler(callable $onInvalidRequest = null)
     {
         $this->onInvalidRequest = $onInvalidRequest;
     }
 
     /**
-     * @param callable $onError
+     * @param callable|null $onError
      */
-    public function setErrorHandler(callable $onError)
+    public function setErrorHandler(callable $onError = null)
     {
         $this->onError = $onError;
     }
 
     /**
-     * @param callable $onUpgrade
+     * @param callable|null $onUpgrade
      */
-    public function setUpgradeHandler(callable $onUpgrade)
+    public function setUpgradeHandler(callable $onUpgrade = null)
     {
         $this->onUpgrade = $onUpgrade;
     }

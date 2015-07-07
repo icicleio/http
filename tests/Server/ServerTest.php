@@ -157,7 +157,13 @@ class ServerTest extends TestCase
             $options['factory'] = $this->createFactory($this->createSocketServer($this->createSocketClient()));
         }
 
-        return new Server($onRequest, $onInvalidRequest, $onError, $onUpgrade, $options);
+        $server = new Server($onRequest, $options);
+
+        $server->setInvalidRequestHandler($onInvalidRequest);
+        $server->setErrorHandler($onError);
+        $server->setUpgradeHandler($onUpgrade);
+
+        return $server;
     }
 
     /**

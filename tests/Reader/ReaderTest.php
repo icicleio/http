@@ -16,16 +16,6 @@ use Symfony\Component\Yaml\Yaml;
 class ReaderTest extends TestCase
 {
     /**
-     * @var \Icicle\Http\Reader\Reader;
-     */
-    protected $reader;
-
-    public function setUp()
-    {
-        $this->reader = new Reader();
-    }
-
-    /**
      * @return \Icicle\Stream\ReadableStreamInterface
      */
     protected function createStream()
@@ -67,9 +57,11 @@ class ReaderTest extends TestCase
      */
     public function testReadRequest($filename, $method, $target, $protocolVersion, $headers, $body = null)
     {
+        $reader = new Reader();
+
         $stream = $this->readMessage($filename);
 
-        $promise = new Coroutine($this->reader->readRequest($stream));
+        $promise = new Coroutine($reader->readRequest($stream));
 
         $promise->done(function (RequestInterface $request) use (
             $method, $target, $protocolVersion, $headers, $body
@@ -117,9 +109,11 @@ class ReaderTest extends TestCase
      */
     public function testReadInvalidRequest($filename, $exceptionClass)
     {
+        $reader = new Reader();
+
         $stream = $this->readMessage($filename);
 
-        $promise = new Coroutine($this->reader->readRequest($stream));
+        $promise = new Coroutine($reader->readRequest($stream));
 
         $callback = $this->createCallback(1);
         $callback->method('__invoke')
@@ -149,9 +143,11 @@ class ReaderTest extends TestCase
      */
     public function testReadResponse($filename, $code, $reason, $protocolVersion, $headers, $body = null)
     {
+        $reader = new Reader();
+
         $stream = $this->readMessage($filename);
 
-        $promise = new Coroutine($this->reader->readResponse($stream));
+        $promise = new Coroutine($reader->readResponse($stream));
 
         $promise->done(function (ResponseInterface $response) use (
             $code, $reason, $protocolVersion, $headers, $body
@@ -197,9 +193,11 @@ class ReaderTest extends TestCase
      */
     public function testReadInvalidResponse($filename, $exceptionClass)
     {
+        $reader = new Reader();
+
         $stream = $this->readMessage($filename);
 
-        $promise = new Coroutine($this->reader->readResponse($stream));
+        $promise = new Coroutine($reader->readResponse($stream));
 
         $callback = $this->createCallback(1);
         $callback->method('__invoke')
@@ -215,13 +213,15 @@ class ReaderTest extends TestCase
      */
     public function testReadRequestMaxSizeExceeded()
     {
+        $reader = new Reader(['max_header_size' => 1]);
+
         $stream = $this->createStream();
         $maxSize = 1;
 
         $stream->shouldReceive('read')
             ->andReturn(Promise\resolve("GET / HTTP/1.1\r\nHost: example.com\r\n\r\n"));
 
-        $promise = new Coroutine($this->reader->readRequest($stream, $maxSize));
+        $promise = new Coroutine($reader->readRequest($stream, $maxSize));
 
         $callback = $this->createCallback(1);
         $callback->method('__invoke')
@@ -237,13 +237,15 @@ class ReaderTest extends TestCase
      */
     public function testReadResponseMaxSizeExceeded()
     {
+        $reader = new Reader(['max_header_size' => 1]);
+
         $stream = $this->createStream();
         $maxSize = 1;
 
         $stream->shouldReceive('read')
             ->andReturn(Promise\resolve("HTTP/1.1 200 OK\r\n\r\n"));
 
-        $promise = new Coroutine($this->reader->readResponse($stream, $maxSize));
+        $promise = new Coroutine($reader->readResponse($stream, $maxSize));
 
         $callback = $this->createCallback(1);
         $callback->method('__invoke')
