@@ -1,7 +1,7 @@
 <?php
 namespace Icicle\Http\Exception;
 
-class InvalidCallableException extends LogicException
+class InvalidCallableError extends Error
 {
     /**
      * @var callable

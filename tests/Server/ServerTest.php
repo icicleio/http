@@ -3,11 +3,9 @@ namespace Icicle\Tests\Http\Server;
 
 use Icicle\Http\Builder\BuilderInterface;
 use Icicle\Http\Encoder\EncoderInterface;
-use Icicle\Http\Exception\InvalidCallableException;
-use Icicle\Http\Exception\LengthRequiredException;
-use Icicle\Http\Exception\MessageBodySizeException;
-use Icicle\Http\Exception\MessageHeaderSizeException;
-use Icicle\Http\Exception\UnexpectedValueException;
+use Icicle\Http\Exception\InvalidCallableError;
+use Icicle\Http\Exception\InvalidValueException;
+use Icicle\Http\Exception\MessageException;
 use Icicle\Http\Message\RequestInterface;
 use Icicle\Http\Message\ResponseInterface;
 use Icicle\Http\Reader\ReaderInterface;
@@ -224,7 +222,7 @@ class ServerTest extends TestCase
 
     /**
      * @depends testClose
-     * @expectedException \Icicle\Http\Exception\LogicException
+     * @expectedException \Icicle\Http\Exception\Error
      */
     public function testListenAfterClose()
     {
@@ -283,7 +281,7 @@ class ServerTest extends TestCase
         };
 
         $onError = function (\Exception $exception) use ($onRequest) {
-            $this->assertInstanceOf(InvalidCallableException::class, $exception);
+            $this->assertInstanceOf(InvalidCallableError::class, $exception);
             $this->assertSame($onRequest, $exception->getCallable());
         };
 
@@ -363,10 +361,10 @@ class ServerTest extends TestCase
     public function invalidRequestExceptions()
     {
         return [
-            [MessageHeaderSizeException::class, 431],
-            [MessageBodySizeException::class, 413],
-            [LengthRequiredException::class, 411],
-            [UnexpectedValueException::class, 400],
+            [MessageException::class, 431],
+            [MessageException::class, 413],
+            [MessageException::class, 411],
+            [MessageException::class, 400],
             [TimeoutException::class, 408],
         ];
     }
@@ -380,7 +378,7 @@ class ServerTest extends TestCase
     {
         $reader = Mockery::mock(ReaderInterface::class);
         $reader->shouldReceive('readRequest')
-            ->andThrow($exceptionName);
+            ->andThrow(new $exceptionName($statusCode, 'Reason'));
 
         $callback = function ($code) use ($statusCode) {
             $this->assertSame($statusCode, $code);
@@ -418,7 +416,7 @@ class ServerTest extends TestCase
     {
         $reader = Mockery::mock(ReaderInterface::class);
         $reader->shouldReceive('readRequest')
-            ->andThrow(UnexpectedValueException::class);
+            ->andThrow(new MessageException(400, 'Reason'));
 
         $encoder = Mockery::mock(EncoderInterface::class);
         $encoder->shouldReceive('encodeResponse')
@@ -433,7 +431,7 @@ class ServerTest extends TestCase
         };
 
         $onError = function (\Exception $exception) use ($onInvalidRequest) {
-            $this->assertInstanceOf(InvalidCallableException::class, $exception);
+            $this->assertInstanceOf(InvalidCallableError::class, $exception);
             $this->assertSame($onInvalidRequest, $exception->getCallable());
         };
 
@@ -457,7 +455,7 @@ class ServerTest extends TestCase
     {
         $reader = Mockery::mock(ReaderInterface::class);
         $reader->shouldReceive('readRequest')
-            ->andThrow(UnexpectedValueException::class);
+            ->andThrow(new MessageException(400, 'Reason'));
 
         $encoder = Mockery::mock(EncoderInterface::class);
         $encoder->shouldReceive('encodeResponse')
@@ -497,7 +495,7 @@ class ServerTest extends TestCase
     {
         $reader = Mockery::mock(ReaderInterface::class);
         $reader->shouldReceive('readRequest')
-            ->andThrow(UnexpectedValueException::class);
+            ->andThrow(new MessageException(400, 'Reason'));
 
         $encoder = Mockery::mock(EncoderInterface::class);
         $encoder->shouldReceive('encodeResponse')

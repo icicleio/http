@@ -1,7 +1,7 @@
 <?php
 namespace Icicle\Http\Message;
 
-use Icicle\Http\Exception\InvalidArgumentException;
+use Icicle\Http\Exception\InvalidValueException;
 
 /**
  * URI implementation based on phly/http URI implementation.
@@ -67,6 +67,8 @@ class Uri implements UriInterface
 
     /**
      * @param string $uri
+     *
+     * @throws \Icicle\Http\Exception\InvalidValueException
      */
     public function __construct($uri = '')
     {
@@ -352,13 +354,15 @@ class Uri implements UriInterface
 
     /**
      * @param string $uri
+     *
+     * @throws \Icicle\Http\Exception\InvalidValueException
      */
     private function parseUri($uri)
     {
         $components = parse_url($uri);
 
         if (!$components) {
-            throw new InvalidArgumentException('Invalid URI.');
+            throw new InvalidValueException('Invalid URI.');
         }
 
         $this->scheme   = isset($components['scheme'])   ? $this->filterScheme($components['scheme']) : '';
@@ -383,6 +387,8 @@ class Uri implements UriInterface
      * @param string $scheme
      *
      * @return string
+     *
+     * @throws \Icicle\Http\Exception\InvalidValueException
      */
     protected function filterScheme($scheme)
     {
@@ -394,7 +400,7 @@ class Uri implements UriInterface
         $scheme = rtrim($scheme, ':/');
 
         if ('' !== $scheme && !array_key_exists($scheme, $this->allowedSchemes())) {
-            throw new InvalidArgumentException(sprintf(
+            throw new InvalidValueException(sprintf(
                     'Invalid scheme: %s. Must be null, an empty string, or in set (%s).',
                     $scheme,
                     implode(', ', array_keys($this->allowedSchemes()))
@@ -408,13 +414,15 @@ class Uri implements UriInterface
      * @param int|null $port
      *
      * @return int|null
+     *
+     * @throws \Icicle\Http\Exception\InvalidValueException
      */
     protected function filterPort($port)
     {
         if (null !== $port) {
             $port = (int) $port;
             if (1 > $port || 0xffff < $port) {
-                throw new InvalidArgumentException(
+                throw new InvalidValueException(
                     sprintf('Invalid port: %d. Must be null or an integer between 1 and 65535.', $port)
                 );
             }

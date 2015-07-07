@@ -54,7 +54,7 @@ class ChunkedDecoder extends Stream
 
                 if (!preg_match('/^[a-f0-9]+$/i', $length)) {
                     return parent::send('', $timeout, true)->then(function () {
-                        throw new MessageException('Invalid chunk length.');
+                        throw new MessageException(400, 'Invalid chunk length.');
                     });
                 }
 

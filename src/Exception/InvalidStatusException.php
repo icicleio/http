@@ -1,4 +1,4 @@
 <?php
 namespace Icicle\Http\Exception;
 
-class InvalidStatusException extends MessageException {}
+class InvalidStatusException extends InvalidValueException {}

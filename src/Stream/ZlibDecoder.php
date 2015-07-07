@@ -1,8 +1,7 @@
 <?php
 namespace Icicle\Http\Stream;
 
-use Icicle\Http\Exception\LogicException;
-use Icicle\Http\Exception\MessageBodySizeException;
+use Icicle\Http\Exception\Error;
 use Icicle\Http\Exception\MessageException;
 use Icicle\Promise;
 use Icicle\Stream\Stream;
@@ -29,7 +28,7 @@ class ZlibDecoder extends Stream
     {
         // @codeCoverageIgnoreStart
         if (!extension_loaded('zlib')) {
-            throw new LogicException('zlib extension required to decode compressed streams.');
+            throw new Error('zlib extension required to decode compressed streams.');
         } // @codeCoverageIgnoreEnd
 
         parent::__construct();
@@ -50,7 +49,7 @@ class ZlibDecoder extends Stream
 
         if (null !== $this->maxLength && $this->buffer->getLength() > $this->maxLength) {
             return parent::send('', $timeout, true)->then(function () {
-                throw new MessageBodySizeException('Message body too long.');
+                throw new MessageException(413, 'Message body too long.');
             });
         }
 
@@ -63,7 +62,7 @@ class ZlibDecoder extends Stream
 
         if (false === $data) {
             return parent::send('', $timeout, true)->then(function () {
-                throw new MessageException('Could not decode compressed stream.');
+                throw new MessageException(400, 'Could not decode compressed stream.');
             });
         }
 

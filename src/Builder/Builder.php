@@ -2,8 +2,6 @@
 namespace Icicle\Http\Builder;
 
 use Icicle\Coroutine\Coroutine;
-use Icicle\Http\Exception\InvalidHeaderException;
-use Icicle\Http\Exception\LengthRequiredException;
 use Icicle\Http\Exception\MessageException;
 use Icicle\Http\Message\MessageInterface;
 use Icicle\Http\Message\RequestInterface;
@@ -185,7 +183,7 @@ class Builder implements BuilderInterface
 
                 default:
                     throw new MessageException(
-                        sprintf('Unsupported content encoding set: %s', $contentEncoding)
+                        400, sprintf('Unsupported content encoding set: %s', $contentEncoding)
                     );
             }
 
@@ -245,7 +243,7 @@ class Builder implements BuilderInterface
         } elseif ($message->hasHeader('Content-Length')) {
             $length = (int) $message->getHeaderLine('Content-Length');
             if (0 >= $length) {
-                throw new InvalidHeaderException('Content-Length header invalid.');
+                throw new MessageException(400, 'Content-Length header invalid.');
             }
             $stream = new Stream($this->hwm);
             $body = $message->getBody();
@@ -258,7 +256,7 @@ class Builder implements BuilderInterface
             !$message instanceof ResponseInterface // ResponseInterface may have no length on incoming stream.
             && strtolower($message->getHeaderLine('Connection')) !== 'close'
         ) {
-            throw new LengthRequiredException('Content-Length header required.');
+            throw new MessageException(411, 'Content-Length header required.');
         }
 
         $contentEncoding = strtolower($message->getHeaderLine('Content-Encoding'));
@@ -277,7 +275,7 @@ class Builder implements BuilderInterface
 
             default:
                 throw new MessageException(
-                    sprintf('Unsupported content encoding received: %s', $contentEncoding)
+                    400, sprintf('Unsupported content encoding received: %s', $contentEncoding)
                 );
         }
     }

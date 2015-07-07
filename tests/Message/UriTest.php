@@ -159,7 +159,7 @@ class UriTest extends TestCase
 
     /**
      * @depends testConstructor
-     * @expectedException \Icicle\Http\Exception\InvalidArgumentException
+     * @expectedException \Icicle\Http\Exception\InvalidValueException
      */
     public function testWithInvalidScheme()
     {
@@ -216,7 +216,7 @@ class UriTest extends TestCase
     /**
      * @depends testConstructor
      * @dataProvider getInvalidPorts
-     * @expectedException \Icicle\Http\Exception\InvalidArgumentException
+     * @expectedException \Icicle\Http\Exception\InvalidValueException
      *
      * @param int|string|null $port
      */

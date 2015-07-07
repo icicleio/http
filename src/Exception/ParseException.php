@@ -1,4 +1,4 @@
 <?php
 namespace Icicle\Http\Exception;
 
-class ParseException extends UnexpectedValueException {}
+class ParseException extends Exception {}

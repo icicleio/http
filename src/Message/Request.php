@@ -1,9 +1,8 @@
 <?php
 namespace Icicle\Http\Message;
 
-use Icicle\Http\Exception\InvalidHeaderException;
 use Icicle\Http\Exception\InvalidMethodException;
-use Icicle\Http\Exception\MessageException;
+use Icicle\Http\Exception\InvalidValueException;
 use Icicle\Stream\ReadableStreamInterface;
 
 class Request extends Message implements RequestInterface
@@ -36,7 +35,7 @@ class Request extends Message implements RequestInterface
      * @param string|null $target
      * @param string $protocol
      *
-     * @throws \Icicle\Http\Exception\InvalidArgumentException If one of the arguments is invalid.
+     * @throws \Icicle\Http\Exception\MessageException If one of the arguments is invalid.
      */
     public function __construct(
         $method,
@@ -203,12 +202,12 @@ class Request extends Message implements RequestInterface
      *
      * @return string
      *
-     * @throws \Icicle\Http\Exception\InvalidHeaderException If the target contains whitespace.
+     * @throws \Icicle\Http\Exception\InvalidValueException If the target contains whitespace.
      */
     protected function filterTarget($target)
     {
         if (preg_match('/\s/', $target)) {
-            throw new InvalidHeaderException('Request target cannot contain whitespace.');
+            throw new InvalidValueException('Request target cannot contain whitespace.');
         }
 
         return $target;

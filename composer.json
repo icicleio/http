@@ -15,8 +15,10 @@
         }
     ],
     "require": {
-        "icicleio/icicle": "^0.7 || ^1.0",
-        "icicleio/dns": "^0.3 || ^1.0"
+        "icicleio/icicle": "^0.7",
+        "icicleio/stream": "^0.1",
+        "icicleio/socket": "^0.1",
+        "icicleio/dns": "^0.3"
     },
     "require-dev": {
         "phpunit/phpunit": "^4.6",

@@ -33,7 +33,7 @@ abstract class Message implements MessageInterface
      * @param string[][]|null $headers
      * @param string $protocol
      *
-     * @throws \Icicle\Http\Exception\InvalidArgumentException
+     * @throws \Icicle\Http\Exception\MessageException
      */
     public function __construct(array $headers = null, ReadableStreamInterface $stream = null, $protocol = '1.1')
     {

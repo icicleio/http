@@ -184,7 +184,7 @@ class RequestTest extends TestCase
     }
 
     /**
-     * @expectedException \Icicle\Http\Exception\InvalidHeaderException
+     * @expectedException \Icicle\Http\Exception\InvalidValueException
      */
     public function testConstructWithInvalidTarget()
     {

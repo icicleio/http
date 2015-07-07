@@ -1,4 +1,4 @@
 <?php
 namespace Icicle\Http\Exception;
 
-class UnsupportedVersionException extends MessageException {}
+class UnsupportedVersionException extends InvalidValueException {}

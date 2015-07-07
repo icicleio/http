@@ -9,7 +9,7 @@
   exception: \Icicle\Http\Exception\ParseException
 
 - file: requests/12.txt
-  exception: \Icicle\Http\Exception\MissingHostException
+  exception: \Icicle\Http\Exception\MessageException
 
 - file: requests/13.txt
   exception: \Icicle\Http\Exception\ParseException

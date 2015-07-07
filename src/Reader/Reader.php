@@ -1,8 +1,7 @@
 <?php
 namespace Icicle\Http\Reader;
 
-use Icicle\Http\Exception\MessageHeaderSizeException;
-use Icicle\Http\Exception\MissingHostException;
+use Icicle\Http\Exception\MessageException;
 use Icicle\Http\Exception\ParseException;
 use Icicle\Http\Message\Request;
 use Icicle\Http\Message\Response;
@@ -91,7 +90,7 @@ class Reader implements ReaderInterface
      *
      * @resolve string
      *
-     * @reject \Icicle\Http\Exception\MessageHeaderSizeException
+     * @reject \Icicle\Http\Exception\MessageException
      * @reject \Icicle\Socket\Exception\UnreadableException
      */
     protected function readMessage(ReadableStreamInterface $stream, $timeout = null)
@@ -102,8 +101,8 @@ class Reader implements ReaderInterface
             $data .= (yield $stream->read(null, "\n", $timeout));
 
             if (strlen($data) > $this->maxHeaderSize) {
-                throw new MessageHeaderSizeException(
-                    sprintf('Message header exceeded maximum size of %d bytes.', $this->maxHeaderSize)
+                throw new MessageException(
+                    431, sprintf('Message header exceeded maximum size of %d bytes.', $this->maxHeaderSize)
                 );
             }
         } while (substr($data, -4) !== "\r\n\r\n");
@@ -172,7 +171,7 @@ class Reader implements ReaderInterface
      *
      * @return string
      *
-     * @throws \Icicle\Http\Exception\MissingHostException If no host header is find.
+     * @throws \Icicle\Http\Exception\MessageException If no host header is find.
      */
     protected function findHost(array $headers)
     {
@@ -182,6 +181,6 @@ class Reader implements ReaderInterface
             }
         }
 
-        throw new MissingHostException('No host header in message.');
+        throw new MessageException(400, 'No host header in message.');
     }
 }

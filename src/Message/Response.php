@@ -91,7 +91,7 @@ class Response extends Message implements ResponseInterface
      * @param string|null $reason Status code reason.
      * @param string $protocol
      *
-     * @throws \Icicle\Http\Exception\InvalidArgumentException If one of the arguments is invalid.
+     * @throws \Icicle\Http\Exception\MessageException If one of the arguments is invalid.
      */
     public function __construct(
         $code = 200,

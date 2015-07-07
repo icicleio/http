@@ -2,11 +2,13 @@
 namespace Icicle\Tests\Http\Reader;
 
 use Icicle\Coroutine\Coroutine;
+use Icicle\Http\Exception\MessageException;
 use Icicle\Http\Message\RequestInterface;
 use Icicle\Http\Message\ResponseInterface;
 use Icicle\Http\Reader\Reader;
 use Icicle\Loop;
 use Icicle\Promise;
+use Icicle\Stream\ReadableStreamInterface;
 use Icicle\Stream\SeekableStreamInterface;
 use Icicle\Stream\Stream;
 use Icicle\Tests\Http\TestCase;
@@ -20,7 +22,7 @@ class ReaderTest extends TestCase
      */
     protected function createStream()
     {
-        return Mockery::mock('Icicle\Stream\ReadableStreamInterface');
+        return Mockery::mock(ReadableStreamInterface::class);
     }
 
     /**
@@ -225,7 +227,7 @@ class ReaderTest extends TestCase
 
         $callback = $this->createCallback(1);
         $callback->method('__invoke')
-            ->with($this->isInstanceOf('Icicle\Http\Exception\MessageHeaderSizeException'));
+            ->with($this->isInstanceOf(MessageException::class));
 
         $promise->done($this->createCallback(0), $callback);
 
@@ -249,7 +251,7 @@ class ReaderTest extends TestCase
 
         $callback = $this->createCallback(1);
         $callback->method('__invoke')
-            ->with($this->isInstanceOf('Icicle\Http\Exception\MessageHeaderSizeException'));
+            ->with($this->isInstanceOf(MessageException::class));
 
         $promise->done($this->createCallback(0), $callback);
 

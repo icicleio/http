@@ -7,12 +7,11 @@ use Icicle\Http\Builder\Builder;
 use Icicle\Http\Builder\BuilderInterface;
 use Icicle\Http\Encoder\Encoder;
 use Icicle\Http\Encoder\EncoderInterface;
-use Icicle\Http\Exception\InvalidCallableException;
-use Icicle\Http\Exception\LengthRequiredException;
-use Icicle\Http\Exception\LogicException;
-use Icicle\Http\Exception\MessageBodySizeException;
-use Icicle\Http\Exception\MessageHeaderSizeException;
-use Icicle\Http\Exception\UnexpectedValueException;
+use Icicle\Http\Exception\Error;
+use Icicle\Http\Exception\InvalidCallableError;
+use Icicle\Http\Exception\InvalidValueException;
+use Icicle\Http\Exception\MessageException;
+use Icicle\Http\Exception\ParseException;
 use Icicle\Http\Message\RequestInterface;
 use Icicle\Http\Message\Response;
 use Icicle\Http\Message\ResponseInterface;
@@ -171,16 +170,19 @@ class Server implements ServerInterface
     }
 
     /**
-     * @return float|int
+     * @return float
      */
     public function getTimeout()
     {
         return $this->timeout;
     }
 
+    /**
+     * @param float|int $timeout
+     */
     public function setTimeout($timeout)
     {
-        $this->timeout = $timeout;
+        $this->timeout = (float) $timeout;
     }
 
     /**
@@ -204,7 +206,7 @@ class Server implements ServerInterface
      * @param int $port
      * @param mixed[] $options
      *
-     * @throws \Icicle\Http\Exception\LogicException If the server has been closed.
+     * @throws \Icicle\Http\Exception\Error If the server has been closed.
      *
      * @see \Icicle\Socket\Server\ServerFactoryInterface::create() Options are similar to this method with the
      *     addition of the crypto_method option.
@@ -212,7 +214,7 @@ class Server implements ServerInterface
     public function listen($port, $address = self::DEFAULT_ADDRESS, array $options = null)
     {
         if (!$this->open) {
-            throw new LogicException('The server has been closed.');
+            throw new Error('The server has been closed.');
         }
 
         $server = $this->factory->create($address, $port, $options);
@@ -280,13 +282,11 @@ class Server implements ServerInterface
                         return; // Keep-alive timeout expired.
                     }
                     $response = (yield $this->createErrorResponse(408, $client));
-                } catch (MessageHeaderSizeException $exception) { // Request header too large.
-                    $response = (yield $this->createErrorResponse(431, $client));
-                } catch (MessageBodySizeException $exception) { // Request body too large.
-                    $response = (yield $this->createErrorResponse(413, $client));
-                } catch (LengthRequiredException $exception) { // Required content length missing.
-                    $response = (yield $this->createErrorResponse(411, $client));
-                } catch (UnexpectedValueException $exception) { // Bad request.
+                } catch (MessageException $exception) { // Bad request.
+                    $response = (yield $this->createErrorResponse($exception->getCode(), $client));
+                } catch (InvalidValueException $exception) { // Invalid value in message header.
+                    $response = (yield $this->createErrorResponse(400, $client));
+                } catch (ParseException $exception) { // Parse error in request.
                     $response = (yield $this->createErrorResponse(400, $client));
                 }
 
@@ -302,7 +302,7 @@ class Server implements ServerInterface
 
                 if ($connection === 'upgrade') {
                     if (!isset($request) || strtolower($request->getHeaderLine('Connection')) !== 'upgrade') {
-                        throw new LogicException('Cannot upgrade connection without a valid upgrade request.');
+                        throw new Error('Cannot upgrade connection without a valid upgrade request.');
                     }
 
                     yield $this->upgrade($request, $response, $client);
@@ -332,7 +332,7 @@ class Server implements ServerInterface
     private function upgrade(RequestInterface $request, ResponseInterface $response, SocketClientInterface $client)
     {
         if (null === $this->onUpgrade) {
-            throw new LogicException('No callback given for upgrade responses.');
+            throw new Error('No callback given for upgrade responses.');
         }
 
         $onUpgrade = $this->onUpgrade;
@@ -386,7 +386,7 @@ class Server implements ServerInterface
             $response = (yield $onRequest($request, $client));
 
             if (!$response instanceof ResponseInterface) {
-                throw new InvalidCallableException(
+                throw new InvalidCallableError(
                     sprintf('A %s object was not returned from the request callback.', ResponseInterface::class),
                     $this->onRequest
                 );
@@ -424,7 +424,7 @@ class Server implements ServerInterface
                 $response = (yield $onInvalidRequest($code, $client));
 
                 if (!$response instanceof ResponseInterface) {
-                    throw new InvalidCallableException(
+                    throw new InvalidCallableError(
                         sprintf('A %s object was not returned from the error callback.', ResponseInterface::class),
                         $this->onInvalidRequest
                     );
