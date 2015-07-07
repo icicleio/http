@@ -35,11 +35,6 @@ class Requester implements RequesterInterface
     private $allowPersistent = true;
 
     /**
-     * @var int
-     */
-    private $maxHeaderSize = self::DEFAULT_MAX_HEADER_SIZE;
-
-    /**
      * @var float|int
      */
     private $timeout = self::DEFAULT_TIMEOUT;
@@ -52,21 +47,18 @@ class Requester implements RequesterInterface
     ) {
         $this->timeout = isset($options['timeout']) ? (float) $options['timeout'] : self::DEFAULT_TIMEOUT;
         $this->allowPersistent = isset($options['allow_persistent']) ? (bool) $options['allow_persistent'] : true;
-        $this->maxHeaderSize = isset($options['max_header_size'])
-            ? (int) $options['max_header_size']
-            : self::DEFAULT_MAX_HEADER_SIZE;
 
         $this->reader = isset($options['reader']) && $options['reader'] instanceof ReaderInterface
             ? $options['reader']
-            : new Reader();
+            : new Reader($options);
 
         $this->builder = isset($options['builder']) && $options['builder'] instanceof BuilderInterface
             ? $options['builder']
-            : new Builder();
+            : new Builder($options);
 
         $this->encoder = isset($options['encoder']) && $options['encoder'] instanceof EncoderInterface
             ? $options['encoder']
-            : new Encoder();
+            : new Encoder($options);
     }
 
     /**
@@ -74,7 +66,7 @@ class Requester implements RequesterInterface
      */
     public function request(SocketClientInterface $client, RequestInterface $request, $timeout = self::DEFAULT_TIMEOUT)
     {
-        $request = $this->builder->buildOutgoingRequest($request, $this->timeout, $this->allowPersistent);
+        $request = (yield $this->builder->buildOutgoingRequest($request, $this->timeout, $this->allowPersistent));
 
         yield $client->write($this->encoder->encodeRequest($request));
 
@@ -84,7 +76,7 @@ class Requester implements RequesterInterface
             yield $stream->pipe($client, false);
         }
 
-        $response = (yield $this->reader->readResponse($client, $this->maxHeaderSize, $this->timeout));
+        $response = (yield $this->reader->readResponse($client, $this->timeout));
 
         yield $this->builder->buildIncomingResponse($response);
     }

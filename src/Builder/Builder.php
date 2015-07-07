@@ -58,7 +58,7 @@ class Builder implements BuilderInterface
     public function buildOutgoingResponse(
         ResponseInterface $response,
         RequestInterface $request = null,
-        $timeout = null,
+        $timeout = 0,
         $allowPersistent = false
     ) {
         if (null === $request) { // Fallback to 1.0 for responses due to message errors.
@@ -129,7 +129,7 @@ class Builder implements BuilderInterface
     /**
      * {@inheritdoc}
      */
-    public function buildIncomingRequest(RequestInterface $request, $timeout = null)
+    public function buildIncomingRequest(RequestInterface $request, $timeout = 0)
     {
         if ($request->getMethod() === 'POST' || $request->getMethod() === 'PUT') {
             yield $this->buildIncomingStream($request, $timeout);
@@ -145,20 +145,20 @@ class Builder implements BuilderInterface
     /**
      * {@inheritdoc}
      */
-    public function buildIncomingResponse(ResponseInterface $response, $timeout = null)
+    public function buildIncomingResponse(ResponseInterface $response, $timeout = 0)
     {
         yield $this->buildIncomingStream($response, $timeout);
     }
 
     /**
      * @param \Icicle\Http\Message\MessageInterface $message
-     * @param float|null $timeout
+     * @param float|int $timeout
      *
      * @return \Generator
      *
      * @resolve \Icicle\Http\Message\MessageInterface
      */
-    private function buildOutgoingStream(MessageInterface $message, $timeout = null)
+    private function buildOutgoingStream(MessageInterface $message, $timeout = 0)
     {
         $stream = $message->getBody();
 
@@ -215,13 +215,13 @@ class Builder implements BuilderInterface
 
     /**
      * @param \Icicle\Http\Message\MessageInterface $message
-     * @param float|null $timeout
+     * @param float|int $timeout
      *
      * @return \Generator
      *
      * @resolve \Icicle\Http\Message\MessageInterface
      */
-    private function buildIncomingStream(MessageInterface $message, $timeout = null)
+    private function buildIncomingStream(MessageInterface $message, $timeout = 0)
     {
         $stream = $message->getBody();
 
