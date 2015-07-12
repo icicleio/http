@@ -6,6 +6,7 @@ use Icicle\Http\Encoder\EncoderInterface;
 use Icicle\Http\Exception\InvalidCallableError;
 use Icicle\Http\Exception\InvalidValueException;
 use Icicle\Http\Exception\MessageException;
+use Icicle\Http\Exception\ParseException;
 use Icicle\Http\Message\RequestInterface;
 use Icicle\Http\Message\ResponseInterface;
 use Icicle\Http\Reader\ReaderInterface;
@@ -24,26 +25,28 @@ use Symfony\Component\Yaml;
 class ServerTest extends TestCase
 {
     /**
-     * @param \Icicle\Socket\Server\ServerInterface
+     * @param \Icicle\Socket\Server\ServerInterface $server
      *
      * @return \Icicle\Socket\Server\ServerFactoryInterface
      */
-    public function createFactory(ServerInterface $server)
+    public function createFactory(ServerInterface $server = null)
     {
         $mock = Mockery::mock(ServerFactoryInterface::class);
 
         $mock->shouldReceive('create')
-            ->andReturn($server);
+            ->andReturnUsing(function () use ($server) {
+                return $server ?: $this->createSocketServer();
+            });
 
         return $mock;
     }
 
     /**
-     * @param \Icicle\Socket\Client\ClientInterface
+     * @param \Icicle\Socket\Client\ClientInterface $client
      *
      * @return \Icicle\Socket\Server\ServerInterface
      */
-    public function createSocketServer(ClientInterface $client)
+    public function createSocketServer(ClientInterface $client = null)
     {
         $mock = Mockery::mock(ServerInterface::class);
 
@@ -53,7 +56,9 @@ class ServerTest extends TestCase
         $mock->shouldReceive('close');
 
         $mock->shouldReceive('accept')
-            ->andReturn(Promise\resolve($client));
+            ->andReturnUsing(function () use ($client) {
+                return Promise\resolve($client ?: $this->createSocketClient());
+            });
 
         return $mock;
     }
@@ -152,7 +157,7 @@ class ServerTest extends TestCase
         }
 
         if (!isset($options['factory'])) {
-            $options['factory'] = $this->createFactory($this->createSocketServer($this->createSocketClient()));
+            $options['factory'] = $this->createFactory();
         }
 
         $server = new Server($onRequest, $options);
@@ -361,24 +366,26 @@ class ServerTest extends TestCase
     public function invalidRequestExceptions()
     {
         return [
-            [MessageException::class, 431],
-            [MessageException::class, 413],
-            [MessageException::class, 411],
-            [MessageException::class, 400],
-            [TimeoutException::class, 408],
+            [new MessageException(431, 'Body too long'), 431],
+            [new MessageException(413, 'Headers too long'), 413],
+            [new MessageException(411, 'Length required'), 411],
+            [new MessageException(400, 'Bad request'), 400],
+            [new TimeoutException('Reading timed out'), 408],
+            [new ParseException('Parse error in message'), 400],
+            [new InvalidValueException('Invalid value in message'), 400],
         ];
     }
 
     /**
      * @dataProvider invalidRequestExceptions
-     * @param string $exceptionName
+     * @param \Exception $exception
      * @param int $statusCode
      */
-    public function testInvalidRequest($exceptionName, $statusCode)
+    public function testInvalidRequest(\Exception $exception, $statusCode)
     {
         $reader = Mockery::mock(ReaderInterface::class);
         $reader->shouldReceive('readRequest')
-            ->andThrow(new $exceptionName($statusCode, 'Reason'));
+            ->andThrow($exception);
 
         $callback = function ($code) use ($statusCode) {
             $this->assertSame($statusCode, $code);
