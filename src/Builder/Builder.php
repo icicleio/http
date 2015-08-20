@@ -164,8 +164,13 @@ class Builder implements BuilderInterface
             $stream->seek(0);
         }
 
-        if (!$stream->isReadable() || strtolower($message->getHeaderLine('Connection')) === 'upgrade') {
+        if (strtolower($message->getHeaderLine('Connection')) === 'upgrade') {
             yield $message;
+            return;
+        }
+
+        if (!$stream->isReadable()) {
+            yield $message->withHeader('Content-Length', 0);
             return;
         }
 

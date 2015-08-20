@@ -98,7 +98,7 @@ class Reader implements ReaderInterface
         $data = '';
 
         do {
-            $data .= (yield $stream->read(null, "\n", $timeout));
+            $data .= (yield $stream->read(0, "\n", $timeout));
 
             if (strlen($data) > $this->maxHeaderSize) {
                 throw new MessageException(
