@@ -15,10 +15,10 @@ interface ReaderInterface
      *
      * @resolve \Icicle\Http\Message\ResponseInterface
      *
-     * @reject \Icicle\Http\Exception\MessageHeaderSizeException
-     * @reject \Icicle\Socket\Exception\UnreadableException
+     * @throws \Icicle\Http\Exception\MessageException
+     * @throws \Icicle\Stream\Exception\UnreadableException
      */
-    public function readResponse(ReadableStreamInterface $stream, $timeout = null);
+    public function readResponse(ReadableStreamInterface $stream, $timeout = 0);
 
     /**
      * @coroutine
@@ -30,8 +30,8 @@ interface ReaderInterface
      *
      * @resolve \Icicle\Http\Message\RequestInterface
      *
-     * @reject \Icicle\Http\Exception\MessageHeaderSizeException
-     * @reject \Icicle\Socket\Exception\UnreadableException
+     * @throws \Icicle\Http\Exception\MessageException
+     * @throws \Icicle\Stream\Exception\UnreadableException
      */
-    public function readRequest(ReadableStreamInterface $stream, $timeout = null);
+    public function readRequest(ReadableStreamInterface $stream, $timeout = 0);
 }

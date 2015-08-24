@@ -38,7 +38,7 @@ interface UriInterface
     /**
      * Returns the port or null if no port is set and no scheme is set.
      *
-     * @return int|null
+     * @return int
      */
     public function getPort();
 

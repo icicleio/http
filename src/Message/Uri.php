@@ -111,7 +111,7 @@ class Uri implements UriInterface
      */
     public function getUserInfo()
     {
-        if (null !== $this->password) {
+        if ('' !== $this->password) {
             return sprintf('%s:%s', $this->user, $this->password);
         }
 
@@ -208,17 +208,12 @@ class Uri implements UriInterface
     /**
      * {@inheritdoc}
      */
-    public function withUserInfo($user, $password = null)
+    public function withUserInfo($user, $password = '')
     {
         $new = clone $this;
 
         $new->user = $new->encodeValue($user);
-
-        if (null === $password) {
-            $new->password = null;
-        } else {
-            $new->password = $new->encodeValue($password);
-        }
+        $new->password = $new->encodeValue($password);
 
         return $new;
     }
@@ -367,9 +362,9 @@ class Uri implements UriInterface
 
         $this->scheme   = isset($components['scheme'])   ? $this->filterScheme($components['scheme']) : '';
         $this->host     = isset($components['host'])     ? $components['host'] : '';
-        $this->port     = isset($components['port'])     ? $this->filterPort($components['port']) : null;
+        $this->port     = isset($components['port'])     ? $this->filterPort($components['port']) : 0;
         $this->user     = isset($components['user'])     ? $this->encodeValue($components['user']) : '';
-        $this->password = isset($components['pass'])     ? $this->encodeValue($components['pass']) : null;
+        $this->password = isset($components['pass'])     ? $this->encodeValue($components['pass']) : '';
         $this->path     = isset($components['path'])     ? $this->parsePath($components['path']) : '';
         $this->query    = isset($components['query'])    ? $this->parseQuery($components['query']) : [];
         $this->fragment = isset($components['fragment']) ? $this->parseFragment($components['fragment']) : '';
@@ -411,21 +406,20 @@ class Uri implements UriInterface
     }
 
     /**
-     * @param int|null $port
+     * @param int $port
      *
-     * @return int|null
+     * @return int
      *
      * @throws \Icicle\Http\Exception\InvalidValueException
      */
     protected function filterPort($port)
     {
-        if (null !== $port) {
-            $port = (int) $port;
-            if (1 > $port || 0xffff < $port) {
-                throw new InvalidValueException(
-                    sprintf('Invalid port: %d. Must be null or an integer between 1 and 65535.', $port)
-                );
-            }
+        $port = (int) $port;
+
+        if (0 > $port || 0xffff < $port) {
+            throw new InvalidValueException(
+                sprintf('Invalid port: %d. Must be 0 or an integer between 1 and 65535.', $port)
+            );
         }
 
         return $port;

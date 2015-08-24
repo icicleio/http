@@ -3,10 +3,16 @@ namespace Icicle\Http\Server;
 
 interface ServerInterface
 {
+    const DEFAULT_ADDRESS = '0.0.0.0';
+    const DEFAULT_TIMEOUT = 15;
+    const DEFAULT_CRYPTO_METHOD = STREAM_CRYPTO_METHOD_TLS_SERVER;
+
     /**
-     * @param int|string $port Port number or socket.
+     * @param int $port Port number.
+     * @param string $address
+     * @param mixed[] $options
      */
-    public function listen($port);
+    public function listen($port, $address = self::DEFAULT_ADDRESS, array $options = []);
 
     /**
      * Determines if the server is open, accepting connections.
@@ -19,14 +25,4 @@ interface ServerInterface
      * Closes the server. No more connections will be served.
      */
     public function close();
-
-    /**
-     * @return float|int
-     */
-    public function getTimeout();
-
-    /**
-     * @return bool
-     */
-    public function allowPersistent();
 }

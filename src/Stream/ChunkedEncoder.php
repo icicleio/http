@@ -10,7 +10,7 @@ class ChunkedEncoder extends Stream
      * @param float|int $timeout
      * @param bool $end
      *
-     * @return \Icicle\Promise\PromiseInterface
+     * @return \Generator
      */
     protected function send($data, $timeout = 0, $end = false)
     {

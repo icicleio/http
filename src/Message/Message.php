@@ -29,15 +29,15 @@ abstract class Message implements MessageInterface
     private $stream;
 
     /**
+     * @param string[][] $headers
      * @param \Icicle\Stream\ReadableStreamInterface|null $stream
-     * @param string[][]|null $headers
      * @param string $protocol
      *
      * @throws \Icicle\Http\Exception\MessageException
      */
-    public function __construct(array $headers = null, ReadableStreamInterface $stream = null, $protocol = '1.1')
+    public function __construct(array $headers = [], ReadableStreamInterface $stream = null, $protocol = '1.1')
     {
-        if (null !== $headers) {
+        if (!empty($headers)) {
             $this->addHeaders($headers);
         }
 

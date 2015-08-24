@@ -6,6 +6,8 @@ use Icicle\Stream\ReadableStreamInterface;
 
 interface ClientInterface
 {
+    const DEFAULT_CRYPTO_METHOD = STREAM_CRYPTO_METHOD_TLS_CLIENT;
+
     /**
      * @coroutine
      *

@@ -1,38 +1,35 @@
 <?php
 namespace Icicle\Http\Stream;
 
-use Icicle\Http\Exception\Error;
 use Icicle\Http\Exception\MessageException;
-use Icicle\Promise;
+use Icicle\Http\Exception\UnsupportedError;
 use Icicle\Stream\Stream;
-use Icicle\Stream\Structures\Buffer;
 
 class ZlibDecoder extends Stream
 {
     /**
-     * @var \Icicle\Stream\Structures\Buffer
+     * @var string
      */
-    private $buffer;
+    private $buffer = '';
 
     /**
-     * @var int|null
+     * @var int
      */
     private $maxLength;
 
     /**
      * @param int|null $maxLength Maximum length of compressed data; null for no max length.
      *
-     * @throws \Icicle\Http\Exception\LogicException If the zlib extension is not loaded.
+     * @throws \Icicle\Http\Exception\UnsupportedError If the zlib extension is not loaded.
      */
-    public function __construct($maxLength = null)
+    public function __construct($maxLength = 0)
     {
         // @codeCoverageIgnoreStart
         if (!extension_loaded('zlib')) {
-            throw new Error('zlib extension required to decode compressed streams.');
+            throw new UnsupportedError('zlib extension required to decode compressed streams.');
         } // @codeCoverageIgnoreEnd
 
         parent::__construct();
-        $this->buffer = new Buffer();
         $this->maxLength = $this->parseLength($maxLength);
     }
 
@@ -41,31 +38,34 @@ class ZlibDecoder extends Stream
      * @param float|int $timeout
      * @param bool $end
      *
-     * @return \Icicle\Promise\PromiseInterface
+     * @return \Generator
+     *
+     * @throws \Icicle\Http\Exception\MessageException If compressed message body exceeds the max length or if decoding
+     *    the compressed stream fails.
      */
     public function send($data, $timeout = 0, $end = false)
     {
-        $this->buffer->push($data);
+        $this->buffer .= $data;
 
-        if (null !== $this->maxLength && $this->buffer->getLength() > $this->maxLength) {
-            return parent::send('', $timeout, true)->then(function () {
-                throw new MessageException(413, 'Message body too long.');
-            });
+        if (0 !== $this->maxLength && strlen($this->buffer) > $this->maxLength) {
+            yield parent::send('', $timeout, true);
+            throw new MessageException(413, 'Message body too long.');
         }
 
         if (!$end) {
-            return Promise\resolve(0);
+            yield 0;
+            return;
         }
 
         // Error reporting suppressed since zlib_decode() emits a warning if decompressing fails. Checked below.
-        $data = @zlib_decode($this->buffer->drain());
+        $data = @zlib_decode($this->buffer);
+        $this->buffer = '';
 
         if (false === $data) {
-            return parent::send('', $timeout, true)->then(function () {
-                throw new MessageException(400, 'Could not decode compressed stream.');
-            });
+            yield parent::send('', $timeout, true);
+            throw new MessageException(400, 'Could not decode compressed stream.');
         }
 
-        return parent::send($data, $timeout, true);
+        yield parent::send($data, $timeout, true);
     }
 }

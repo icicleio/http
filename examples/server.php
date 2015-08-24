@@ -1,3 +1,4 @@
+#!/usr/bin/env php
 <?php
 
 require dirname(__DIR__) . '/vendor/autoload.php';
@@ -17,19 +18,20 @@ $server = new Server(function (RequestInterface $request, ClientInterface $clien
         $client->getLocalPort()
     );
 
-    $data .= "\n" . $request->getHeaderLine('Content-Length');
-
     $body = $request->getBody();
 
-    while ($body->isReadable()) {
-        $data .= "\n\n" . (yield $body->read());
+    if ($body->isReadable()) {
+        $data .= "\n\n";
+        do {
+            $data .= (yield $body->read());
+        } while ($body->isReadable());
     }
 
     $response = new Response(200);
     $response = $response->withHeader('Content-Type', 'text/plain')
         ->withHeader('Content-Length', strlen($data));
 
-    $response->getBody()->end($data);
+    yield $response->getBody()->end($data);
 
     yield $response;
 });

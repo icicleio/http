@@ -1,11 +1,8 @@
 <?php
 namespace Icicle\Http\Stream;
 
-use Icicle\Http\Exception\InvalidArgumentException;
-use Icicle\Http\Exception\LogicException;
-use Icicle\Promise;
+use Icicle\Http\Exception\Error;
 use Icicle\Stream\Stream;
-use Icicle\Stream\Structures\Buffer;
 
 class ZlibEncoder extends Stream
 {
@@ -15,9 +12,9 @@ class ZlibEncoder extends Stream
     const DEFAULT_LEVEL = -1;
 
     /**
-     * @var \Icicle\Stream\Structures\Buffer
+     * @var string
      */
-    private $buffer;
+    private $buffer = '';
 
     /**
      * @var int
@@ -39,7 +36,7 @@ class ZlibEncoder extends Stream
     {
         // @codeCoverageIgnoreStart
         if (!extension_loaded('zlib')) {
-            throw new LogicException('zlib extension required to decode compressed streams.');
+            throw new Error('zlib extension required to decode compressed streams.');
         } // @codeCoverageIgnoreEnd
 
         switch ($type) {
@@ -49,12 +46,11 @@ class ZlibEncoder extends Stream
                 break;
 
             default:
-                throw new InvalidArgumentException('Invalid compression type.');
+                throw new Error('Invalid compression type.');
         }
 
         parent::__construct();
 
-        $this->buffer = new Buffer();
         $this->level = (int) $level;
     }
 
@@ -63,16 +59,17 @@ class ZlibEncoder extends Stream
      * @param float|int $timeout
      * @param bool $end
      *
-     * @return \Icicle\Promise\PromiseInterface
+     * @return \Generator
      */
     public function send($data, $timeout = 0, $end = false)
     {
-        $this->buffer->push($data);
+        $this->buffer .= $data;
 
         if (!$end) {
-            return Promise\resolve(0);
+            yield 0;
+            return;
         }
 
-        return parent::send(zlib_encode($this->buffer, $this->type, $this->level), $timeout, true);
+        yield parent::send(zlib_encode($this->buffer, $this->type, $this->level), $timeout, true);
     }
 }

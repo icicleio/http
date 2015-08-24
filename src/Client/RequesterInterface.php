@@ -13,7 +13,7 @@ interface RequesterInterface
      *
      * @param \Icicle\Socket\Client\ClientInterface $client
      * @param \Icicle\Http\Message\RequestInterface $request
-     * @param float|int|null $timeout
+     * @param mixed[] $options
      *
      * @return \Generator
      *
@@ -22,5 +22,5 @@ interface RequesterInterface
      * @reject \Icicle\Http\Exception\MessageException
      * @reject \Icicle\Http\Exception\ParseException
      */
-    public function request(SocketClientInterface $client, RequestInterface $request, $timeout = self::DEFAULT_TIMEOUT);
+    public function request(SocketClientInterface $client, RequestInterface $request, array $options = []);
 }

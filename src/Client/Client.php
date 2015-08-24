@@ -3,18 +3,13 @@ namespace Icicle\Http\Client;
 
 use Icicle\Dns\Connector\Connector;
 use Icicle\Dns\Connector\ConnectorInterface;
-use Icicle\Dns\Executor\Executor;
-use Icicle\Dns\Executor\MultiExecutor;
-use Icicle\Dns\Resolver\Resolver;
-use Icicle\Http\Exception\RuntimeException;
 use Icicle\Http\Message\Request;
 use Icicle\Http\Message\RequestInterface;
+use Icicle\Socket\Exception\FailureException;
 use Icicle\Stream\ReadableStreamInterface;
 
 class Client implements ClientInterface
 {
-    const DEFAULT_CRYPTO_METHOD = STREAM_CRYPTO_METHOD_TLS_CLIENT;
-
     /**
      * @var \Icicle\Http\Client\RequesterInterface
      */
@@ -33,28 +28,13 @@ class Client implements ClientInterface
     /**
      * @param \Icicle\Http\Client\RequesterInterface|null $requester
      * @param \Icicle\Dns\Connector\ConnectorInterface|null $connector
-     * @param mixed[]|null $options
      */
     public function __construct(
         RequesterInterface $requester = null,
-        ConnectorInterface $connector = null,
-        array $options = null
+        ConnectorInterface $connector = null
     ) {
-        $this->cryptoMethod = isset($options['crypto_method'])
-            ? (int) $options['crypto_method']
-            : self::DEFAULT_CRYPTO_METHOD;
-
         $this->requester = $requester ?: new Requester();
-
-        $this->connector = $connector;
-
-        if (null === $this->connector) {
-            $executor = new MultiExecutor();
-            $executor->add(new Executor('8.8.8.8'));
-            $executor->add(new Executor('8.8.4.4'));
-
-            $this->connector = new Connector(new Resolver($executor));
-        }
+        $this->connector = $connector ?: new Connector();
     }
 
     /**
@@ -63,10 +43,10 @@ class Client implements ClientInterface
     public function request(
         $method,
         $uri,
-        array $headers = null,
+        array $headers = [],
         ReadableStreamInterface $body = null,
         $timeout = RequesterInterface::DEFAULT_TIMEOUT,
-        array $options = null
+        array $options = []
     ) {
         return $this->send(new Request($method, $uri, $headers, $body), $timeout, $options);
     }
@@ -77,7 +57,7 @@ class Client implements ClientInterface
     public function send(
         RequestInterface $request,
         $timeout = RequesterInterface::DEFAULT_TIMEOUT,
-        array $options = null
+        array $options = []
     ) {
         $uri = $request->getUri();
 
@@ -85,11 +65,15 @@ class Client implements ClientInterface
         $client = (yield $this->connector->connect($uri->getHost(), $uri->getPort(), $options));
 
         if (!$client->isOpen()) {
-            throw new RuntimeException('Could not connect to server.');
+            throw new FailureException('Could not connect to server.');
         }
 
         if ($uri->getScheme() === 'https') {
-            yield $client->enableCrypto($this->cryptoMethod);
+            $cryptoMethod = isset($options['crypto_method'])
+                ? (int) $options['crypto_method']
+                : self::DEFAULT_CRYPTO_METHOD;
+
+            yield $client->enableCrypto($cryptoMethod);
         }
 
         yield $this->requester->request($client, $request, $timeout, $options);

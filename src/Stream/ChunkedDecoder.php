@@ -18,9 +18,9 @@ class ChunkedDecoder extends Stream
     private $buffer;
 
     /**
-     * @param int|null $hwm
+     * @param int $hwm
      */
-    public function __construct($hwm = null)
+    public function __construct($hwm = 0)
     {
         parent::__construct($hwm);
 
@@ -32,7 +32,11 @@ class ChunkedDecoder extends Stream
      * @param float|int $timeout
      * @param bool $end
      *
-     * @return \Icicle\Promise\PromiseInterface
+     * @return \Generator
+     *
+     * @resolve int
+     *
+     * @throws \Icicle\Http\Exception\MessageException
      */
     public function send($data, $timeout = 0, $end = false)
     {
@@ -43,7 +47,8 @@ class ChunkedDecoder extends Stream
         while (!$this->buffer->isEmpty()) {
             if (0 === $this->length) { // Read chunk length.
                 if (false === ($position = $this->buffer->search("\n"))) {
-                    return parent::send($data, $timeout, $end);
+                    yield parent::send($data, $timeout, $end);
+                    return;
                 }
 
                 $length = rtrim($this->buffer->remove($position + 1), "\r\n");
@@ -53,9 +58,8 @@ class ChunkedDecoder extends Stream
                 }
 
                 if (!preg_match('/^[a-f0-9]+$/i', $length)) {
-                    return parent::send('', $timeout, true)->then(function () {
-                        throw new MessageException(400, 'Invalid chunk length.');
-                    });
+                    yield parent::send('', $timeout, true);
+                    throw new MessageException(400, 'Invalid chunk length.');
                 }
 
                 $this->length = hexdec($length) + 2;
@@ -76,6 +80,6 @@ class ChunkedDecoder extends Stream
             }
         }
 
-        return parent::send($data, $timeout, $end);
+        yield parent::send($data, $timeout, $end);
     }
 }

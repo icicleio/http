@@ -24,7 +24,7 @@ class Reader implements ReaderInterface
     /**
      * {@inheritdoc}
      */
-    public function readResponse(ReadableStreamInterface $stream, $timeout = null)
+    public function readResponse(ReadableStreamInterface $stream, $timeout = 0)
     {
         $message = (yield $this->readMessage($stream, $timeout));
 
@@ -38,7 +38,7 @@ class Reader implements ReaderInterface
 
         $protocol = $matches[1];
         $code = (int) $matches[2];
-        $reason = isset($matches[3]) ? $matches[3] : null;
+        $reason = isset($matches[3]) ? $matches[3] : '';
 
         $headers = $this->parseHeaders($headers);
 
@@ -48,7 +48,7 @@ class Reader implements ReaderInterface
     /**
      * {@inheritdoc}
      */
-    public function readRequest(ReadableStreamInterface $stream, $timeout = null)
+    public function readRequest(ReadableStreamInterface $stream, $timeout = 0)
     {
         $message = (yield $this->readMessage($stream, $timeout));
 
@@ -90,10 +90,10 @@ class Reader implements ReaderInterface
      *
      * @resolve string
      *
-     * @reject \Icicle\Http\Exception\MessageException
-     * @reject \Icicle\Socket\Exception\UnreadableException
+     * @throws \Icicle\Http\Exception\MessageException
+     * @throws \Icicle\Stream\Exception\UnreadableException
      */
-    protected function readMessage(ReadableStreamInterface $stream, $timeout = null)
+    protected function readMessage(ReadableStreamInterface $stream, $timeout = 0)
     {
         $data = '';
 

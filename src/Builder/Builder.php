@@ -37,7 +37,7 @@ class Builder implements BuilderInterface
     /**
      * @param mixed[] $options
      */
-    public function __construct(array $options = null)
+    public function __construct(array $options = [])
     {
         if (isset($options['compress_types']) && is_array($options['compress_types'])) {
             $this->compressTypes = $options['compress_types'];
@@ -102,11 +102,8 @@ class Builder implements BuilderInterface
     /**
      * {@inheritdoc}
      */
-    public function buildOutgoingRequest(
-        RequestInterface $request,
-        $timeout = null,
-        $allowPersistent = false
-    ) {
+    public function buildOutgoingRequest(RequestInterface $request, $timeout = 0, $allowPersistent = false)
+    {
         if (!$request->hasHeader('Connection')) {
             $request = $request->withHeader('Connection', $allowPersistent ? 'keep-alive' : 'close');
         }
@@ -135,7 +132,7 @@ class Builder implements BuilderInterface
         }
 
         $stream = new Stream();
-        $stream->end(); // No body in other requests.
+        yield $stream->end(); // No body in other requests.
 
         yield $request->withBody($stream);
     }
@@ -155,18 +152,20 @@ class Builder implements BuilderInterface
      * @return \Generator
      *
      * @resolve \Icicle\Http\Message\MessageInterface
+     *
+     * @throws \Icicle\Http\Exception\MessageException
      */
     private function buildOutgoingStream(MessageInterface $message, $timeout = 0)
     {
-        $stream = $message->getBody();
-
-        if ($stream instanceof SeekableStreamInterface) {
-            $stream->seek(0);
-        }
-
         if (strtolower($message->getHeaderLine('Connection')) === 'upgrade') {
             yield $message;
             return;
+        }
+
+        $stream = $message->getBody();
+
+        if ($stream instanceof SeekableStreamInterface) {
+            yield $stream->seek(0);
         }
 
         if (!$stream->isReadable()) {
@@ -213,7 +212,6 @@ class Builder implements BuilderInterface
         }
 
         yield $message;
-        return;
     }
 
     /**
@@ -223,6 +221,8 @@ class Builder implements BuilderInterface
      * @return \Generator
      *
      * @resolve \Icicle\Http\Message\MessageInterface
+     *
+     * @throws \Icicle\Http\Exception\MessageException
      */
     private function buildIncomingStream(MessageInterface $message, $timeout = 0)
     {

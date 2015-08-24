@@ -31,8 +31,8 @@ class Request extends Message implements RequestInterface
      * @param string $method
      * @param string|\Icicle\Http\Message\UriInterface $uri
      * @param \Icicle\Stream\ReadableStreamInterface|null $stream
-     * @param string[]|null $headers
-     * @param string|null $target
+     * @param string[][] $headers
+     * @param string $target
      * @param string $protocol
      *
      * @throws \Icicle\Http\Exception\MessageException If one of the arguments is invalid.
@@ -40,9 +40,9 @@ class Request extends Message implements RequestInterface
     public function __construct(
         $method,
         $uri = '',
-        array $headers = null,
+        array $headers = [],
         ReadableStreamInterface $stream = null,
-        $target = null,
+        $target = '',
         $protocol = '1.1'
     ) {
         parent::__construct($headers, $stream, $protocol);
@@ -64,7 +64,7 @@ class Request extends Message implements RequestInterface
      */
     public function getRequestTarget()
     {
-        if (null !== $this->target) {
+        if ('' !== $this->target) {
             return $this->target;
         }
 

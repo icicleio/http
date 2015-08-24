@@ -1,3 +1,4 @@
+#!/usr/bin/env php
 <?php
 
 require dirname(__DIR__) . '/vendor/autoload.php';
@@ -30,7 +31,7 @@ $coroutine = Coroutine\create(function () {
 });
 
 $coroutine->done(null, function (Exception $exception) {
-    printf("Exception: %s\n", $exception->getMessage());
+    printf("Exception: %s\n", $exception);
 });
 
 Loop\run();

@@ -80,7 +80,7 @@ class Response extends Message implements ResponseInterface
     private $status;
 
     /**
-     * @var string|null
+     * @var string
      */
     private $reason;
 
@@ -95,9 +95,9 @@ class Response extends Message implements ResponseInterface
      */
     public function __construct(
         $code = 200,
-        array $headers = null,
+        array $headers = [],
         ReadableStreamInterface $stream = null,
-        $reason = null,
+        $reason = '',
         $protocol = '1.1'
     ) {
         parent::__construct($headers, $stream, $protocol);
@@ -119,7 +119,7 @@ class Response extends Message implements ResponseInterface
      */
     public function getReasonPhrase()
     {
-        if (null !== $this->reason) {
+        if ('' !== $this->reason) {
             return $this->reason;
         }
 
@@ -129,7 +129,7 @@ class Response extends Message implements ResponseInterface
     /**
      * {@inheritdoc}
      */
-    public function withStatus($code, $reason = null)
+    public function withStatus($code, $reason = '')
     {
         $new = clone $this;
         $new->status = $new->validateStatusCode($code);
@@ -162,6 +162,6 @@ class Response extends Message implements ResponseInterface
      */
     protected function filterReason($reason)
     {
-        return $reason ? (string) $reason : null;
+        return $reason ? (string) $reason : '';
     }
 }

@@ -30,24 +30,10 @@ class Requester implements RequesterInterface
     private $builder;
 
     /**
-     * @var bool
-     */
-    private $allowPersistent = true;
-
-    /**
-     * @var float|int
-     */
-    private $timeout = self::DEFAULT_TIMEOUT;
-
-    /**
      * @param mixed[] $options
      */
-    public function __construct(
-        array $options = null
-    ) {
-        $this->timeout = isset($options['timeout']) ? (float) $options['timeout'] : self::DEFAULT_TIMEOUT;
-        $this->allowPersistent = isset($options['allow_persistent']) ? (bool) $options['allow_persistent'] : true;
-
+    public function __construct(array $options = [])
+    {
         $this->reader = isset($options['reader']) && $options['reader'] instanceof ReaderInterface
             ? $options['reader']
             : new Reader($options);
@@ -64,19 +50,23 @@ class Requester implements RequesterInterface
     /**
      * {@inheritdoc}
      */
-    public function request(SocketClientInterface $client, RequestInterface $request, $timeout = self::DEFAULT_TIMEOUT)
+    public function request(SocketClientInterface $client, RequestInterface $request, array $options = [])
     {
-        $request = (yield $this->builder->buildOutgoingRequest($request, $this->timeout, $this->allowPersistent));
+        $timeout = isset($options['timeout']) ? (float) $options['timeout'] : self::DEFAULT_TIMEOUT;
+        $allowPersistent = isset($options['allow_persistent']) ? (bool) $options['allow_persistent'] : true;
+
+        /** @var \Icicle\Http\Message\RequestInterface $request */
+        $request = (yield $this->builder->buildOutgoingRequest($request, $timeout, $allowPersistent));
 
         yield $client->write($this->encoder->encodeRequest($request));
 
         $stream = $request->getBody();
 
         if ($stream->isReadable()) {
-            yield $stream->pipe($client, false);
+            yield $stream->pipe($client, false, 0, null, $timeout);
         }
 
-        $response = (yield $this->reader->readResponse($client, $this->timeout));
+        $response = (yield $this->reader->readResponse($client, $timeout));
 
         yield $this->builder->buildIncomingResponse($response);
     }

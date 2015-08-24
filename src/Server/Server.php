@@ -25,10 +25,6 @@ use Icicle\Socket\Server\ServerInterface as SocketServerInterface;
 
 class Server implements ServerInterface
 {
-    const DEFAULT_ADDRESS = '127.0.0.1';
-    const DEFAULT_TIMEOUT = 15;
-    const DEFAULT_CRYPTO_METHOD = STREAM_CRYPTO_METHOD_TLS_SERVER;
-
     /**
      * @var callable
      */
@@ -75,16 +71,6 @@ class Server implements ServerInterface
     private $servers = [];
 
     /**
-     * @var float|int
-     */
-    private $timeout = self::DEFAULT_TIMEOUT;
-
-    /**
-     * @var bool
-     */
-    private $allowPersistent = true;
-
-    /**
      * @var bool
      */
     private $open = true;
@@ -93,11 +79,8 @@ class Server implements ServerInterface
      * @param callable $onRequest
      * @param mixed[]|null $options
      */
-    public function __construct(callable $onRequest, array $options = null)
+    public function __construct(callable $onRequest, array $options = [])
     {
-        $this->timeout = isset($options['timeout']) ? (float) $options['timeout'] : self::DEFAULT_TIMEOUT;
-        $this->allowPersistent = isset($options['allow_persistent']) ? (bool) $options['allow_persistent'] : true;
-
         $this->reader = isset($options['reader']) && $options['reader'] instanceof ReaderInterface
             ? $options['reader']
             : new Reader($options);
@@ -170,38 +153,6 @@ class Server implements ServerInterface
     }
 
     /**
-     * @return float
-     */
-    public function getTimeout()
-    {
-        return $this->timeout;
-    }
-
-    /**
-     * @param float|int $timeout
-     */
-    public function setTimeout($timeout)
-    {
-        $this->timeout = (float) $timeout;
-    }
-
-    /**
-     * @return bool
-     */
-    public function allowPersistent()
-    {
-        return $this->allowPersistent;
-    }
-
-    /**
-     * @param bool $allow
-     */
-    public function setAllowPersistent($allow = true)
-    {
-        $this->allowPersistent = (bool) $allow;
-    }
-
-    /**
      * @param string|int $address
      * @param int $port
      * @param mixed[] $options
@@ -211,8 +162,14 @@ class Server implements ServerInterface
      * @see \Icicle\Socket\Server\ServerFactoryInterface::create() Options are similar to this method with the
      *     addition of the crypto_method option.
      */
-    public function listen($port, $address = self::DEFAULT_ADDRESS, array $options = null)
+    public function listen($port, $address = self::DEFAULT_ADDRESS, array $options = [])
     {
+        $cryptoMethod = isset($options['crypto_method'])
+            ? (int) $options['crypto_method']
+            : (isset($options['pem']) ? self::DEFAULT_CRYPTO_METHOD : 0);
+        $timeout = isset($options['timeout']) ? (float) $options['timeout'] : self::DEFAULT_TIMEOUT;
+        $allowPersistent = isset($options['allow_persistent']) ? (bool) $options['allow_persistent'] : true;
+
         if (!$this->open) {
             throw new Error('The server has been closed.');
         }
@@ -221,11 +178,7 @@ class Server implements ServerInterface
 
         $this->servers[] = $server;
 
-        $cryptoMethod = isset($options['crypto_method'])
-            ? (int) $options['crypto_method']
-            : (isset($options['pem']) ? self::DEFAULT_CRYPTO_METHOD : 0);
-
-        $coroutine = new Coroutine($this->accept($server, $cryptoMethod));
+        $coroutine = new Coroutine($this->accept($server, $cryptoMethod, $timeout, $allowPersistent));
         $coroutine->done();
     }
 
@@ -234,14 +187,18 @@ class Server implements ServerInterface
      *
      * @param \Icicle\Socket\Server\ServerInterface $server
      * @param int $cryptoMethod
+     * @param float $timeout
+     * @param bool $allowPersistent
      *
      * @return \Generator
      */
-    private function accept(SocketServerInterface $server, $cryptoMethod)
+    private function accept(SocketServerInterface $server, $cryptoMethod, $timeout, $allowPersistent)
     {
         while ($server->isOpen()) {
             try {
-                $coroutine = new Coroutine($this->process((yield $server->accept()), $cryptoMethod));
+                $coroutine = new Coroutine(
+                    $this->process((yield $server->accept()), $cryptoMethod, $timeout, $allowPersistent)
+                );
                 $coroutine->done();
             } catch (Exception $exception) {
                 if ($this->open) {
@@ -257,37 +214,39 @@ class Server implements ServerInterface
      *
      * @param \Icicle\Socket\Client\ClientInterface $client
      * @param int $cryptoMethod
+     * @param float $timeout
+     * @param bool $allowPersistent
      *
      * @return \Generator
      */
-    private function process(SocketClientInterface $client, $cryptoMethod)
+    private function process(SocketClientInterface $client, $cryptoMethod, $timeout, $allowPersistent)
     {
         $count = 0;
 
         try {
             if (0 !== $cryptoMethod) {
-                yield $client->enableCrypto($cryptoMethod, $this->timeout);
+                yield $client->enableCrypto($cryptoMethod, $timeout);
             }
 
             do {
                 try {
                     /** @var \Icicle\Http\Message\RequestInterface $request */
-                    $request = (yield $this->readRequest($client));
+                    $request = (yield $this->readRequest($client, $timeout));
                     ++$count;
 
                     /** @var \Icicle\Http\Message\ResponseInterface $response */
-                    $response = (yield $this->createResponse($request, $client));
+                    $response = (yield $this->createResponse($request, $client, $timeout, $allowPersistent));
                 } catch (TimeoutException $exception) { // Request timeout.
                     if (0 < $count) {
                         return; // Keep-alive timeout expired.
                     }
-                    $response = (yield $this->createErrorResponse(408, $client));
+                    $response = (yield $this->createErrorResponse(408, $client, $timeout));
                 } catch (MessageException $exception) { // Bad request.
-                    $response = (yield $this->createErrorResponse($exception->getCode(), $client));
+                    $response = (yield $this->createErrorResponse($exception->getCode(), $client, $timeout));
                 } catch (InvalidValueException $exception) { // Invalid value in message header.
-                    $response = (yield $this->createErrorResponse(400, $client));
+                    $response = (yield $this->createErrorResponse(400, $client, $timeout));
                 } catch (ParseException $exception) { // Parse error in request.
-                    $response = (yield $this->createErrorResponse(400, $client));
+                    $response = (yield $this->createErrorResponse(400, $client, $timeout));
                 }
 
                 yield $client->write($this->encoder->encodeResponse($response));
@@ -295,7 +254,7 @@ class Server implements ServerInterface
                 $stream = $response->getBody();
 
                 if ($stream->isReadable() && (!isset($request) || $request->getMethod() !== 'HEAD')) {
-                    yield $stream->pipe($client, false);
+                    yield $stream->pipe($client, false, 0, null, $timeout);
                 }
 
                 $connection = strtolower($response->getHeaderLine('Connection'));
@@ -308,7 +267,7 @@ class Server implements ServerInterface
                     yield $this->upgrade($request, $response, $client);
                     return;
                 }
-            } while ($this->allowPersistent
+            } while ($allowPersistent
                 && $connection === 'keep-alive'
                 && $client->isReadable()
                 && $client->isWritable()
@@ -359,14 +318,15 @@ class Server implements ServerInterface
      * @coroutine
      *
      * @param \Icicle\Socket\Client\ClientInterface $client
+     * @param float $timeout
      *
      * @return \Generator
      */
-    private function readRequest(SocketClientInterface $client)
+    private function readRequest(SocketClientInterface $client, $timeout)
     {
-        $request = (yield $this->reader->readRequest($client, $this->timeout));
+        $request = (yield $this->reader->readRequest($client, $timeout));
 
-        yield $this->builder->buildIncomingRequest($request, $this->timeout);
+        yield $this->builder->buildIncomingRequest($request, $timeout);
     }
 
     /**
@@ -374,13 +334,19 @@ class Server implements ServerInterface
      *
      * @param \Icicle\Http\Message\RequestInterface $request
      * @param \Icicle\Socket\Client\ClientInterface $client
+     * @param float $timeout
+     * @param bool $allowPersistent
      *
      * @return \Generator
      *
      * @resolve \Icicle\Http\Message|ResponseInterface
      */
-    private function createResponse(RequestInterface $request, SocketClientInterface $client)
-    {
+    private function createResponse(
+        RequestInterface $request,
+        SocketClientInterface $client,
+        $timeout,
+        $allowPersistent
+    ) {
         try {
             $onRequest = $this->onRequest;
             $response = (yield $onRequest($request, $client));
@@ -396,12 +362,7 @@ class Server implements ServerInterface
             $response = (yield $this->createDefaultErrorResponse(500));
         }
 
-        yield $this->builder->buildOutgoingResponse(
-            $response,
-            $request,
-            $this->timeout,
-            $this->allowPersistent
-        );
+        yield $this->builder->buildOutgoingResponse($response, $request, $timeout, $allowPersistent);
     }
 
     /**
@@ -409,12 +370,13 @@ class Server implements ServerInterface
      *
      * @param int $code
      * @param \Icicle\Socket\Client\ClientInterface $client
+     * @param float $timeout
      *
      * @return \Generator
      *
      * @resolve \Icicle\Http\Message|ResponseInterface
      */
-    private function createErrorResponse($code, SocketClientInterface $client)
+    private function createErrorResponse($code, SocketClientInterface $client, $timeout)
     {
         if (null === $this->onInvalidRequest) {
             $response = (yield $this->createDefaultErrorResponse($code));
@@ -435,7 +397,7 @@ class Server implements ServerInterface
             }
         }
 
-        yield $this->builder->buildOutgoingResponse($response, null, $this->timeout, false);
+        yield $this->builder->buildOutgoingResponse($response, null, $timeout, false);
     }
 
     /**
