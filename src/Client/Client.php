@@ -75,7 +75,9 @@ class Client implements ClientInterface
 
             yield $client->enableCrypto($cryptoMethod);
         }
+        
+        $options['timeout'] = $timeout;
 
-        yield $this->requester->request($client, $request, $timeout, $options);
+        yield $this->requester->request($client, $request, $options);
     }
 }
