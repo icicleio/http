@@ -68,7 +68,7 @@ class Reader implements ReaderInterface
 
         if ('/' === $target[0]) { // origin-form
             $uri = new Uri($this->filterHost($this->findHost($headers)) . $target);
-            $target = null; // null $target since it was a path.
+            $target = ''; // Empty request target since it was a path.
         } elseif ('*' === $target) { // asterisk-form
             $uri = new Uri($this->filterHost($this->findHost($headers)));
         } elseif (preg_match('/^https?:\/\//i', $target)) { // absolute-form

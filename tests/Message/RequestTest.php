@@ -188,7 +188,7 @@ class RequestTest extends TestCase
      */
     public function testConstructWithInvalidTarget()
     {
-        new Request('GET', '', null, null, 'Invalid target');
+        new Request('GET', '', [], null, 'Invalid target');
     }
 
     public function getUris()
@@ -233,7 +233,7 @@ class RequestTest extends TestCase
      */
     public function testConstructWithTarget($target)
     {
-        $request = new Request('GET', 'http://example.org/different/path', null, null, $target);
+        $request = new Request('GET', 'http://example.org/different/path', [], null, $target);
         $this->assertSame($target, $request->getRequestTarget());
     }
 

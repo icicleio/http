@@ -77,7 +77,7 @@ class Server implements ServerInterface
 
     /**
      * @param callable $onRequest
-     * @param mixed[]|null $options
+     * @param mixed[] $options
      */
     public function __construct(callable $onRequest, array $options = [])
     {
@@ -153,7 +153,7 @@ class Server implements ServerInterface
     }
 
     /**
-     * @param string|int $address
+     * @param string $address
      * @param int $port
      * @param mixed[] $options
      *

@@ -45,10 +45,9 @@ class Client implements ClientInterface
         $uri,
         array $headers = [],
         ReadableStreamInterface $body = null,
-        $timeout = RequesterInterface::DEFAULT_TIMEOUT,
         array $options = []
     ) {
-        return $this->send(new Request($method, $uri, $headers, $body), $timeout, $options);
+        return $this->send(new Request($method, $uri, $headers, $body), $options);
     }
 
     /**
@@ -56,7 +55,6 @@ class Client implements ClientInterface
      */
     public function send(
         RequestInterface $request,
-        $timeout = RequesterInterface::DEFAULT_TIMEOUT,
         array $options = []
     ) {
         $uri = $request->getUri();
@@ -68,16 +66,18 @@ class Client implements ClientInterface
             throw new FailureException('Could not connect to server.');
         }
 
-        if ($uri->getScheme() === 'https') {
-            $cryptoMethod = isset($options['crypto_method'])
-                ? (int) $options['crypto_method']
-                : self::DEFAULT_CRYPTO_METHOD;
+        try {
+            if ($uri->getScheme() === 'https') {
+                $cryptoMethod = isset($options['crypto_method'])
+                    ? (int) $options['crypto_method']
+                    : self::DEFAULT_CRYPTO_METHOD;
 
-            yield $client->enableCrypto($cryptoMethod);
+                yield $client->enableCrypto($cryptoMethod);
+            }
+
+            yield $this->requester->request($client, $request, $options);
+        } finally {
+            $client->close();
         }
-        
-        $options['timeout'] = $timeout;
-
-        yield $this->requester->request($client, $request, $options);
     }
 }

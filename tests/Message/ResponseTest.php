@@ -62,7 +62,7 @@ class ResponseTest extends TestCase
     {
         $reason = 'Custom Reason';
 
-        $response = new Response($code, null, null, $reason);
+        $response = new Response($code, [], null, $reason);
         $this->assertSame((int) $code, $response->getStatusCode());
         $this->assertSame($reason, $response->getReasonPhrase());
     }

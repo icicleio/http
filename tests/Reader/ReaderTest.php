@@ -35,7 +35,8 @@ class ReaderTest extends TestCase
         $data = file_get_contents(dirname(__DIR__) . '/data/' . $filename);
 
         $stream = new Stream();
-        $stream->end($data);
+        $coroutine = new Coroutine($stream->end($data));
+        $coroutine->wait();
 
         return $stream;
     }
@@ -81,7 +82,7 @@ class ReaderTest extends TestCase
                     $this->assertSame(strlen($body), $stream->getLength());
                 }
 
-                $promise = $stream->read();
+                $promise = new Coroutine($stream->read());
 
                 $callback = $this->createCallback(1);
                 $callback->method('__invoke')
@@ -167,7 +168,7 @@ class ReaderTest extends TestCase
                     $this->assertSame(strlen($body), $stream->getLength());
                 }
 
-                $promise = $stream->read();
+                $promise = new Coroutine($stream->read());
 
                 $callback = $this->createCallback(1);
                 $callback->method('__invoke')

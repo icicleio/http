@@ -23,7 +23,7 @@ class Request extends Message implements RequestInterface
     private $hostFromUri = false;
 
     /**
-     * @var string|null
+     * @var string
      */
     private $target;
 
@@ -50,9 +50,7 @@ class Request extends Message implements RequestInterface
         $this->method = $this->filterMethod($method);
         $this->uri = $uri instanceof UriInterface ? $uri : new Uri($uri);
 
-        if (null !== $target) {
-            $this->target = $this->filterTarget($target);
-        }
+        $this->target = $this->filterTarget($target);
 
         if (!$this->hasHeader('Host')) {
             $this->setHostFromUri();
@@ -206,6 +204,10 @@ class Request extends Message implements RequestInterface
      */
     protected function filterTarget($target)
     {
+        if (!is_string($target)) {
+            throw new InvalidMethodException('Request target must be a string.');
+        }
+
         if (preg_match('/\s/', $target)) {
             throw new InvalidValueException('Request target cannot contain whitespace.');
         }

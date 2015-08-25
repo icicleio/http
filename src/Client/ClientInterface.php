@@ -30,7 +30,6 @@ interface ClientInterface
         $uri,
         array $headers = null,
         ReadableStreamInterface $body = null,
-        $timeout = RequesterInterface::DEFAULT_TIMEOUT,
         array $options = null
     );
 
@@ -50,7 +49,6 @@ interface ClientInterface
      */
     public function send(
         RequestInterface $request,
-        $timeout = RequesterInterface::DEFAULT_TIMEOUT,
         array $options = null
     );
 }

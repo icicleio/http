@@ -131,7 +131,7 @@ class Uri implements UriInterface
      */
     public function getPort()
     {
-        if (null === $this->port) {
+        if (0 === $this->port) {
             return $this->getPortForScheme();
         }
 
@@ -341,7 +341,7 @@ class Uri implements UriInterface
         $scheme = $this->getScheme();
 
         if (!$scheme) {
-            return null;
+            return 0;
         }
 
         return $this->allowedSchemes()[$scheme];

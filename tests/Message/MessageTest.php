@@ -21,7 +21,7 @@ class MessageTest extends TestCase
      *
      * @return \Icicle\Http\Message\Message
      */
-    public function createMessage(ReadableStreamInterface $stream = null, array $headers = null, $protocol = '1.1')
+    public function createMessage(ReadableStreamInterface $stream = null, array $headers = [], $protocol = '1.1')
     {
         return $this->getMockForAbstractClass('Icicle\Http\Message\Message', [$headers, $stream, $protocol]);
     }
@@ -30,7 +30,7 @@ class MessageTest extends TestCase
     {
         $protocol = '1.0';
 
-        $message = $this->createMessage(null, null, $protocol);
+        $message = $this->createMessage(null, [], $protocol);
 
         $this->assertSame($protocol, $message->getProtocolVersion());
     }
@@ -43,7 +43,7 @@ class MessageTest extends TestCase
         $original = '1.1';
         $protocol = '1.0';
 
-        $message = $this->createMessage(null, null, $original);
+        $message = $this->createMessage(null, [], $original);
         $new = $message->withProtocolVersion($protocol);
 
         $this->assertNotSame($message, $new);
@@ -58,7 +58,7 @@ class MessageTest extends TestCase
     {
         $protocol = 'protocol';
 
-        $message = $this->createMessage(null, null, $protocol);
+        $message = $this->createMessage(null, [], $protocol);
     }
 
     /**
@@ -69,7 +69,7 @@ class MessageTest extends TestCase
         $original = '1.1';
         $protocol = 'protocol';
 
-        $message = $this->createMessage(null, null, $original);
+        $message = $this->createMessage(null, [], $original);
         $new = $message->withProtocolVersion($protocol);
     }
 
