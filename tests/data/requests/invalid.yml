@@ -31,3 +31,6 @@
 
 - file: requests/19.txt
   exception: \Icicle\Http\Exception\ParseException
+
+- file: requests/20.txt
+  exception: \Icicle\Http\Exception\InvalidValueException

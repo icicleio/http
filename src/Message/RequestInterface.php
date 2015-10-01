@@ -53,13 +53,32 @@ interface RequestInterface extends MessageInterface
     public function getUri();
 
     /**
+     * @return \Icicle\Http\Message\Cookie\CookieInterface[]
+     */
+    public function getCookies();
+
+    /**
+     * @param string $name
+     *
+     * @return \Icicle\Http\Message\Cookie\CookieInterface
+     */
+    public function getCookie($name);
+
+    /**
+     * @param string $name
+     *
+     * @return bool
+     */
+    public function hasCookie($name);
+
+    /**
      * Returns a new instance with the given request target.
      *
      * @param string $target
      *
-     * @return static
+     * @return self
      *
-     * @throws \Icicle\Http\Exception\InvalidArgumentException If the target contains whitespace.
+     * @throws \Icicle\Http\Exception\InvalidValueException If the target contains whitespace.
      */
     public function withRequestTarget($target);
 
@@ -68,9 +87,9 @@ interface RequestInterface extends MessageInterface
      *
      * @param string $method
      *
-     * @return static
+     * @return self
      *
-     * @throws \Icicle\Http\Exception\InvalidArgumentException If the given method is invalid.
+     * @throws \Icicle\Http\Exception\InvalidValueException If the given method is invalid.
      */
     public function withMethod($method);
 
@@ -79,7 +98,22 @@ interface RequestInterface extends MessageInterface
      *
      * @param string|\Icicle\Http\Message\UriInterface $uri
      *
-     * @return static
+     * @return self
      */
     public function withUri($uri);
+
+    /**
+     * @param string $name
+     * @param string $value
+     *
+     * @return self
+     */
+    public function withCookie($name, $value);
+
+    /**
+     * @param string $name
+     *
+     * @return self
+     */
+    public function withoutCookie($name);
 }

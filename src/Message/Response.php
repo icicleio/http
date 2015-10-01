@@ -2,6 +2,7 @@
 namespace Icicle\Http\Message;
 
 use Icicle\Http\Exception\InvalidStatusException;
+use Icicle\Http\Message\Cookie\SetCookie;
 use Icicle\Stream\ReadableStreamInterface;
 
 class Response extends Message implements ResponseInterface
@@ -85,6 +86,11 @@ class Response extends Message implements ResponseInterface
     private $reason;
 
     /**
+     * @var \Icicle\Http\Message\Cookie\Cookie[]
+     */
+    private $cookies = [];
+
+    /**
      * @param int $code Status code.
      * @param \Icicle\Stream\ReadableStreamInterface|null $stream
      * @param string[][] $headers
@@ -138,6 +144,109 @@ class Response extends Message implements ResponseInterface
     }
 
     /**
+     * {@inheritdoc}
+     */
+    public function getCookies()
+    {
+        return array_values($this->cookies);
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function hasCookie($name)
+    {
+        return array_key_exists((string) $name, $this->cookies);
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function getCookie($name)
+    {
+        $name = (string) $name;
+        return array_key_exists($name, $this->cookies) ? $this->cookies[$name] : null;
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function withCookie(
+        $name,
+        $value = '',
+        $expires = 0,
+        $path = '',
+        $domain = '',
+        $secure = false,
+        $httpOnly = false
+    ) {
+        $new = clone $this;
+
+        $new->cookies[(string) $name] = new SetCookie($name, $value, $expires, $path, $domain, $secure, $httpOnly);
+        $new->setHeadersFromCookies();
+        return $new;
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function withoutCookie($name)
+    {
+        $new = clone $this;
+
+        unset($new->cookies[(string) $name]);
+        $new->setHeadersFromCookies();
+        return $new;
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    protected function addHeader($name, $value)
+    {
+        $normalized = strtolower($name);
+
+        parent::addHeader($name, $value);
+
+        if ('set-cookie' === $normalized) {
+            $this->setCookiesFromHeaders();
+        }
+
+        return $this;
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    protected function setHeader($name, $value)
+    {
+        parent::setHeader($name, $value);
+
+        $normalized = strtolower($name);
+
+        if ('set-cookie' === $normalized) {
+            $this->setCookiesFromHeaders();
+        }
+
+        return $this;
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    protected function removeHeader($name)
+    {
+        $normalized = strtolower($name);
+
+        parent::removeHeader($name);
+
+        if ('set-cookie' === $normalized) {
+            $this->cookies = [];
+        }
+
+        return $this;
+    }
+    /**
      * @param string|int $code
      *
      * @return int
@@ -163,5 +272,36 @@ class Response extends Message implements ResponseInterface
     protected function filterReason($reason)
     {
         return $reason ? (string) $reason : '';
+    }
+
+    /**
+     * Sets cookies based on headers.
+     *
+     * @throws \Icicle\Http\Exception\InvalidValueException
+     */
+    private function setCookiesFromHeaders()
+    {
+        $this->cookies = [];
+
+        $headers = $this->getHeader('Set-Cookie');
+
+        foreach ($headers as $line) {
+            $cookie = SetCookie::fromHeader($line);
+            $this->cookies[$cookie->getName()] = $cookie;
+        }
+    }
+
+    /**
+     * Sets headers based on cookie values.
+     */
+    private function setHeadersFromCookies()
+    {
+        $values = [];
+
+        foreach ($this->cookies as $cookie) {
+            $values[] = $cookie->toHeader();
+        }
+
+        $this->setHeader('Set-Cookie', $values);
     }
 }

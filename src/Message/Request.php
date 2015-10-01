@@ -3,6 +3,7 @@ namespace Icicle\Http\Message;
 
 use Icicle\Http\Exception\InvalidMethodException;
 use Icicle\Http\Exception\InvalidValueException;
+use Icicle\Http\Message\Cookie\Cookie;
 use Icicle\Stream\ReadableStreamInterface;
 
 class Request extends Message implements RequestInterface
@@ -26,6 +27,11 @@ class Request extends Message implements RequestInterface
      * @var string
      */
     private $target;
+
+    /**
+     * @var \Icicle\Http\Message\Cookie\CookieInterface[]
+     */
+    private $cookies = [];
 
     /**
      * @param string $method
@@ -119,50 +125,6 @@ class Request extends Message implements RequestInterface
     /**
      * {@inheritdoc}
      */
-    public function withHeader($name, $value)
-    {
-        $new = parent::withHeader($name, $value);
-
-        if (strtolower($name) === 'host') {
-            $new->hostFromUri = false;
-        }
-
-        return $new;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function withAddedHeader($name, $value)
-    {
-        if (strtolower($name) === 'host' && $this->hostFromUri) {
-            $new = parent::withoutHeader('Host');
-            $new->setHeader($name, $value);
-            $new->hostFromUri = false;
-        } else {
-            $new = parent::withAddedHeader($name, $value);
-        }
-
-        return $new;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function withoutHeader($name)
-    {
-        $new = parent::withoutHeader($name);
-
-        if (strtolower($name) === 'host') {
-            $new->setHostFromUri();
-        }
-
-        return $new;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
     public function withUri($uri)
     {
         if (!$uri instanceof UriInterface) {
@@ -176,6 +138,52 @@ class Request extends Message implements RequestInterface
             $new->setHostFromUri();
         }
 
+        return $new;
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function getCookies()
+    {
+        return array_values($this->cookies);
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function getCookie($name)
+    {
+        return array_key_exists($name, $this->cookies) ? $this->cookies[$name] : null;
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function hasCookie($name)
+    {
+        return array_key_exists($name, $this->cookies);
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function withCookie($name, $value)
+    {
+        $new = clone $this;
+        $new->cookies[(string) $name] = new Cookie($name, $value);
+        $new->setHeadersFromCookies();
+        return $new;
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function withoutCookie($name)
+    {
+        $new = clone $this;
+        unset($new->cookies[(string) $name]);
+        $new->setHeadersFromCookies();
         return $new;
     }
 
@@ -216,6 +224,63 @@ class Request extends Message implements RequestInterface
     }
 
     /**
+     * {@inheritdoc}
+     */
+    protected function addHeader($name, $value)
+    {
+        $normalized = strtolower($name);
+
+        if ('host' === $normalized && $this->hostFromUri) {
+            $this->hostFromUri = false;
+            return parent::setHeader($name, $value);
+        }
+
+        parent::addHeader($name, $value);
+
+        if ('cookie' === $normalized) {
+            $this->setCookiesFromHeaders();
+        }
+
+        return $this;
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    protected function setHeader($name, $value)
+    {
+        parent::setHeader($name, $value);
+
+        $normalized = strtolower($name);
+
+        if ('cookie' === $normalized) {
+            $this->setCookiesFromHeaders();
+        } elseif ('host' === $normalized) {
+            $this->hostFromUri = false;
+        }
+
+        return $this;
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    protected function removeHeader($name)
+    {
+        $normalized = strtolower($name);
+
+        parent::removeHeader($name);
+
+        if ('cookie' === $normalized) {
+            $this->setCookiesFromHeaders();
+        } elseif ('host' === $normalized) {
+            $this->setHostFromUri();
+        }
+
+        return $this;
+    }
+
+    /**
      * Sets the host based on the current URI.
      */
     private function setHostFromUri()
@@ -230,7 +295,43 @@ class Request extends Message implements RequestInterface
                 $host = sprintf('%s:%d', $host, $port);
             }
 
-            $this->setHeader('Host', $host);
+            parent::setHeader('Host', $host);
+        }
+    }
+
+    /**
+     * Sets cookies based on headers.
+     *
+     * @throws \Icicle\Http\Exception\InvalidValueException
+     */
+    private function setCookiesFromHeaders()
+    {
+        $this->cookies = [];
+
+        $headers = $this->getHeader('Cookie');
+
+        foreach ($headers as $line) {
+            foreach (explode(';', $line) as $pair) {
+                $cookie = Cookie::fromHeader($pair);
+                $this->cookies[$cookie->getName()] = $cookie;
+
+            }
+        }
+    }
+
+    /**
+     * Sets headers based on cookie values.
+     */
+    private function setHeadersFromCookies()
+    {
+        $values = [];
+
+        foreach ($this->cookies as $cookie) {
+            $values[] = $cookie->toHeader();
+        }
+
+        if (!empty($values)) {
+            $this->setHeader('Cookie', implode('; ', $values));
         }
     }
 }

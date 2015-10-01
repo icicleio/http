@@ -1,6 +1,7 @@
 <?php
 namespace Icicle\Tests\Http\Message;
 
+use Icicle\Http\Message\Cookie\CookieInterface;
 use Icicle\Http\Message\Request;
 use Icicle\Http\Message\Uri;
 use Icicle\Tests\Http\TestCase;
@@ -247,5 +248,106 @@ class RequestTest extends TestCase
         $new = $request->withRequestTarget($target);
         $this->assertNotSame($request, $new);
         $this->assertSame($target, $new->getRequestTarget());
+    }
+
+    public function testCookieDecode()
+    {
+        $request = new Request('GET', 'http://example.org/different/path', [
+            'Cookie' => 'name1 = value1; name2=value2'
+        ]);
+
+        $cookies = $request->getCookies();
+
+        $this->assertInternalType('array', $cookies);
+        $this->assertSame(2, count($cookies));
+        $this->assertSame('name1', $cookies[0]->getName());
+        $this->assertSame('value1', $cookies[0]->getValue());
+        $this->assertSame('name2', $cookies[1]->getName());
+        $this->assertSame('value2', $cookies[1]->getValue());
+    }
+
+    /**
+     * @depends testCookieDecode
+     *
+     * @return \Icicle\Http\Message\Request
+     */
+    public function testWithCookie()
+    {
+        $request = new Request('GET', 'http://example.com');
+
+        $new = $request->withCookie('name', 'value');
+        $this->assertNotSame($request, $new);
+
+        $this->assertTrue($new->hasCookie('name'));
+        $cookie = $new->getCookie('name');
+        $this->assertInstanceOf(CookieInterface::class, $cookie);
+        $this->assertSame('name', $cookie->getName());
+        $this->assertSame('value', $cookie->getValue());
+        $this->assertSame('value', (string) $cookie);
+
+        $this->assertSame($cookie, $new->getCookies()[0]);
+
+        $this->assertTrue($new->hasHeader('Cookie'));
+        $this->assertSame(['name=value'], $new->getHeader('Cookie'));
+
+        return $new;
+    }
+
+    /**
+     * @depends testWithCookie
+     * @param \Icicle\Http\Message\Request $request
+     *
+     * @return \Icicle\Http\Message\Request
+     */
+    public function testWithAnotherCookie($request)
+    {
+        $new = $request->withCookie('key', 'cookie-value');
+        $this->assertNotSame($request, $new);
+
+        $this->assertTrue($new->hasCookie('name'));
+        $this->assertTrue($new->hasCookie('key'));
+        $cookie = $new->getCookie('key');
+        $this->assertSame('key', $cookie->getName());
+        $this->assertSame('cookie-value', $cookie->getValue());
+
+        $this->assertTrue($new->hasHeader('Cookie'));
+        $this->assertEquals(['name=value', 'key=cookie-value'], explode('; ', $new->getHeader('Cookie')[0]));
+
+        return $new;
+    }
+
+    /**
+     * @depends testWithAnotherCookie
+     * @param \Icicle\Http\Message\Request $request
+     *
+     * @return \Icicle\Http\Message\Request
+     */
+    public function testWithoutCookie($request)
+    {
+        $new = $request->withoutCookie('name');
+        $this->assertNotSame($request, $new);
+        $this->assertFalse($new->hasCookie('name'));
+        $this->assertTrue($new->hasCookie('key'));
+
+        $cookie = $new->getCookie('key');
+        $this->assertSame($cookie, $new->getCookies()[0]);
+
+        $this->assertTrue($new->hasHeader('Cookie'));
+        $this->assertEquals(['key=cookie-value'], $new->getHeader('Cookie'));
+
+        return $new;
+    }
+
+    /**
+     * @depends testWithoutCookie
+     * @param \Icicle\Http\Message\Request $request
+     *
+     * @return \Icicle\Http\Message\Request
+     */
+    public function testWithoutCookieHeader($request)
+    {
+        $new = $request->withoutHeader('Cookie');
+
+        $this->assertEmpty($new->getCookies());
     }
 }

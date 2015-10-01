@@ -62,7 +62,7 @@ interface MessageInterface
      *
      * @param string $version
      *
-     * @return static
+     * @return self
      */
     public function withProtocolVersion($version);
 
@@ -72,7 +72,7 @@ interface MessageInterface
      * @param string $name
      * @param string|string[] $value
      *
-     * @return static
+     * @return self
      *
      * @throws \Icicle\Http\Exception\InvalidHeaderException If the header name or value is invalid.
      */
@@ -85,7 +85,7 @@ interface MessageInterface
      * @param string $name
      * @param string|string[] $value
      *
-     * @return static
+     * @return self
      *
      * @throws \Icicle\Http\Exception\InvalidHeaderException If the header name or value is invalid.
      */
@@ -96,7 +96,7 @@ interface MessageInterface
      *
      * @param string $name
      *
-     * @return static
+     * @return self
      */
     public function withoutHeader($name);
 
@@ -105,7 +105,7 @@ interface MessageInterface
      *
      * @param \Icicle\Stream\ReadableStreamInterface $stream
      *
-     * @return static
+     * @return self
      */
     public function withBody(ReadableStreamInterface $stream);
 }
