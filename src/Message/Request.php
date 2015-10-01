@@ -154,6 +154,7 @@ class Request extends Message implements RequestInterface
      */
     public function getCookie($name)
     {
+        $name = (string) $name;
         return array_key_exists($name, $this->cookies) ? $this->cookies[$name] : null;
     }
 
@@ -162,7 +163,7 @@ class Request extends Message implements RequestInterface
      */
     public function hasCookie($name)
     {
-        return array_key_exists($name, $this->cookies);
+        return array_key_exists((string) $name, $this->cookies);
     }
 
     /**
@@ -309,7 +310,6 @@ class Request extends Message implements RequestInterface
             foreach (explode(';', $line) as $pair) {
                 $cookie = Cookie::fromHeader($pair);
                 $this->cookies[$cookie->getName()] = $cookie;
-
             }
         }
     }
