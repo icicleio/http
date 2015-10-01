@@ -2,7 +2,7 @@
 namespace Icicle\Http\Message;
 
 use Icicle\Http\Exception\InvalidStatusException;
-use Icicle\Http\Message\Cookie\SetCookie;
+use Icicle\Http\Message\Cookie\MetaCookie;
 use Icicle\Stream\ReadableStreamInterface;
 
 class Response extends Message implements ResponseInterface
@@ -182,7 +182,7 @@ class Response extends Message implements ResponseInterface
     ) {
         $new = clone $this;
 
-        $new->cookies[(string) $name] = new SetCookie($name, $value, $expires, $path, $domain, $secure, $httpOnly);
+        $new->cookies[(string) $name] = new MetaCookie($name, $value, $expires, $path, $domain, $secure, $httpOnly);
         $new->setHeadersFromCookies();
         return $new;
     }
@@ -286,7 +286,7 @@ class Response extends Message implements ResponseInterface
         $headers = $this->getHeader('Set-Cookie');
 
         foreach ($headers as $line) {
-            $cookie = SetCookie::fromHeader($line);
+            $cookie = MetaCookie::fromHeader($line);
             $this->cookies[$cookie->getName()] = $cookie;
         }
     }

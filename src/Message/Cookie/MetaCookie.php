@@ -3,7 +3,7 @@ namespace Icicle\Http\Message\Cookie;
 
 use Icicle\Http\Exception\InvalidValueException;
 
-class SetCookie extends Cookie implements SetCookieInterface
+class MetaCookie extends Cookie implements MetaCookieInterface
 {
     /**
      * @var string
@@ -103,6 +103,15 @@ class SetCookie extends Cookie implements SetCookieInterface
         return new self($name, $value, $expires, $path, $domain, $secure, $httpOnly);
     }
 
+    /**
+     * @param string $name
+     * @param string $value
+     * @param int $expires
+     * @param string $path
+     * @param string $domain
+     * @param bool $secure
+     * @param bool $httpOnly
+     */
     public function __construct(
         $name,
         $value = '',

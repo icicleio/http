@@ -1,7 +1,7 @@
 <?php
 namespace Icicle\Http\Message\Cookie;
 
-interface SetCookieInterface extends CookieInterface
+interface MetaCookieInterface extends CookieInterface
 {
     /**
      * @return int Unix timestamp of expiration time.

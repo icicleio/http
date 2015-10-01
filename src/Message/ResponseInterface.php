@@ -18,7 +18,7 @@ interface ResponseInterface extends MessageInterface
     public function getReasonPhrase();
 
     /**
-     * @return \Icicle\Http\Message\Cookie\SetCookieInterface[]
+     * @return \Icicle\Http\Message\Cookie\MetaCookieInterface[]
      */
     public function getCookies();
 
@@ -32,7 +32,7 @@ interface ResponseInterface extends MessageInterface
     /**
      * @param string $name
      *
-     * @return \Icicle\Http\Message\Cookie\SetCookieInterface|null
+     * @return \Icicle\Http\Message\Cookie\MetaCookieInterface|null
      */
     public function getCookie($name);
 

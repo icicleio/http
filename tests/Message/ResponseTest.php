@@ -1,7 +1,7 @@
 <?php
 namespace Icicle\Tests\Http\Message;
 
-use Icicle\Http\Message\Cookie\SetCookieInterface;
+use Icicle\Http\Message\Cookie\MetaCookieInterface;
 use Icicle\Http\Message\Response;
 use Icicle\Tests\Http\TestCase;
 
@@ -135,7 +135,7 @@ class ResponseTest extends TestCase
 
         $this->assertTrue($new->hasCookie('name'));
         $cookie = $new->getCookie('name');
-        $this->assertInstanceOf(SetCookieInterface::class, $cookie);
+        $this->assertInstanceOf(MetaCookieInterface::class, $cookie);
         $this->assertSame('name', $cookie->getName());
         $this->assertSame('value', $cookie->getValue());
         $this->assertSame($time, $cookie->getExpires());
@@ -171,7 +171,7 @@ class ResponseTest extends TestCase
         $this->assertTrue($new->hasCookie('key'));
         $this->assertTrue($new->hasCookie('name'));
         $cookie = $new->getCookie('key');
-        $this->assertInstanceOf(SetCookieInterface::class, $cookie);
+        $this->assertInstanceOf(MetaCookieInterface::class, $cookie);
         $this->assertSame('key', $cookie->getName());
         $this->assertSame('cookie-value', $cookie->getValue());
         $this->assertSame($time, $cookie->getExpires());
