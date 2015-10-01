@@ -211,8 +211,6 @@ class Response extends Message implements ResponseInterface
         if ('set-cookie' === $normalized) {
             $this->setCookiesFromHeaders();
         }
-
-        return $this;
     }
 
     /**
@@ -227,8 +225,6 @@ class Response extends Message implements ResponseInterface
         if ('set-cookie' === $normalized) {
             $this->setCookiesFromHeaders();
         }
-
-        return $this;
     }
 
     /**
@@ -243,8 +239,6 @@ class Response extends Message implements ResponseInterface
         if ('set-cookie' === $normalized) {
             $this->cookies = [];
         }
-
-        return $this;
     }
     /**
      * @param string|int $code

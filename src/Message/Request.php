@@ -232,7 +232,8 @@ class Request extends Message implements RequestInterface
 
         if ('host' === $normalized && $this->hostFromUri) {
             $this->hostFromUri = false;
-            return parent::setHeader($name, $value);
+            parent::setHeader($name, $value);
+            return;
         }
 
         parent::addHeader($name, $value);
@@ -240,8 +241,6 @@ class Request extends Message implements RequestInterface
         if ('cookie' === $normalized) {
             $this->setCookiesFromHeaders();
         }
-
-        return $this;
     }
 
     /**
@@ -258,8 +257,6 @@ class Request extends Message implements RequestInterface
         } elseif ('host' === $normalized) {
             $this->hostFromUri = false;
         }
-
-        return $this;
     }
 
     /**
@@ -276,8 +273,6 @@ class Request extends Message implements RequestInterface
         } elseif ('host' === $normalized) {
             $this->setHostFromUri();
         }
-
-        return $this;
     }
 
     /**

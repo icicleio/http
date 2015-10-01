@@ -119,7 +119,8 @@ abstract class Message implements MessageInterface
     public function withHeader($name, $value)
     {
         $new = clone $this;
-        return $new->setHeader($name, $value);
+        $new->setHeader($name, $value);
+        return $new;
     }
 
     /**
@@ -128,7 +129,8 @@ abstract class Message implements MessageInterface
     public function withAddedHeader($name, $value)
     {
         $new = clone $this;
-        return $new->addHeader($name, $value);
+        $new->addHeader($name, $value);
+        return $new;
     }
 
     /**
@@ -137,7 +139,8 @@ abstract class Message implements MessageInterface
     public function withoutHeader($name)
     {
         $new = clone $this;
-        return $new->removeHeader($name);
+        $new->removeHeader($name);
+        return $new;
     }
 
     /**
@@ -154,31 +157,25 @@ abstract class Message implements MessageInterface
      * Sets the headers from the given array.
      *
      * @param string[] $headers
-     *
-     * @return $this
      */
     protected function setHeaders(array $headers)
     {
         $this->headerNameMap = [];
         $this->headers = [];
 
-        return $this->addHeaders($headers);
+        $this->addHeaders($headers);
     }
 
     /**
      * Adds headers from the given array.
      *
      * @param string[] $headers
-     *
-     * @return $this
      */
     protected function addHeaders(array $headers)
     {
         foreach ($headers as $name => $value) {
             $this->addHeader($name, $value);
         }
-
-        return $this;
     }
 
     /**
@@ -186,8 +183,6 @@ abstract class Message implements MessageInterface
      *
      * @param string $name
      * @param string|string[] $value
-     *
-     * @return $this
      *
      * @throws \Icicle\Http\Exception\InvalidHeaderException If the header name or value is invalid.
      */
@@ -207,8 +202,6 @@ abstract class Message implements MessageInterface
 
         $this->headerNameMap[$normalized] = $name;
         $this->headers[$name] = $value;
-
-        return $this;
     }
 
     /**
@@ -216,8 +209,6 @@ abstract class Message implements MessageInterface
      *
      * @param string $name
      * @param string|string[] $value
-     *
-     * @return $this
      *
      * @throws \Icicle\Http\Exception\InvalidHeaderException If the header name or value is invalid.
      */
@@ -237,16 +228,12 @@ abstract class Message implements MessageInterface
             $this->headerNameMap[$normalized] = $name;
             $this->headers[$name] = $value;
         }
-
-        return $this;
     }
 
     /**
      * Removes the given header if it exists.
      *
      * @param string $name
-     *
-     * @return $this
      */
     protected function removeHeader($name)
     {
@@ -256,8 +243,6 @@ abstract class Message implements MessageInterface
             $name = $this->headerNameMap[$normalized];
             unset($this->headers[$name], $this->headerNameMap[$normalized]);
         }
-
-        return $this;
     }
 
     /**
