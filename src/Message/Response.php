@@ -152,7 +152,7 @@ class Response extends Message implements ResponseInterface
      */
     public function getCookies()
     {
-        return array_values($this->cookies);
+        return $this->cookies;
     }
 
     /**

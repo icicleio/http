@@ -260,10 +260,13 @@ class RequestTest extends TestCase
 
         $this->assertInternalType('array', $cookies);
         $this->assertSame(2, count($cookies));
-        $this->assertSame('name1', $cookies[0]->getName());
-        $this->assertSame('value1', $cookies[0]->getValue());
-        $this->assertSame('name2', $cookies[1]->getName());
-        $this->assertSame('value2', $cookies[1]->getValue());
+        $this->assertArrayHasKey('name1', $cookies);
+        $this->assertArrayHasKey('name2', $cookies);
+
+        $this->assertSame('name1', $cookies['name1']->getName());
+        $this->assertSame('value1', $cookies['name1']->getValue());
+        $this->assertSame('name2', $cookies['name2']->getName());
+        $this->assertSame('value2', $cookies['name2']->getValue());
     }
 
     /**
@@ -285,7 +288,7 @@ class RequestTest extends TestCase
         $this->assertSame('value', $cookie->getValue());
         $this->assertSame('value', (string) $cookie);
 
-        $this->assertSame($cookie, $new->getCookies()[0]);
+        $this->assertSame($cookie, $new->getCookies()['name']);
 
         $this->assertTrue($new->hasHeader('Cookie'));
         $this->assertSame(['name=value'], $new->getHeader('Cookie'));
@@ -330,10 +333,51 @@ class RequestTest extends TestCase
         $this->assertTrue($new->hasCookie('key'));
 
         $cookie = $new->getCookie('key');
-        $this->assertSame($cookie, $new->getCookies()[0]);
+        $this->assertSame($cookie, $new->getCookies()['key']);
 
         $this->assertTrue($new->hasHeader('Cookie'));
         $this->assertEquals(['key=cookie-value'], $new->getHeader('Cookie'));
+
+        return $new;
+    }
+
+    /**
+     * @depends testWithCookie
+     * @param \Icicle\Http\Message\Response $response
+     *
+     * @return \Icicle\Http\Message\Response
+     */
+    public function testWithCookieHeader($response)
+    {
+        $new = $response->withHeader('Cookie', 'test=cookie-value');
+
+        $this->assertTrue($new->hasCookie('test'));
+        $cookie = $new->getCookie('test');
+        $this->assertSame('test', $cookie->getName());
+        $this->assertSame('cookie-value', $cookie->getValue());
+
+        return $new;
+    }
+
+    /**
+     * @depends testWithCookieHeader
+     * @param \Icicle\Http\Message\Response $response
+     *
+     * @return \Icicle\Http\Message\Response
+     */
+    public function testWithAddedCookieHeader($response)
+    {
+        $new = $response->withAddedHeader('Cookie', 'test2=cookie-value2');
+
+        $this->assertTrue($new->hasCookie('test'));
+        $cookie = $new->getCookie('test');
+        $this->assertSame('test', $cookie->getName());
+        $this->assertSame('cookie-value', $cookie->getValue());
+
+        $this->assertTrue($new->hasCookie('test2'));
+        $cookie = $new->getCookie('test2');
+        $this->assertSame('test2', $cookie->getName());
+        $this->assertSame('cookie-value2', $cookie->getValue());
 
         return $new;
     }

@@ -205,7 +205,7 @@ class Request extends Message implements RequestInterface
      */
     public function getCookies()
     {
-        return array_values($this->cookies);
+        return $this->cookies;
     }
 
     /**
