@@ -110,6 +110,10 @@ class Response extends Message implements ResponseInterface
 
         $this->status = $this->validateStatusCode($code);
         $this->reason = $this->filterReason($reason);
+
+        if ($this->hasHeader('Set-Cookie')) {
+            $this->setCookiesFromHeaders();
+        }
     }
 
     /**
@@ -202,44 +206,45 @@ class Response extends Message implements ResponseInterface
     /**
      * {@inheritdoc}
      */
-    protected function addHeader($name, $value)
+    public function withHeader($name, $value)
     {
-        $normalized = strtolower($name);
+        $new = parent::withHeader($name, $value);
 
-        parent::addHeader($name, $value);
-
-        if ('set-cookie' === $normalized) {
-            $this->setCookiesFromHeaders();
+        if ('set-cookie' === strtolower($name)) {
+            $new->setCookiesFromHeaders();
         }
+
+        return $new;
     }
 
     /**
      * {@inheritdoc}
      */
-    protected function setHeader($name, $value)
+    public function withAddedHeader($name, $value)
     {
-        parent::setHeader($name, $value);
+        $new = parent::withAddedHeader($name, $value);
 
-        $normalized = strtolower($name);
-
-        if ('set-cookie' === $normalized) {
-            $this->setCookiesFromHeaders();
+        if ('set-cookie' === strtolower($name)) {
+            $new->setCookiesFromHeaders();
         }
+
+        return $new;
     }
 
     /**
      * {@inheritdoc}
      */
-    protected function removeHeader($name)
+    public function withoutHeader($name)
     {
-        $normalized = strtolower($name);
+        $new = parent::withoutHeader($name);
 
-        parent::removeHeader($name);
-
-        if ('set-cookie' === $normalized) {
-            $this->cookies = [];
+        if ('set-cookie' === strtolower($name)) {
+            $new->cookies = [];
         }
+
+        return $new;
     }
+
     /**
      * @param string|int $code
      *

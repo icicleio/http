@@ -61,6 +61,10 @@ class Request extends Message implements RequestInterface
         if (!$this->hasHeader('Host')) {
             $this->setHostFromUri();
         }
+
+        if ($this->hasHeader('Cookie')) {
+            $this->setCookiesFromHeaders();
+        }
     }
 
     /**
@@ -122,6 +126,61 @@ class Request extends Message implements RequestInterface
         return $new;
     }
 
+    /**
+     * {@inheritdoc}
+     */
+    public function withHeader($name, $value)
+    {
+        $new = parent::withHeader($name, $value);
+
+        $normalized = strtolower($name);
+
+        if ('host' === $normalized) {
+            $new->hostFromUri = false;
+        } elseif ('cookie' === $normalized) {
+            $new->setCookiesFromHeaders();
+        }
+
+        return $new;
+    }
+    /**
+     * {@inheritdoc}
+     */
+    public function withAddedHeader($name, $value)
+    {
+        $normalized = strtolower($name);
+
+        if ('host' === $normalized && $this->hostFromUri) {
+            $new = parent::withoutHeader('Host');
+            $new->setHeader($name, $value);
+            $new->hostFromUri = false;
+        } else {
+            $new = parent::withAddedHeader($name, $value);
+
+            if ('cookie' === $normalized) {
+                $new->setCookiesFromHeaders();
+            }
+        }
+
+        return $new;
+    }
+    /**
+     * {@inheritdoc}
+     */
+    public function withoutHeader($name)
+    {
+        $new = parent::withoutHeader($name);
+
+        $normalized = strtolower($name);
+
+        if ('host' === $normalized) {
+            $new->setHostFromUri();
+        } elseif ('cookie' === $normalized) {
+            $new->cookies = [];
+        }
+
+        return $new;
+    }
     /**
      * {@inheritdoc}
      */
@@ -222,58 +281,6 @@ class Request extends Message implements RequestInterface
         }
 
         return $target;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    protected function addHeader($name, $value)
-    {
-        $normalized = strtolower($name);
-
-        if ('host' === $normalized && $this->hostFromUri) {
-            $this->hostFromUri = false;
-            parent::setHeader($name, $value);
-            return;
-        }
-
-        parent::addHeader($name, $value);
-
-        if ('cookie' === $normalized) {
-            $this->setCookiesFromHeaders();
-        }
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    protected function setHeader($name, $value)
-    {
-        parent::setHeader($name, $value);
-
-        $normalized = strtolower($name);
-
-        if ('cookie' === $normalized) {
-            $this->setCookiesFromHeaders();
-        } elseif ('host' === $normalized) {
-            $this->hostFromUri = false;
-        }
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    protected function removeHeader($name)
-    {
-        $normalized = strtolower($name);
-
-        parent::removeHeader($name);
-
-        if ('cookie' === $normalized) {
-            $this->setCookiesFromHeaders();
-        } elseif ('host' === $normalized) {
-            $this->setHostFromUri();
-        }
     }
 
     /**
