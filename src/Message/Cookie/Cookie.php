@@ -27,7 +27,7 @@ class Cookie implements CookieInterface
         $parts = array_map('trim', explode('=', $string, 2));
 
         if (2 !== count($parts)) {
-            throw new InvalidValueException('Invalid cookie header value.');
+            throw new InvalidValueException('Invalid cookie header format.');
         }
 
         list($name, $value) = $parts;
@@ -37,8 +37,8 @@ class Cookie implements CookieInterface
 
     public function __construct($name, $value = '')
     {
-        $this->name = (string) $name;
-        $this->value = (string) $value;
+        $this->name = $this->filterValue($name);
+        $this->value = $this->filterValue($value);
     }
 
     /**
@@ -73,4 +73,20 @@ class Cookie implements CookieInterface
         return $this->name . '=' . $this->value;
     }
 
+    /**
+     * @param string $value
+     * @return string mixed
+     *
+     * @throws \Icicle\Http\Exception\InvalidValueException
+     */
+    protected function filterValue($value)
+    {
+        $value = (string) $value;
+
+        if (preg_match("/[^\x21\x23-\x23\x2d-\x3a\x3c-\x5b\x5d-\x7e]/", $value)) {
+            throw new InvalidValueException('Invalid cookie header value.');
+        }
+
+        return $value;
+    }
 }

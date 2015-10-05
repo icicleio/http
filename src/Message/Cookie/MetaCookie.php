@@ -124,8 +124,8 @@ class MetaCookie extends Cookie implements MetaCookieInterface
         parent::__construct($name, $value);
 
         $this->expires = (int) $expires;
-        $this->path = (string) $path;
-        $this->domain = (string) $domain;
+        $this->path = $this->filterValue($path);
+        $this->domain = $this->filterValue($domain);
         $this->secure = (bool) $secure;
         $this->httpOnly = (bool) $httpOnly;
     }

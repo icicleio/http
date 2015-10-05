@@ -86,7 +86,7 @@ class Response extends Message implements ResponseInterface
     private $reason;
 
     /**
-     * @var \Icicle\Http\Message\Cookie\Cookie[]
+     * @var \Icicle\Http\Message\Cookie\MetaCookieInterface[]
      */
     private $cookies = [];
 
