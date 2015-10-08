@@ -65,6 +65,11 @@ class Builder implements BuilderInterface
             $response = $response->withProtocolVersion($request->getProtocolVersion());
         }
 
+        if (strtolower($response->getHeaderLine('Connection')) === 'upgrade') {
+            yield $response;
+            return;
+        }
+
         if ($response->getProtocolVersion() === '1.1'
             && !$response->hasHeader('Connection')
             && $allowPersistent
@@ -157,11 +162,6 @@ class Builder implements BuilderInterface
      */
     private function buildOutgoingStream(MessageInterface $message, $timeout = 0)
     {
-        if (strtolower($message->getHeaderLine('Connection')) === 'upgrade') {
-            yield $message;
-            return;
-        }
-
         $stream = $message->getBody();
 
         if ($stream instanceof SeekableStreamInterface) {
@@ -232,7 +232,7 @@ class Builder implements BuilderInterface
             $stream->seek(0);
         }
 
-        if (!$stream->isReadable() || strtolower($message->getHeaderLine('Connection') === 'upgrade')) {
+        if (!$stream->isReadable()) {
             yield $message;
             return;
         }
