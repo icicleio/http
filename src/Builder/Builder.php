@@ -10,8 +10,9 @@ use Icicle\Http\Stream\ChunkedDecoder;
 use Icicle\Http\Stream\ChunkedEncoder;
 use Icicle\Http\Stream\ZlibDecoder;
 use Icicle\Http\Stream\ZlibEncoder;
+use Icicle\Stream;
+use Icicle\Stream\MemoryStream;
 use Icicle\Stream\SeekableStreamInterface;
-use Icicle\Stream\Stream;
 
 class Builder implements BuilderInterface
 {
@@ -136,7 +137,7 @@ class Builder implements BuilderInterface
             return;
         }
 
-        $stream = new Stream();
+        $stream = new MemoryStream();
         yield $stream->end(); // No body in other requests.
 
         yield $request->withBody($stream);
@@ -191,7 +192,7 @@ class Builder implements BuilderInterface
                     );
             }
 
-            yield $message->getBody()->pipe($stream, true, 0, null, $timeout);
+            yield Stream\pipe($message->getBody(), $stream, true, 0, null, $timeout);
             $message = $message
                 ->withBody($stream)
                 ->withoutHeader('Content-Length');
@@ -200,7 +201,7 @@ class Builder implements BuilderInterface
         if ($message->getProtocolVersion() === '1.1' && !$message->hasHeader('Content-Length')) {
             $stream = new ChunkedEncoder($this->hwm);
             $body = $message->getBody();
-            $coroutine = new Coroutine($body->pipe($stream, true, 0, null, $timeout));
+            $coroutine = new Coroutine(Stream\pipe($body, $stream, true, 0, null, $timeout));
             $coroutine->done(null, function () use ($body) {
                 $body->close();
             });
@@ -240,7 +241,7 @@ class Builder implements BuilderInterface
         if (strtolower($message->getHeaderLine('Transfer-Encoding') === 'chunked')) {
             $stream = new ChunkedDecoder($this->hwm);
             $body = $message->getBody();
-            $coroutine = new Coroutine($body->pipe($stream, true, 0, null, $timeout));
+            $coroutine = new Coroutine(Stream\pipe($body, $stream, true, 0, null, $timeout));
             $coroutine->done(null, function () use ($body) {
                 $body->close();
             });
@@ -250,9 +251,9 @@ class Builder implements BuilderInterface
             if (0 >= $length) {
                 throw new MessageException(400, 'Content-Length header invalid.');
             }
-            $stream = new Stream($this->hwm);
+            $stream = new MemoryStream($this->hwm);
             $body = $message->getBody();
-            $coroutine = new Coroutine($body->pipe($stream, true, $length, null, $timeout));
+            $coroutine = new Coroutine(Stream\pipe($body, $stream, true, $length, null, $timeout));
             $coroutine->done(null, function () use ($body) {
                 $body->close();
             });
@@ -270,7 +271,7 @@ class Builder implements BuilderInterface
             case 'deflate':
             case 'gzip':
                 $stream = new ZlibDecoder();
-                yield $message->getBody()->pipe($stream, true, 0, null, $timeout);
+                yield Stream\pipe($message->getBody(), $stream, true, 0, null, $timeout);
                 yield $message->withBody($stream);
                 return;
 

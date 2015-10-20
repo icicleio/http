@@ -9,8 +9,8 @@ use Icicle\Http\Reader\Reader;
 use Icicle\Loop;
 use Icicle\Promise;
 use Icicle\Stream\ReadableStreamInterface;
+use Icicle\Stream\MemoryStream;
 use Icicle\Stream\SeekableStreamInterface;
-use Icicle\Stream\Stream;
 use Icicle\Tests\Http\TestCase;
 use Mockery;
 use Symfony\Component\Yaml\Yaml;
@@ -34,7 +34,7 @@ class ReaderTest extends TestCase
     {
         $data = file_get_contents(dirname(__DIR__) . '/data/' . $filename);
 
-        $stream = new Stream();
+        $stream = new MemoryStream();
         $coroutine = new Coroutine($stream->end($data));
         $coroutine->wait();
 

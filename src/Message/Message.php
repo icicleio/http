@@ -4,7 +4,7 @@ namespace Icicle\Http\Message;
 use Icicle\Http\Exception\InvalidHeaderException;
 use Icicle\Http\Exception\UnsupportedVersionException;
 use Icicle\Stream\ReadableStreamInterface;
-use Icicle\Stream\Sink;
+use Icicle\Stream\MemorySink;
 
 abstract class Message implements MessageInterface
 {
@@ -41,7 +41,7 @@ abstract class Message implements MessageInterface
             $this->addHeaders($headers);
         }
 
-        $this->stream = $stream ?: new Sink();
+        $this->stream = $stream ?: new MemorySink();
         $this->protocol = $this->filterProtocolVersion($protocol);
     }
 

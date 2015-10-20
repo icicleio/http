@@ -2,10 +2,10 @@
 namespace Icicle\Http\Stream;
 
 use Icicle\Http\Exception\MessageException;
-use Icicle\Stream\Stream;
+use Icicle\Stream\MemoryStream;
 use Icicle\Stream\Structures\Buffer;
 
-class ChunkedDecoder extends Stream
+class ChunkedDecoder extends MemoryStream
 {
     /**
      * @var int

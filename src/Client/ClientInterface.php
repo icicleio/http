@@ -13,9 +13,8 @@ interface ClientInterface
      *
      * @param string $method
      * @param string|\Icicle\Http\Message\UriInterface $uri
-     * @param string[]|null $headers
+     * @param string[] $headers
      * @param \Icicle\Stream\ReadableStreamInterface|null $body
-     * @param float|int|null $timeout
      * @param mixed[] $options
      *
      * @return \Generator
@@ -28,16 +27,15 @@ interface ClientInterface
     public function request(
         $method,
         $uri,
-        array $headers = null,
+        array $headers = [],
         ReadableStreamInterface $body = null,
-        array $options = null
+        array $options = []
     );
 
     /**
      * @coroutine
      *
      * @param \Icicle\Http\Message\RequestInterface $request
-     * @param float|int|null $timeout
      * @param mixed[] $options
      *
      * @return \Generator
@@ -49,6 +47,6 @@ interface ClientInterface
      */
     public function send(
         RequestInterface $request,
-        array $options = null
+        array $options = []
     );
 }

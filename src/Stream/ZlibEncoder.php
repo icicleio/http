@@ -2,9 +2,9 @@
 namespace Icicle\Http\Stream;
 
 use Icicle\Http\Exception\Error;
-use Icicle\Stream\Stream;
+use Icicle\Stream\MemoryStream;
 
-class ZlibEncoder extends Stream
+class ZlibEncoder extends MemoryStream
 {
     const GZIP = ZLIB_ENCODING_GZIP;
     const DEFLATE = ZLIB_ENCODING_RAW;
@@ -30,7 +30,7 @@ class ZlibEncoder extends Stream
      * @param int $type Compression type. Use GZIP or DEFLATE constants.
      * @param int $level Compression level.
      *
-     * @throws \Icicle\Http\Exception\LogicException If the zlib extension is not loaded.
+     * @throws \Icicle\Http\Exception\Error If the zlib extension is not loaded.
      */
     public function __construct($type, $level = self::DEFAULT_LEVEL)
     {

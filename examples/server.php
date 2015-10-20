@@ -7,15 +7,16 @@ use Icicle\Http\Message\RequestInterface;
 use Icicle\Http\Message\Response;
 use Icicle\Http\Server\Server;
 use Icicle\Loop;
-use Icicle\Socket\Client\ClientInterface;
+use Icicle\Socket\SocketInterface;
+use Icicle\Stream\MemorySink;
 
-$server = new Server(function (RequestInterface $request, ClientInterface $client) {
+$server = new Server(function (RequestInterface $request, SocketInterface $socket) {
     $data = sprintf(
         'Hello to %s:%d from %s:%d!',
-        $client->getRemoteAddress(),
-        $client->getRemotePort(),
-        $client->getLocalAddress(),
-        $client->getLocalPort()
+        $socket->getRemoteAddress(),
+        $socket->getRemotePort(),
+        $socket->getLocalAddress(),
+        $socket->getLocalPort()
     );
 
     $body = $request->getBody();
@@ -27,11 +28,13 @@ $server = new Server(function (RequestInterface $request, ClientInterface $clien
         } while ($body->isReadable());
     }
 
-    $response = new Response(200);
-    $response = $response->withHeader('Content-Type', 'text/plain')
-        ->withHeader('Content-Length', strlen($data));
+    $sink = new MemorySink();
+    yield $sink->end($data);
 
-    yield $response->getBody()->end($data);
+    $response = new Response(200, [
+        'Content-Type' => 'text/plain',
+        'Content-Length' => $sink->getLength(),
+    ], $sink);
 
     yield $response;
 });

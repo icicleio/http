@@ -1,11 +1,12 @@
 <?php
 namespace Icicle\Http\Stream;
 
+use Icicle\Http\Exception\InvalidArgumentError;
 use Icicle\Http\Exception\MessageException;
 use Icicle\Http\Exception\UnsupportedError;
-use Icicle\Stream\Stream;
+use Icicle\Stream\MemoryStream;
 
-class ZlibDecoder extends Stream
+class ZlibDecoder extends MemoryStream
 {
     /**
      * @var string
@@ -20,6 +21,7 @@ class ZlibDecoder extends Stream
     /**
      * @param int|null $maxLength Maximum length of compressed data; null for no max length.
      *
+     * @throws \Icicle\Http\Exception\InvalidArgumentError If the max length is negative.
      * @throws \Icicle\Http\Exception\UnsupportedError If the zlib extension is not loaded.
      */
     public function __construct($maxLength = 0)
@@ -30,7 +32,12 @@ class ZlibDecoder extends Stream
         } // @codeCoverageIgnoreEnd
 
         parent::__construct();
-        $this->maxLength = $this->parseLength($maxLength);
+
+        $this->maxLength = (int) $maxLength;
+        if (0 > $this->maxLength) {
+            throw new InvalidArgumentError('The max length must be a non-negative integer.');
+        }
+
     }
 
     /**

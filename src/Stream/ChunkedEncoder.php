@@ -1,9 +1,9 @@
 <?php
 namespace Icicle\Http\Stream;
 
-use Icicle\Stream\Stream;
+use Icicle\Stream\MemoryStream;
 
-class ChunkedEncoder extends Stream
+class ChunkedEncoder extends MemoryStream
 {
     /**
      * @param string $data

@@ -18,10 +18,12 @@ use Icicle\Http\Message\ResponseInterface;
 use Icicle\Http\Reader\Reader;
 use Icicle\Http\Reader\ReaderInterface;
 use Icicle\Promise\Exception\TimeoutException;
-use Icicle\Socket\Client\ClientInterface as SocketClientInterface;
+use Icicle\Stream;
+use Icicle\Stream\MemorySink;
 use Icicle\Socket\Server\ServerFactory;
 use Icicle\Socket\Server\ServerFactoryInterface;
 use Icicle\Socket\Server\ServerInterface as SocketServerInterface;
+use Icicle\Socket\SocketInterface;
 
 class Server implements ServerInterface
 {
@@ -212,49 +214,49 @@ class Server implements ServerInterface
     /**
      * @coroutine
      *
-     * @param \Icicle\Socket\Client\ClientInterface $client
+     * @param \Icicle\Socket\SocketInterface $socket
      * @param int $cryptoMethod
      * @param float $timeout
      * @param bool $allowPersistent
      *
      * @return \Generator
      */
-    private function process(SocketClientInterface $client, $cryptoMethod, $timeout, $allowPersistent)
+    private function process(SocketInterface $socket, $cryptoMethod, $timeout, $allowPersistent)
     {
         $count = 0;
 
         try {
             if (0 !== $cryptoMethod) {
-                yield $client->enableCrypto($cryptoMethod, $timeout);
+                yield $socket->enableCrypto($cryptoMethod, $timeout);
             }
 
             do {
                 try {
                     /** @var \Icicle\Http\Message\RequestInterface $request */
-                    $request = (yield $this->readRequest($client, $timeout));
+                    $request = (yield $this->readRequest($socket, $timeout));
                     ++$count;
 
                     /** @var \Icicle\Http\Message\ResponseInterface $response */
-                    $response = (yield $this->createResponse($request, $client, $timeout, $allowPersistent));
+                    $response = (yield $this->createResponse($request, $socket, $timeout, $allowPersistent));
                 } catch (TimeoutException $exception) { // Request timeout.
                     if (0 < $count) {
                         return; // Keep-alive timeout expired.
                     }
-                    $response = (yield $this->createErrorResponse(408, $client, $timeout));
+                    $response = (yield $this->createErrorResponse(408, $socket, $timeout));
                 } catch (MessageException $exception) { // Bad request.
-                    $response = (yield $this->createErrorResponse($exception->getCode(), $client, $timeout));
+                    $response = (yield $this->createErrorResponse($exception->getCode(), $socket, $timeout));
                 } catch (InvalidValueException $exception) { // Invalid value in message header.
-                    $response = (yield $this->createErrorResponse(400, $client, $timeout));
+                    $response = (yield $this->createErrorResponse(400, $socket, $timeout));
                 } catch (ParseException $exception) { // Parse error in request.
-                    $response = (yield $this->createErrorResponse(400, $client, $timeout));
+                    $response = (yield $this->createErrorResponse(400, $socket, $timeout));
                 }
 
-                yield $client->write($this->encoder->encodeResponse($response));
+                yield $socket->write($this->encoder->encodeResponse($response));
 
                 $stream = $response->getBody();
 
                 if ($stream->isReadable() && (!isset($request) || $request->getMethod() !== 'HEAD')) {
-                    yield $stream->pipe($client, false, 0, null, $timeout);
+                    yield Stream\pipe($stream, $socket, false, 0, null, $timeout);
                 }
 
                 $connection = strtolower($response->getHeaderLine('Connection'));
@@ -264,18 +266,18 @@ class Server implements ServerInterface
                         throw new Error('Cannot upgrade connection without a valid upgrade request.');
                     }
 
-                    yield $this->upgrade($request, $response, $client);
+                    yield $this->upgrade($request, $response, $socket);
                     return;
                 }
             } while ($allowPersistent
                 && $connection === 'keep-alive'
-                && $client->isReadable()
-                && $client->isWritable()
+                && $socket->isReadable()
+                && $socket->isWritable()
             );
         } catch (Exception $exception) {
-            yield $this->error($exception, $client);
+            yield $this->error($exception, $socket);
         } finally {
-            $client->close();
+            $socket->close();
         }
     }
 
@@ -284,45 +286,45 @@ class Server implements ServerInterface
      *
      * @param \Icicle\Http\Message\RequestInterface $request
      * @param \Icicle\Http\Message\ResponseInterface $response
-     * @param \Icicle\Socket\Client\ClientInterface $client
+     * @param \Icicle\Socket\SocketInterface $socket
      *
      * @return \Generator
      */
-    private function upgrade(RequestInterface $request, ResponseInterface $response, SocketClientInterface $client)
+    private function upgrade(RequestInterface $request, ResponseInterface $response, SocketInterface $socket)
     {
         if (null === $this->onUpgrade) {
             throw new Error('No callback given for upgrade responses.');
         }
 
         $onUpgrade = $this->onUpgrade;
-        yield $onUpgrade($request, $response, $client);
+        yield $onUpgrade($request, $response, $socket);
     }
 
     /**
      * @coroutine
      *
      * @param \Exception $exception
-     * @param \Icicle\Socket\Client\ClientInterface $client
+     * @param \Icicle\Socket\SocketInterface $socket
      *
      * @return \Generator
      */
-    private function error(Exception $exception, SocketClientInterface $client)
+    private function error(Exception $exception, SocketInterface $socket)
     {
         if (null !== $this->onError) {
             $onError = $this->onError;
-            yield $onError($exception, $client);
+            yield $onError($exception, $socket);
         }
     }
 
     /**
      * @coroutine
      *
-     * @param \Icicle\Socket\Client\ClientInterface $client
+     * @param \Icicle\Socket\SocketInterface $client
      * @param float $timeout
      *
      * @return \Generator
      */
-    private function readRequest(SocketClientInterface $client, $timeout)
+    private function readRequest(SocketInterface $client, $timeout)
     {
         $request = (yield $this->reader->readRequest($client, $timeout));
 
@@ -333,7 +335,7 @@ class Server implements ServerInterface
      * @coroutine
      *
      * @param \Icicle\Http\Message\RequestInterface $request
-     * @param \Icicle\Socket\Client\ClientInterface $client
+     * @param \Icicle\Socket\SocketInterface $socket
      * @param float $timeout
      * @param bool $allowPersistent
      *
@@ -343,13 +345,13 @@ class Server implements ServerInterface
      */
     private function createResponse(
         RequestInterface $request,
-        SocketClientInterface $client,
+        SocketInterface $socket,
         $timeout,
         $allowPersistent
     ) {
         try {
             $onRequest = $this->onRequest;
-            $response = (yield $onRequest($request, $client));
+            $response = (yield $onRequest($request, $socket));
 
             if (!$response instanceof ResponseInterface) {
                 throw new InvalidCallableError(
@@ -358,7 +360,7 @@ class Server implements ServerInterface
                 );
             }
         } catch (Exception $exception) {
-            yield $this->error($exception, $client);
+            yield $this->error($exception, $socket);
             $response = (yield $this->createDefaultErrorResponse(500));
         }
 
@@ -369,21 +371,21 @@ class Server implements ServerInterface
      * @coroutine
      *
      * @param int $code
-     * @param \Icicle\Socket\Client\ClientInterface $client
+     * @param \Icicle\Socket\SocketInterface $socket
      * @param float $timeout
      *
      * @return \Generator
      *
      * @resolve \Icicle\Http\Message|ResponseInterface
      */
-    private function createErrorResponse($code, SocketClientInterface $client, $timeout)
+    private function createErrorResponse($code, SocketInterface $socket, $timeout)
     {
         if (null === $this->onInvalidRequest) {
             $response = (yield $this->createDefaultErrorResponse($code));
         } else {
             try {
                 $onInvalidRequest = $this->onInvalidRequest;
-                $response = (yield $onInvalidRequest($code, $client));
+                $response = (yield $onInvalidRequest($code, $socket));
 
                 if (!$response instanceof ResponseInterface) {
                     throw new InvalidCallableError(
@@ -392,7 +394,7 @@ class Server implements ServerInterface
                     );
                 }
             } catch (Exception $exception) {
-                yield $this->error($exception, $client);
+                yield $this->error($exception, $socket);
                 $response = (yield $this->createDefaultErrorResponse(500));
             }
         }
@@ -411,16 +413,14 @@ class Server implements ServerInterface
      */
     protected function createDefaultErrorResponse($code)
     {
-        $message = sprintf('%d Error', $code);
+        $sink = new MemorySink(sprintf('%d Error', $code));
 
-        $response = new Response($code, [
+        $headers = [
             'Connection' => 'close',
             'Content-Type' => 'text/plain',
-            'Content-Length' => strlen($message),
-        ]);
+            'Content-Length' => $sink->getLength(),
+        ];
 
-        yield $response->getBody()->end($message);
-
-        yield $response;
+        return new Response($code, $headers, $sink);
     }
 }

@@ -2,7 +2,7 @@
 namespace Icicle\Http\Client;
 
 use Icicle\Http\Message\RequestInterface;
-use Icicle\Socket\Client\ClientInterface as SocketClientInterface;
+use Icicle\Socket\SocketInterface;
 
 interface RequesterInterface
 {
@@ -11,7 +11,7 @@ interface RequesterInterface
     /**
      * @coroutine
      *
-     * @param \Icicle\Socket\Client\ClientInterface $client
+     * @param \Icicle\Socket\SocketInterface $socket
      * @param \Icicle\Http\Message\RequestInterface $request
      * @param mixed[] $options
      *
@@ -22,5 +22,5 @@ interface RequesterInterface
      * @reject \Icicle\Http\Exception\MessageException
      * @reject \Icicle\Http\Exception\ParseException
      */
-    public function request(SocketClientInterface $client, RequestInterface $request, array $options = []);
+    public function request(SocketInterface $socket, RequestInterface $request, array $options = []);
 }

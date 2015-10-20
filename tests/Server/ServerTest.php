@@ -14,9 +14,9 @@ use Icicle\Http\Server\Server;
 use Icicle\Loop;
 use Icicle\Promise;
 use Icicle\Promise\Exception\TimeoutException;
-use Icicle\Socket\Client\ClientInterface;
 use Icicle\Socket\Server\ServerFactoryInterface;
 use Icicle\Socket\Server\ServerInterface;
+use Icicle\Socket\SocketInterface;
 use Icicle\Stream\ReadableStreamInterface;
 use Icicle\Tests\Http\TestCase;
 use Mockery;
@@ -42,11 +42,11 @@ class ServerTest extends TestCase
     }
 
     /**
-     * @param \Icicle\Socket\Client\ClientInterface $client
+     * @param \Icicle\Socket\SocketInterface $socket
      *
      * @return \Icicle\Socket\Server\ServerInterface
      */
-    public function createSocketServer(ClientInterface $client = null)
+    public function createSocketServer(SocketInterface $socket = null)
     {
         $mock = Mockery::mock(ServerInterface::class);
 
@@ -56,24 +56,32 @@ class ServerTest extends TestCase
         $mock->shouldReceive('close');
 
         $mock->shouldReceive('accept')
-            ->andReturnUsing(function () use ($client) {
-                return Promise\resolve($client ?: $this->createSocketClient());
+            ->andReturnUsing(function () use ($socket) {
+                yield $socket ?: $this->createSocketClient();
             });
 
         return $mock;
     }
 
     /**
-     * @return \Icicle\Socket\Client\ClientInterface
+     * @return \Icicle\Socket\SocketInterface
      */
     public function createSocketClient()
     {
-        $mock = Mockery::mock(ClientInterface::class);
+        $mock = Mockery::mock(SocketInterface::class);
 
         $mock->shouldReceive('close');
 
+        $mock->shouldReceive('isReadable')
+            ->andReturn(true);
+
+        $mock->shouldReceive('isWritable')
+            ->andReturn(true);
+
         $mock->shouldReceive('write')
-            ->with(Mockery::mustBe('Encoded response.'));
+            ->andReturnUsing(function ($data) {
+                yield strlen($data);
+            });
 
         return $mock;
     }
@@ -255,7 +263,7 @@ class ServerTest extends TestCase
 
             $response->getBody()
                 ->shouldReceive('pipe')
-                ->with(Mockery::type(ClientInterface::class), Mockery::type('bool'))
+                ->with(Mockery::type(SocketInterface::class), Mockery::type('bool'))
                 ->andReturn(Promise\resolve(0));
 
             return $response;
@@ -438,6 +446,10 @@ class ServerTest extends TestCase
         };
 
         $onError = function (\Exception $exception) use ($onInvalidRequest) {
+            if (!$exception instanceof InvalidCallableError) {
+                throw $exception;
+            }
+
             $this->assertInstanceOf(InvalidCallableError::class, $exception);
             $this->assertSame($onInvalidRequest, $exception->getCallable());
         };

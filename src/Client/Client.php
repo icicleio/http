@@ -59,10 +59,10 @@ class Client implements ClientInterface
     ) {
         $uri = $request->getUri();
 
-        /** @var \Icicle\Socket\Client\ClientInterface $client */
-        $client = (yield $this->connector->connect($uri->getHost(), $uri->getPort(), $options));
+        /** @var \Icicle\Socket\Socket $socket */
+        $socket = (yield $this->connector->connect($uri->getHost(), $uri->getPort(), $options));
 
-        if (!$client->isOpen()) {
+        if (!$socket->isOpen()) {
             throw new FailureException('Could not connect to server.');
         }
 
@@ -72,12 +72,12 @@ class Client implements ClientInterface
                     ? (int) $options['crypto_method']
                     : self::DEFAULT_CRYPTO_METHOD;
 
-                yield $client->enableCrypto($cryptoMethod);
+                yield $socket->enableCrypto($cryptoMethod);
             }
 
-            yield $this->requester->request($client, $request, $options);
+            yield $this->requester->request($socket, $request, $options);
         } finally {
-            $client->close();
+            $socket->close();
         }
     }
 }

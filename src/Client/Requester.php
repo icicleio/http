@@ -8,7 +8,8 @@ use Icicle\Http\Encoder\EncoderInterface;
 use Icicle\Http\Message\RequestInterface;
 use Icicle\Http\Reader\Reader;
 use Icicle\Http\Reader\ReaderInterface;
-use Icicle\Socket\Client\ClientInterface as SocketClientInterface;
+use Icicle\Stream;
+use Icicle\Socket\SocketInterface;
 
 class Requester implements RequesterInterface
 {
@@ -50,7 +51,7 @@ class Requester implements RequesterInterface
     /**
      * {@inheritdoc}
      */
-    public function request(SocketClientInterface $client, RequestInterface $request, array $options = [])
+    public function request(SocketInterface $socket, RequestInterface $request, array $options = [])
     {
         $timeout = isset($options['timeout']) ? (float) $options['timeout'] : self::DEFAULT_TIMEOUT;
         $allowPersistent = isset($options['allow_persistent']) ? (bool) $options['allow_persistent'] : true;
@@ -58,15 +59,15 @@ class Requester implements RequesterInterface
         /** @var \Icicle\Http\Message\RequestInterface $request */
         $request = (yield $this->builder->buildOutgoingRequest($request, $timeout, $allowPersistent));
 
-        yield $client->write($this->encoder->encodeRequest($request));
+        yield $socket->write($this->encoder->encodeRequest($request));
 
         $stream = $request->getBody();
 
         if ($stream->isReadable()) {
-            yield $stream->pipe($client, false, 0, null, $timeout);
+            yield Stream\pipe($stream, $socket, false, 0, null, $timeout);
         }
 
-        $response = (yield $this->reader->readResponse($client, $timeout));
+        $response = (yield $this->reader->readResponse($socket, $timeout));
 
         yield $this->builder->buildIncomingResponse($response);
     }
