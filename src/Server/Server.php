@@ -8,7 +8,7 @@ use Icicle\Http\Builder\BuilderInterface;
 use Icicle\Http\Encoder\Encoder;
 use Icicle\Http\Encoder\EncoderInterface;
 use Icicle\Http\Exception\Error;
-use Icicle\Http\Exception\InvalidCallableError;
+use Icicle\Http\Exception\InvalidResultError;
 use Icicle\Http\Exception\InvalidValueException;
 use Icicle\Http\Exception\MessageException;
 use Icicle\Http\Exception\ParseException;
@@ -20,6 +20,7 @@ use Icicle\Http\Reader\ReaderInterface;
 use Icicle\Promise\Exception\TimeoutException;
 use Icicle\Stream;
 use Icicle\Stream\MemorySink;
+use Icicle\Stream\WritableStreamInterface;
 use Icicle\Socket\Server\ServerFactory;
 use Icicle\Socket\Server\ServerFactoryInterface;
 use Icicle\Socket\Server\ServerInterface as SocketServerInterface;
@@ -28,24 +29,14 @@ use Icicle\Socket\SocketInterface;
 class Server implements ServerInterface
 {
     /**
-     * @var callable
+     * @var \Icicle\Http\Server\RequestHandlerInterface
      */
-    private $onRequest;
+    private $handler;
 
     /**
-     * @var callable|null
+     * @var \Icicle\Stream\WritableStreamInterface
      */
-    private $onInvalidRequest;
-
-    /**
-     * @var callable|null
-     */
-    private $onError;
-
-    /**
-     * @var callable|null
-     */
-    private $onUpgrade;
+    private $errorStream;
 
     /**
      * @var \Icicle\Http\Encoder\EncoderInterface
@@ -78,10 +69,11 @@ class Server implements ServerInterface
     private $open = true;
 
     /**
-     * @param callable $onRequest
+     * @param \Icicle\Http\Server\RequestHandlerInterface $handler
+     * @param \Icicle\Stream\WritableStreamInterface|null $log
      * @param mixed[] $options
      */
-    public function __construct(callable $onRequest, array $options = [])
+    public function __construct(RequestHandlerInterface $handler, WritableStreamInterface $log = null, array $options = [])
     {
         $this->reader = isset($options['reader']) && $options['reader'] instanceof ReaderInterface
             ? $options['reader']
@@ -99,39 +91,8 @@ class Server implements ServerInterface
             ? $options['factory']
             : new ServerFactory();
 
-        $this->onRequest = $onRequest;
-    }
-
-    /**
-     * @param callable $onRequest
-     */
-    public function setRequestHandler(callable $onRequest)
-    {
-        $this->onRequest = $onRequest;
-    }
-
-    /**
-     * @param callable|null $onInvalidRequest
-     */
-    public function setInvalidRequestHandler(callable $onInvalidRequest = null)
-    {
-        $this->onInvalidRequest = $onInvalidRequest;
-    }
-
-    /**
-     * @param callable|null $onError
-     */
-    public function setErrorHandler(callable $onError = null)
-    {
-        $this->onError = $onError;
-    }
-
-    /**
-     * @param callable|null $onUpgrade
-     */
-    public function setUpgradeHandler(callable $onUpgrade = null)
-    {
-        $this->onUpgrade = $onUpgrade;
+        $this->handler = $handler;
+        $this->errorStream = $log ?: Stream\stderr();
     }
 
     /**
@@ -220,6 +181,8 @@ class Server implements ServerInterface
      * @param bool $allowPersistent
      *
      * @return \Generator
+     *
+     * @resolve null
      */
     private function process(SocketInterface $socket, $cryptoMethod, $timeout, $allowPersistent)
     {
@@ -266,8 +229,12 @@ class Server implements ServerInterface
                         throw new Error('Cannot upgrade connection without a valid upgrade request.');
                     }
 
-                    yield $this->upgrade($request, $response, $socket);
-                    return;
+                    if (!$this->handler instanceof UpgradeHandlerInterface) {
+                        throw new Error('Request handler cannot process upgrade requests.');
+                    }
+
+                    yield $this->handler->onUpgrade($request, $response, $socket);
+                    return; // Request done.
                 }
             } while ($allowPersistent
                 && $connection === 'keep-alive'
@@ -275,44 +242,14 @@ class Server implements ServerInterface
                 && $socket->isWritable()
             );
         } catch (Exception $exception) {
-            yield $this->error($exception, $socket);
+            yield $this->errorStream->write(sprintf(
+                "Error when handling request from %s:%d: %s\n",
+                $socket->getRemoteAddress(),
+                $socket->getRemotePort(),
+                $exception->getMessage()
+            ));
         } finally {
             $socket->close();
-        }
-    }
-
-    /**
-     * @coroutine
-     *
-     * @param \Icicle\Http\Message\RequestInterface $request
-     * @param \Icicle\Http\Message\ResponseInterface $response
-     * @param \Icicle\Socket\SocketInterface $socket
-     *
-     * @return \Generator
-     */
-    private function upgrade(RequestInterface $request, ResponseInterface $response, SocketInterface $socket)
-    {
-        if (null === $this->onUpgrade) {
-            throw new Error('No callback given for upgrade responses.');
-        }
-
-        $onUpgrade = $this->onUpgrade;
-        yield $onUpgrade($request, $response, $socket);
-    }
-
-    /**
-     * @coroutine
-     *
-     * @param \Exception $exception
-     * @param \Icicle\Socket\SocketInterface $socket
-     *
-     * @return \Generator
-     */
-    private function error(Exception $exception, SocketInterface $socket)
-    {
-        if (null !== $this->onError) {
-            $onError = $this->onError;
-            yield $onError($exception, $socket);
         }
     }
 
@@ -323,6 +260,8 @@ class Server implements ServerInterface
      * @param float $timeout
      *
      * @return \Generator
+     *
+     * @resolve \Icicle\Http\Message\RequestInterface
      */
     private function readRequest(SocketInterface $client, $timeout)
     {
@@ -350,17 +289,23 @@ class Server implements ServerInterface
         $allowPersistent
     ) {
         try {
-            $onRequest = $this->onRequest;
-            $response = (yield $onRequest($request, $socket));
+            $response = (yield $this->handler->onRequest($request, $socket));
 
             if (!$response instanceof ResponseInterface) {
-                throw new InvalidCallableError(
+                throw new InvalidResultError(
                     sprintf('A %s object was not returned from the request callback.', ResponseInterface::class),
-                    $this->onRequest
+                    $response
                 );
             }
         } catch (Exception $exception) {
-            yield $this->error($exception, $socket);
+            yield $this->errorStream->write(sprintf(
+                "Uncaught exception when creating response to a request from %s:%d in file %s on line %d: %s\n",
+                $socket->getRemoteAddress(),
+                $socket->getRemotePort(),
+                $exception->getFile(),
+                $exception->getLine(),
+                $exception->getMessage()
+            ));
             $response = (yield $this->createDefaultErrorResponse(500));
         }
 
@@ -380,23 +325,25 @@ class Server implements ServerInterface
      */
     private function createErrorResponse($code, SocketInterface $socket, $timeout)
     {
-        if (null === $this->onInvalidRequest) {
-            $response = (yield $this->createDefaultErrorResponse($code));
-        } else {
-            try {
-                $onInvalidRequest = $this->onInvalidRequest;
-                $response = (yield $onInvalidRequest($code, $socket));
+        try {
+            $response = (yield $this->handler->onError($code, $socket));
 
-                if (!$response instanceof ResponseInterface) {
-                    throw new InvalidCallableError(
-                        sprintf('A %s object was not returned from the error callback.', ResponseInterface::class),
-                        $this->onInvalidRequest
-                    );
-                }
-            } catch (Exception $exception) {
-                yield $this->error($exception, $socket);
-                $response = (yield $this->createDefaultErrorResponse(500));
+            if (!$response instanceof ResponseInterface) {
+                throw new InvalidResultError(
+                    sprintf('A %s object was not returned from the error callback.', ResponseInterface::class),
+                    $response
+                );
             }
+        } catch (Exception $exception) {
+            yield $this->errorStream->write(sprintf(
+                "Uncaught exception when creating response to an error from %s:%d in file %s on line %d: %s\n",
+                $socket->getRemoteAddress(),
+                $socket->getRemotePort(),
+                $exception->getFile(),
+                $exception->getLine(),
+                $exception->getMessage()
+            ));
+            $response = (yield $this->createDefaultErrorResponse(500));
         }
 
         yield $this->builder->buildOutgoingResponse($response, null, $timeout, false);

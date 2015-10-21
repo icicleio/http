@@ -3,13 +3,14 @@ namespace Icicle\Tests\Http\Server;
 
 use Icicle\Http\Builder\BuilderInterface;
 use Icicle\Http\Encoder\EncoderInterface;
-use Icicle\Http\Exception\InvalidCallableError;
+use Icicle\Http\Exception\InvalidResultError;
 use Icicle\Http\Exception\InvalidValueException;
 use Icicle\Http\Exception\MessageException;
 use Icicle\Http\Exception\ParseException;
 use Icicle\Http\Message\RequestInterface;
 use Icicle\Http\Message\ResponseInterface;
 use Icicle\Http\Reader\ReaderInterface;
+use Icicle\Http\Server\RequestHandlerInterface;
 use Icicle\Http\Server\Server;
 use Icicle\Loop;
 use Icicle\Promise;
@@ -18,6 +19,7 @@ use Icicle\Socket\Server\ServerFactoryInterface;
 use Icicle\Socket\Server\ServerInterface;
 use Icicle\Socket\SocketInterface;
 use Icicle\Stream\ReadableStreamInterface;
+use Icicle\Stream\WritableStreamInterface;
 use Icicle\Tests\Http\TestCase;
 use Mockery;
 use Symfony\Component\Yaml;
@@ -83,6 +85,9 @@ class ServerTest extends TestCase
                 yield strlen($data);
             });
 
+        $mock->shouldReceive('getRemoteAddress');
+        $mock->shouldReceive('getRemotePort');
+
         return $mock;
     }
 
@@ -138,18 +143,18 @@ class ServerTest extends TestCase
 
     /**
      * @param callable $onRequest
-     * @param callable|null $onInvalidRequest
      * @param callable|null $onError
      * @param callable|null $onUpgrade
+     * @param \Icicle\Stream\WritableStreamInterface
      * @param mixed[]|null $options
      *
      * @return \Icicle\Http\Server\Server
      */
     public function createServer(
         callable $onRequest,
-        callable $onInvalidRequest = null,
         callable $onError = null,
         callable $onUpgrade = null,
+        WritableStreamInterface $stream = null,
         array $options = null
     ) {
         if (!isset($options['reader'])) {
@@ -168,11 +173,19 @@ class ServerTest extends TestCase
             $options['factory'] = $this->createFactory();
         }
 
-        $server = new Server($onRequest, $options);
+        $handler = Mockery::mock(RequestHandlerInterface::class);
 
-        $server->setInvalidRequestHandler($onInvalidRequest);
-        $server->setErrorHandler($onError);
-        $server->setUpgradeHandler($onUpgrade);
+        $handler->shouldReceive('onRequest')
+            ->with(Mockery::type(RequestInterface::class), Mockery::type(SocketInterface::class))
+            ->andReturnUsing($onRequest);
+
+        if (null !== $onError) {
+            $handler->shouldReceive('onError')
+                ->with(Mockery::type('int'), Mockery::type(SocketInterface::class))
+                ->andReturnUsing($onError);
+        }
+
+        $server = new Server($handler, $stream ?: $this->getMock(WritableStreamInterface::class), $options);
 
         return $server;
     }
@@ -217,7 +230,7 @@ class ServerTest extends TestCase
             $this->createCallback(0),
             $this->createCallback(0),
             $this->createCallback(0),
-            $this->createCallback(0),
+            null,
             ['factory' => $factory]
         );
 
@@ -293,16 +306,18 @@ class ServerTest extends TestCase
             return $request;
         };
 
-        $onError = function (\Exception $exception) use ($onRequest) {
-            $this->assertInstanceOf(InvalidCallableError::class, $exception);
-            $this->assertSame($onRequest, $exception->getCallable());
-        };
+        $stream = Mockery::mock(WritableStreamInterface::class);
+        $stream->shouldReceive('write')
+            ->with(Mockery::type('string'))
+            ->andReturnUsing(function ($data) {
+                yield strlen($data);
+            });
 
         $server = $this->createServer(
             $onRequest,
             $this->createCallback(0),
-            $onError,
             $this->createCallback(0),
+            $stream,
             ['encoder' => $encoder]
         );
 
@@ -330,15 +345,18 @@ class ServerTest extends TestCase
             throw $exception;
         };
 
-        $onError = function (\Exception $e) use ($exception) {
-            $this->assertSame($exception, $e);
-        };
+        $stream = Mockery::mock(WritableStreamInterface::class);
+        $stream->shouldReceive('write')
+            ->with(Mockery::type('string'))
+            ->andReturnUsing(function ($data) {
+                yield strlen($data);
+            });
 
         $server = $this->createServer(
             $onRequest,
             $this->createCallback(0),
-            $onError,
             $this->createCallback(0),
+            $stream,
             ['encoder' => $encoder]
         );
 
@@ -361,8 +379,8 @@ class ServerTest extends TestCase
         $server = $this->createServer(
             $this->createCallback(1),
             $this->createCallback(0),
-            $this->createCallback(1),
             $this->createCallback(0),
+            null,
             ['factory' => $factory]
         );
 
@@ -415,7 +433,7 @@ class ServerTest extends TestCase
             $this->createCallback(0),
             $callback,
             $this->createCallback(0),
-            $this->createCallback(0),
+            null,
             ['reader' => $reader]
         );
 
@@ -454,11 +472,18 @@ class ServerTest extends TestCase
             $this->assertSame($onInvalidRequest, $exception->getCallable());
         };
 
+        $stream = Mockery::mock(WritableStreamInterface::class);
+        $stream->shouldReceive('write')
+            ->with(Mockery::type('string'))
+            ->andReturnUsing(function ($data) {
+                yield strlen($data);
+            });
+
         $server = $this->createServer(
             $this->createCallback(0),
             $onInvalidRequest,
-            $onError,
             $this->createCallback(0),
+            $stream,
             ['reader' => $reader, 'encoder' => $encoder]
         );
 
@@ -490,45 +515,18 @@ class ServerTest extends TestCase
             throw $exception;
         };
 
-        $onError = function (\Exception $e) use ($exception) {
-            $this->assertSame($exception, $e);
-        };
-
-        $server = $this->createServer(
-            $this->createCallback(0),
-            $onInvalidRequest,
-            $onError,
-            $this->createCallback(0),
-            ['reader' => $reader, 'encoder' => $encoder]
-        );
-
-        $server->listen(8080);
-
-        Loop\run();
-    }
-
-    /**
-     * @depends testInvalidRequest
-     */
-    public function testInvalidRequestWithNoOnErrorCallback()
-    {
-        $reader = Mockery::mock(ReaderInterface::class);
-        $reader->shouldReceive('readRequest')
-            ->andThrow(new MessageException(400, 'Reason'));
-
-        $encoder = Mockery::mock(EncoderInterface::class);
-        $encoder->shouldReceive('encodeResponse')
-            ->andReturnUsing(function ($response) {
-                $this->assertInstanceOf(ResponseInterface::class, $response);
-                $this->assertSame(400, $response->getStatusCode());
-                return 'Encoded response.';
+        $stream = Mockery::mock(WritableStreamInterface::class);
+        $stream->shouldReceive('write')
+            ->with(Mockery::type('string'))
+            ->andReturnUsing(function ($data) {
+                yield strlen($data);
             });
 
         $server = $this->createServer(
             $this->createCallback(0),
-            null,
+            $onInvalidRequest,
             $this->createCallback(0),
-            $this->createCallback(0),
+            $stream,
             ['reader' => $reader, 'encoder' => $encoder]
         );
 
