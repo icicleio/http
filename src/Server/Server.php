@@ -205,13 +205,13 @@ class Server implements ServerInterface
                     if (0 < $count) {
                         return; // Keep-alive timeout expired.
                     }
-                    $response = (yield $this->createErrorResponse(408, $socket, $timeout));
+                    $response = (yield $this->createErrorResponse(ResponseInterface::STATUS_REQUEST_TIMEOUT, $socket, $timeout));
                 } catch (MessageException $exception) { // Bad request.
                     $response = (yield $this->createErrorResponse($exception->getCode(), $socket, $timeout));
                 } catch (InvalidValueException $exception) { // Invalid value in message header.
-                    $response = (yield $this->createErrorResponse(400, $socket, $timeout));
+                    $response = (yield $this->createErrorResponse(ResponseInterface::STATUS_BAD_REQUEST, $socket, $timeout));
                 } catch (ParseException $exception) { // Parse error in request.
-                    $response = (yield $this->createErrorResponse(400, $socket, $timeout));
+                    $response = (yield $this->createErrorResponse(ResponseInterface::STATUS_BAD_REQUEST, $socket, $timeout));
                 }
 
                 yield $socket->write($this->encoder->encodeResponse($response));
