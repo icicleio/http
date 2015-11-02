@@ -57,18 +57,22 @@ class Requester implements RequesterInterface
         $allowPersistent = isset($options['allow_persistent']) ? (bool) $options['allow_persistent'] : true;
 
         /** @var \Icicle\Http\Message\RequestInterface $request */
-        $request = (yield $this->builder->buildOutgoingRequest($request, $timeout, $allowPersistent));
+        $request = (yield $this->builder->buildOutgoingRequest($socket, $request, $timeout, $allowPersistent));
 
         yield $socket->write($this->encoder->encodeRequest($request));
 
         $stream = $request->getBody();
 
-        if ($stream->isReadable()) {
-            yield Stream\pipe($stream, $socket, false, 0, null, $timeout);
+        try {
+            if ($stream->isReadable()) {
+                yield Stream\pipe($stream, $socket, false, 0, null, $timeout);
+            }
+        } finally {
+            $stream->close();
         }
 
         $response = (yield $this->reader->readResponse($socket, $timeout));
 
-        yield $this->builder->buildIncomingResponse($response);
+        yield $this->builder->buildIncomingResponse($socket, $response, $request, $timeout);
     }
 }

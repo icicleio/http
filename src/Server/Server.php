@@ -218,8 +218,12 @@ class Server implements ServerInterface
 
                 $stream = $response->getBody();
 
-                if ($stream->isReadable() && (!isset($request) || $request->getMethod() !== 'HEAD')) {
-                    yield Stream\pipe($stream, $socket, false, 0, null, $timeout);
+                try {
+                    if ($stream->isReadable() && (!isset($request) || $request->getMethod() !== 'HEAD')) {
+                        yield Stream\pipe($stream, $socket, false, 0, null, $timeout);
+                    }
+                } finally {
+                    $stream->close();
                 }
 
                 $connection = strtolower($response->getHeaderLine('Connection'));
@@ -256,18 +260,18 @@ class Server implements ServerInterface
     /**
      * @coroutine
      *
-     * @param \Icicle\Socket\SocketInterface $client
+     * @param \Icicle\Socket\SocketInterface $socket
      * @param float $timeout
      *
      * @return \Generator
      *
      * @resolve \Icicle\Http\Message\RequestInterface
      */
-    private function readRequest(SocketInterface $client, $timeout)
+    private function readRequest(SocketInterface $socket, $timeout)
     {
-        $request = (yield $this->reader->readRequest($client, $timeout));
+        $request = (yield $this->reader->readRequest($socket, $timeout));
 
-        yield $this->builder->buildIncomingRequest($request, $timeout);
+        yield $this->builder->buildIncomingRequest($socket, $request, $timeout);
     }
 
     /**
@@ -309,7 +313,7 @@ class Server implements ServerInterface
             $response = (yield $this->createDefaultErrorResponse(500));
         }
 
-        yield $this->builder->buildOutgoingResponse($response, $request, $timeout, $allowPersistent);
+        yield $this->builder->buildOutgoingResponse($socket, $response, $request, $timeout, $allowPersistent);
     }
 
     /**
@@ -346,7 +350,7 @@ class Server implements ServerInterface
             $response = (yield $this->createDefaultErrorResponse(500));
         }
 
-        yield $this->builder->buildOutgoingResponse($response, null, $timeout, false);
+        yield $this->builder->buildOutgoingResponse($socket, $response, null, $timeout, false);
     }
 
     /**

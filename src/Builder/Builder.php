@@ -10,6 +10,7 @@ use Icicle\Http\Stream\ChunkedDecoder;
 use Icicle\Http\Stream\ChunkedEncoder;
 use Icicle\Http\Stream\ZlibDecoder;
 use Icicle\Http\Stream\ZlibEncoder;
+use Icicle\Socket\SocketInterface;
 use Icicle\Stream;
 use Icicle\Stream\MemoryStream;
 use Icicle\Stream\SeekableStreamInterface;
@@ -55,6 +56,7 @@ class Builder implements BuilderInterface
      * {@inheritdoc}
      */
     public function buildOutgoingResponse(
+        SocketInterface $socket,
         ResponseInterface $response,
         RequestInterface $request = null,
         $timeout = 0,
@@ -102,14 +104,18 @@ class Builder implements BuilderInterface
             }
         }
 
-        yield $this->buildOutgoingStream($response, $timeout);
+        yield $this->buildOutgoingStream($socket, $response, $timeout);
     }
 
     /**
      * {@inheritdoc}
      */
-    public function buildOutgoingRequest(RequestInterface $request, $timeout = 0, $allowPersistent = false)
-    {
+    public function buildOutgoingRequest(
+        SocketInterface $socket,
+        RequestInterface $request,
+        $timeout = 0,
+        $allowPersistent = false
+    ) {
         if (!$request->hasHeader('Connection')) {
             $request = $request->withHeader('Connection', $allowPersistent ? 'keep-alive' : 'close');
         }
@@ -124,16 +130,16 @@ class Builder implements BuilderInterface
             $request = $request->withoutHeader('Accept-Encoding');
         }
 
-        yield $this->buildOutgoingStream($request, $timeout);
+        yield $this->buildOutgoingStream($socket, $request, $timeout);
     }
 
     /**
      * {@inheritdoc}
      */
-    public function buildIncomingRequest(RequestInterface $request, $timeout = 0)
+    public function buildIncomingRequest(SocketInterface $socket, RequestInterface $request, $timeout = 0)
     {
         if ($request->getMethod() === 'POST' || $request->getMethod() === 'PUT') {
-            yield $this->buildIncomingStream($request, $timeout);
+            yield $this->buildIncomingStream($socket, $request, $timeout);
             return;
         }
 
@@ -146,9 +152,13 @@ class Builder implements BuilderInterface
     /**
      * {@inheritdoc}
      */
-    public function buildIncomingResponse(ResponseInterface $response, $timeout = 0)
-    {
-        yield $this->buildIncomingStream($response, $timeout);
+    public function buildIncomingResponse(
+        SocketInterface $socket,
+        ResponseInterface $response,
+        RequestInterface $request,
+        $timeout = 0
+    ) {
+        yield $this->buildIncomingStream($socket, $response, $timeout);
     }
 
     /**
@@ -161,15 +171,15 @@ class Builder implements BuilderInterface
      *
      * @throws \Icicle\Http\Exception\MessageException
      */
-    private function buildOutgoingStream(MessageInterface $message, $timeout = 0)
+    private function buildOutgoingStream(SocketInterface $socket, MessageInterface $message, $timeout = 0)
     {
-        $stream = $message->getBody();
+        $body = $message->getBody();
 
-        if ($stream instanceof SeekableStreamInterface) {
-            yield $stream->seek(0);
+        if ($body instanceof SeekableStreamInterface) {
+            yield $body->seek(0);
         }
 
-        if (!$stream->isReadable()) {
+        if (!$body->isReadable()) {
             yield $message->withHeader('Content-Length', 0);
             return;
         }
@@ -203,8 +213,8 @@ class Builder implements BuilderInterface
             $stream = new ChunkedEncoder($this->hwm);
             $body = $message->getBody();
             $coroutine = new Coroutine(Stream\pipe($body, $stream, true, 0, null, $timeout));
-            $coroutine->done(null, function () use ($body) {
-                $body->close();
+            $coroutine->done(null, function () use ($socket) {
+                $socket->close();
             });
 
             yield $message
@@ -226,7 +236,7 @@ class Builder implements BuilderInterface
      *
      * @throws \Icicle\Http\Exception\MessageException
      */
-    private function buildIncomingStream(MessageInterface $message, $timeout = 0)
+    private function buildIncomingStream(SocketInterface $socket, MessageInterface $message, $timeout = 0)
     {
         $stream = $message->getBody();
 
@@ -243,8 +253,8 @@ class Builder implements BuilderInterface
             $stream = new ChunkedDecoder($this->hwm);
             $body = $message->getBody();
             $coroutine = new Coroutine(Stream\pipe($body, $stream, true, 0, null, $timeout));
-            $coroutine->done(null, function () use ($body) {
-                $body->close();
+            $coroutine->done(null, function () use ($socket) {
+                $socket->close();
             });
             $message = $message->withBody($stream);
         } elseif ($message->hasHeader('Content-Length')) {
@@ -255,8 +265,8 @@ class Builder implements BuilderInterface
             $stream = new MemoryStream($this->hwm);
             $body = $message->getBody();
             $coroutine = new Coroutine(Stream\pipe($body, $stream, true, $length, null, $timeout));
-            $coroutine->done(null, function () use ($body) {
-                $body->close();
+            $coroutine->done(null, function () use ($socket) {
+                $socket->close();
             });
             $message = $message->withBody($stream);
         } elseif (
