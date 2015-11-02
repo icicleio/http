@@ -198,7 +198,7 @@ class Builder implements BuilderInterface
 
                 default:
                     throw new MessageException(
-                        ResponseInterface::STATUS_BAD_REQUEST,
+                        ResponseInterface::BAD_REQUEST,
                         sprintf('Unsupported content encoding set: %s', $contentEncoding)
                     );
             }
@@ -260,7 +260,7 @@ class Builder implements BuilderInterface
         } elseif ($message->hasHeader('Content-Length')) {
             $length = (int) $message->getHeaderLine('Content-Length');
             if (0 >= $length) {
-                throw new MessageException(ResponseInterface::STATUS_BAD_REQUEST, 'Content-Length header invalid.');
+                throw new MessageException(ResponseInterface::BAD_REQUEST, 'Content-Length header invalid.');
             }
             $stream = new MemoryStream($this->hwm);
             $body = $message->getBody();
@@ -273,7 +273,7 @@ class Builder implements BuilderInterface
             !$message instanceof ResponseInterface // ResponseInterface may have no length on incoming stream.
             && strtolower($message->getHeaderLine('Connection')) !== 'close'
         ) {
-            throw new MessageException(ResponseInterface::STATUS_LENGTH_REQUIRED, 'Content-Length header required.');
+            throw new MessageException(ResponseInterface::LENGTH_REQUIRED, 'Content-Length header required.');
         }
 
         $contentEncoding = strtolower($message->getHeaderLine('Content-Encoding'));
@@ -292,7 +292,7 @@ class Builder implements BuilderInterface
 
             default:
                 throw new MessageException(
-                    ResponseInterface::STATUS_LENGTH_REQUIRED,
+                    ResponseInterface::LENGTH_REQUIRED,
                     sprintf('Unsupported content encoding received: %s', $contentEncoding)
                 );
         }

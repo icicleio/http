@@ -36,7 +36,7 @@ class Server implements ServerInterface
     /**
      * @var \Icicle\Stream\WritableStreamInterface
      */
-    private $errorStream;
+    private $log;
 
     /**
      * @var \Icicle\Http\Encoder\EncoderInterface
@@ -73,8 +73,11 @@ class Server implements ServerInterface
      * @param \Icicle\Stream\WritableStreamInterface|null $log
      * @param mixed[] $options
      */
-    public function __construct(RequestHandlerInterface $handler, WritableStreamInterface $log = null, array $options = [])
-    {
+    public function __construct(
+        RequestHandlerInterface $handler,
+        WritableStreamInterface $log = null,
+        array $options = []
+    ) {
         $this->reader = isset($options['reader']) && $options['reader'] instanceof ReaderInterface
             ? $options['reader']
             : new Reader($options);
@@ -92,7 +95,7 @@ class Server implements ServerInterface
             : new ServerFactory();
 
         $this->handler = $handler;
-        $this->errorStream = $log ?: Stream\stderr();
+        $this->log = $log ?: Stream\stderr();
     }
 
     /**
@@ -205,13 +208,13 @@ class Server implements ServerInterface
                     if (0 < $count) {
                         return; // Keep-alive timeout expired.
                     }
-                    $response = (yield $this->createErrorResponse(ResponseInterface::STATUS_REQUEST_TIMEOUT, $socket, $timeout));
+                    $response = (yield $this->createErrorResponse(ResponseInterface::REQUEST_TIMEOUT, $socket, $timeout));
                 } catch (MessageException $exception) { // Bad request.
                     $response = (yield $this->createErrorResponse($exception->getCode(), $socket, $timeout));
                 } catch (InvalidValueException $exception) { // Invalid value in message header.
-                    $response = (yield $this->createErrorResponse(ResponseInterface::STATUS_BAD_REQUEST, $socket, $timeout));
+                    $response = (yield $this->createErrorResponse(ResponseInterface::BAD_REQUEST, $socket, $timeout));
                 } catch (ParseException $exception) { // Parse error in request.
-                    $response = (yield $this->createErrorResponse(ResponseInterface::STATUS_BAD_REQUEST, $socket, $timeout));
+                    $response = (yield $this->createErrorResponse(ResponseInterface::BAD_REQUEST, $socket, $timeout));
                 }
 
                 yield $socket->write($this->encoder->encodeResponse($response));
@@ -246,7 +249,7 @@ class Server implements ServerInterface
                 && $socket->isWritable()
             );
         } catch (Exception $exception) {
-            yield $this->errorStream->write(sprintf(
+            yield $this->log->write(sprintf(
                 "Error when handling request from %s:%d: %s\n",
                 $socket->getRemoteAddress(),
                 $socket->getRemotePort(),
@@ -302,7 +305,7 @@ class Server implements ServerInterface
                 );
             }
         } catch (Exception $exception) {
-            yield $this->errorStream->write(sprintf(
+            yield $this->log->write(sprintf(
                 "Uncaught exception when creating response to a request from %s:%d in file %s on line %d: %s\n",
                 $socket->getRemoteAddress(),
                 $socket->getRemotePort(),
@@ -339,7 +342,7 @@ class Server implements ServerInterface
                 );
             }
         } catch (Exception $exception) {
-            yield $this->errorStream->write(sprintf(
+            yield $this->log->write(sprintf(
                 "Uncaught exception when creating response to an error from %s:%d in file %s on line %d: %s\n",
                 $socket->getRemoteAddress(),
                 $socket->getRemotePort(),
