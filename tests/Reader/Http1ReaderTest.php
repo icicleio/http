@@ -3,14 +3,13 @@ namespace Icicle\Tests\Http\Reader;
 
 use Icicle\Coroutine\Coroutine;
 use Icicle\Http\Exception\MessageException;
-use Icicle\Http\Message\RequestInterface;
-use Icicle\Http\Message\ResponseInterface;
-use Icicle\Http\Reader\Reader;
+use Icicle\Http\Message\Request;
+use Icicle\Http\Message\Response;
+use Icicle\Http\Reader\Http1Reader;
 use Icicle\Loop;
-use Icicle\Promise;
-use Icicle\Stream\ReadableStreamInterface;
+use Icicle\Stream\ReadableStream;
 use Icicle\Stream\MemoryStream;
-use Icicle\Stream\SeekableStreamInterface;
+use Icicle\Stream\SeekableStream;
 use Icicle\Tests\Http\TestCase;
 use Mockery;
 use Symfony\Component\Yaml\Yaml;
@@ -18,17 +17,17 @@ use Symfony\Component\Yaml\Yaml;
 class ReaderTest extends TestCase
 {
     /**
-     * @return \Icicle\Stream\ReadableStreamInterface
+     * @return \Icicle\Stream\ReadableStream
      */
     protected function createStream()
     {
-        return Mockery::mock(ReadableStreamInterface::class);
+        return Mockery::mock(ReadableStream::class);
     }
 
     /**
      * @param string $filename
      *
-     * @return \Icicle\Stream\ReadableStreamInterface
+     * @return \Icicle\Stream\ReadableStream
      */
     protected function readMessage($filename)
     {
@@ -60,13 +59,13 @@ class ReaderTest extends TestCase
      */
     public function testReadRequest($filename, $method, $target, $protocolVersion, $headers, $body = null)
     {
-        $reader = new Reader();
+        $reader = new Http1Reader();
 
         $stream = $this->readMessage($filename);
 
         $promise = new Coroutine($reader->readRequest($stream));
 
-        $promise->done(function (RequestInterface $request) use (
+        $promise->done(function (Request $request) use (
             $method, $target, $protocolVersion, $headers, $body
         ) {
             $this->assertSame($method, $request->getMethod());
@@ -77,7 +76,7 @@ class ReaderTest extends TestCase
             if (null !== $body) { // Check body only if not null.
                 $stream = $request->getBody();
 
-                if ($stream instanceof SeekableStreamInterface) {
+                if ($stream instanceof SeekableStream) {
                     $stream->seek(0);
                     $this->assertSame(strlen($body), $stream->getLength());
                 }
@@ -112,7 +111,7 @@ class ReaderTest extends TestCase
      */
     public function testReadInvalidRequest($filename, $exceptionClass)
     {
-        $reader = new Reader();
+        $reader = new Http1Reader();
 
         $stream = $this->readMessage($filename);
 
@@ -146,13 +145,13 @@ class ReaderTest extends TestCase
      */
     public function testReadResponse($filename, $code, $reason, $protocolVersion, $headers, $body = null)
     {
-        $reader = new Reader();
+        $reader = new Http1Reader();
 
         $stream = $this->readMessage($filename);
 
         $promise = new Coroutine($reader->readResponse($stream));
 
-        $promise->done(function (ResponseInterface $response) use (
+        $promise->done(function (Response $response) use (
             $code, $reason, $protocolVersion, $headers, $body
         ) {
             $this->assertSame($code, $response->getStatusCode());
@@ -163,7 +162,7 @@ class ReaderTest extends TestCase
             if (null !== $body) { // Check body only if not null.
                 $stream = $response->getBody();
 
-                if ($stream instanceof SeekableStreamInterface) {
+                if ($stream instanceof SeekableStream) {
                     $stream->seek(0);
                     $this->assertSame(strlen($body), $stream->getLength());
                 }
@@ -196,7 +195,7 @@ class ReaderTest extends TestCase
      */
     public function testReadInvalidResponse($filename, $exceptionClass)
     {
-        $reader = new Reader();
+        $reader = new Http1Reader();
 
         $stream = $this->readMessage($filename);
 
@@ -216,13 +215,15 @@ class ReaderTest extends TestCase
      */
     public function testReadRequestMaxSizeExceeded()
     {
-        $reader = new Reader(['max_header_size' => 1]);
+        $reader = new Http1Reader(['max_header_size' => 1]);
 
         $stream = $this->createStream();
         $maxSize = 1;
 
         $stream->shouldReceive('read')
-            ->andReturn(Promise\resolve("GET / HTTP/1.1\r\nHost: example.com\r\n\r\n"));
+            ->andReturnUsing(function () {
+                yield "GET / HTTP/1.1\r\nHost: example.com\r\n\r\n";
+            });
 
         $promise = new Coroutine($reader->readRequest($stream, $maxSize));
 
@@ -240,13 +241,15 @@ class ReaderTest extends TestCase
      */
     public function testReadResponseMaxSizeExceeded()
     {
-        $reader = new Reader(['max_header_size' => 1]);
+        $reader = new Http1Reader(['max_header_size' => 1]);
 
         $stream = $this->createStream();
         $maxSize = 1;
 
         $stream->shouldReceive('read')
-            ->andReturn(Promise\resolve("HTTP/1.1 200 OK\r\n\r\n"));
+            ->andReturnUsing(function () {
+                yield "HTTP/1.1 200 OK\r\n\r\n";
+            });
 
         $promise = new Coroutine($reader->readResponse($stream, $maxSize));
 

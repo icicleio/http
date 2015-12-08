@@ -1,339 +1,119 @@
 <?php
 namespace Icicle\Http\Message;
 
-use Icicle\Http\Exception\InvalidMethodException;
-use Icicle\Http\Exception\InvalidValueException;
-use Icicle\Http\Message\Cookie\Cookie;
-use Icicle\Stream\ReadableStreamInterface;
-
-class Request extends Message implements RequestInterface
+interface Request extends Message
 {
     /**
-     * @var string
-     */
-    private $method;
-
-    /**
-     * @var \Icicle\Http\Message\UriInterface
-     */
-    private $uri;
-
-    /**
-     * @var bool
-     */
-    private $hostFromUri = false;
-
-    /**
-     * @var string
-     */
-    private $target;
-
-    /**
-     * @var \Icicle\Http\Message\Cookie\CookieInterface[]
-     */
-    private $cookies = [];
-
-    /**
-     * @param string $method
-     * @param string|\Icicle\Http\Message\UriInterface $uri
-     * @param \Icicle\Stream\ReadableStreamInterface|null $stream
-     * @param string[][] $headers
-     * @param string $target
-     * @param string $protocol
+     * Same as Message::getHeaders(), except the Host header will always be set based on the URI.
      *
-     * @throws \Icicle\Http\Exception\MessageException If one of the arguments is invalid.
+     * @return string[][]
      */
-    public function __construct(
-        $method,
-        $uri = '',
-        array $headers = [],
-        ReadableStreamInterface $stream = null,
-        $target = '',
-        $protocol = '1.1'
-    ) {
-        parent::__construct($headers, $stream, $protocol);
-
-        $this->method = $this->filterMethod($method);
-        $this->uri = $uri instanceof UriInterface ? $uri : new Uri($uri);
-
-        $this->target = $this->filterTarget($target);
-
-        if (!$this->hasHeader('Host')) {
-            $this->setHostFromUri();
-        }
-
-        if ($this->hasHeader('Cookie')) {
-            $this->setCookiesFromHeaders();
-        }
-    }
+    public function getHeaders();
 
     /**
-     * {@inheritdoc}
+     * Same as Message::getHeader(), except if the Host header is request and previously unset, the value
+     * will be determined from the URI.
+     *
+     * @param string $name
+     *
+     * @return string[]
      */
-    public function getRequestTarget()
-    {
-        if ('' !== $this->target) {
-            return $this->target;
-        }
-
-        $target = $this->uri->getPath();
-
-        if ('' === $target) {
-            $target = '/';
-        }
-
-        $query = $this->uri->getQuery();
-        if ('' !== $query) {
-            $target = sprintf('%s?%s', $target, $query);
-        }
-
-        return $target;
-    }
+    public function getHeader($name);
 
     /**
-     * {@inheritdoc}
-     */
-    public function getUri()
-    {
-        return $this->uri;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function getMethod()
-    {
-        return $this->method;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function withRequestTarget($target)
-    {
-        $new = clone $this;
-        $new->target = $new->filterTarget($target);
-        return $new;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function withMethod($method)
-    {
-        $new = clone $this;
-        $new->method = $new->filterMethod($method);
-        return $new;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function withHeader($name, $value)
-    {
-        $new = parent::withHeader($name, $value);
-
-        $normalized = strtolower($name);
-
-        if ('host' === $normalized) {
-            $new->hostFromUri = false;
-        } elseif ('cookie' === $normalized) {
-            $new->setCookiesFromHeaders();
-        }
-
-        return $new;
-    }
-    /**
-     * {@inheritdoc}
-     */
-    public function withAddedHeader($name, $value)
-    {
-        $normalized = strtolower($name);
-
-        if ('host' === $normalized && $this->hostFromUri) {
-            $new = parent::withoutHeader('Host');
-            $new->setHeader($name, $value);
-            $new->hostFromUri = false;
-        } else {
-            $new = parent::withAddedHeader($name, $value);
-
-            if ('cookie' === $normalized) {
-                $new->setCookiesFromHeaders();
-            }
-        }
-
-        return $new;
-    }
-    /**
-     * {@inheritdoc}
-     */
-    public function withoutHeader($name)
-    {
-        $new = parent::withoutHeader($name);
-
-        $normalized = strtolower($name);
-
-        if ('host' === $normalized) {
-            $new->setHostFromUri();
-        } elseif ('cookie' === $normalized) {
-            $new->cookies = [];
-        }
-
-        return $new;
-    }
-    /**
-     * {@inheritdoc}
-     */
-    public function withUri($uri)
-    {
-        if (!$uri instanceof UriInterface) {
-            $uri = new Uri($uri);
-        }
-
-        $new = clone $this;
-        $new->uri = $uri;
-
-        if ($new->hostFromUri) {
-            $new->setHostFromUri();
-        }
-
-        return $new;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function getCookies()
-    {
-        return $this->cookies;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function getCookie($name)
-    {
-        $name = (string) $name;
-        return array_key_exists($name, $this->cookies) ? $this->cookies[$name] : null;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function hasCookie($name)
-    {
-        return array_key_exists((string) $name, $this->cookies);
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function withCookie($name, $value)
-    {
-        $new = clone $this;
-        $new->cookies[(string) $name] = new Cookie($name, $value);
-        $new->setHeadersFromCookies();
-        return $new;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function withoutCookie($name)
-    {
-        $new = clone $this;
-        unset($new->cookies[(string) $name]);
-        $new->setHeadersFromCookies();
-        return $new;
-    }
-
-    /**
-     * @param string $method
+     * Same as Message::getHeaderLine(), except if the Host header is request and previously unset, the value
+     * will be determined from the URI.
+     *
+     * @param string $name
      *
      * @return string
-     *
-     * @throws \Icicle\Http\Exception\InvalidMethodException If the method is not valid.
      */
-    protected function filterMethod($method)
-    {
-        if (!is_string($method)) {
-            throw new InvalidMethodException('Request method must be a string.');
-        }
-
-        return strtoupper($method);
-    }
+    public function getHeaderLine($name);
 
     /**
-     * @param string $target
+     * Returns the target of the request. Unless explicitly set, this will usually be the path and query portion
+     * of the URI.
      *
      * @return string
+     */
+    public function getRequestTarget();
+
+    /**
+     * Returns the request method.
+     *
+     * @return string
+     */
+    public function getMethod();
+
+    /**
+     * Returns the request URI.
+     *
+     * @return \Icicle\Http\Message\Uri
+     */
+    public function getUri();
+
+    /**
+     * @return \Icicle\Http\Message\Cookie\Cookie[]
+     */
+    public function getCookies();
+
+    /**
+     * @param string $name
+     *
+     * @return \Icicle\Http\Message\Cookie\Cookie
+     */
+    public function getCookie($name);
+
+    /**
+     * @param string $name
+     *
+     * @return bool
+     */
+    public function hasCookie($name);
+
+    /**
+     * Returns a new instance with the given request target.
+     *
+     * @param string $target
+     *
+     * @return self
      *
      * @throws \Icicle\Http\Exception\InvalidValueException If the target contains whitespace.
      */
-    protected function filterTarget($target)
-    {
-        if (!is_string($target)) {
-            throw new InvalidMethodException('Request target must be a string.');
-        }
-
-        if (preg_match('/\s/', $target)) {
-            throw new InvalidValueException('Request target cannot contain whitespace.');
-        }
-
-        return $target;
-    }
+    public function withRequestTarget($target);
 
     /**
-     * Sets the host based on the current URI.
-     */
-    private function setHostFromUri()
-    {
-        $this->hostFromUri = true;
-
-        $host = $this->uri->getHost();
-
-        if (!empty($host)) { // Do not set Host header if URI has no host.
-            $port = $this->uri->getPort();
-            if (null !== $port) {
-                $host = sprintf('%s:%d', $host, $port);
-            }
-
-            parent::setHeader('Host', $host);
-        }
-    }
-
-    /**
-     * Sets cookies based on headers.
+     * Returns a new instance with the given request method.
      *
-     * @throws \Icicle\Http\Exception\InvalidValueException
+     * @param string $method
+     *
+     * @return self
+     *
+     * @throws \Icicle\Http\Exception\InvalidValueException If the given method is invalid.
      */
-    private function setCookiesFromHeaders()
-    {
-        $this->cookies = [];
-
-        $headers = $this->getHeader('Cookie');
-
-        foreach ($headers as $line) {
-            foreach (explode(';', $line) as $pair) {
-                $cookie = Cookie::fromHeader($pair);
-                $this->cookies[$cookie->getName()] = $cookie;
-            }
-        }
-    }
+    public function withMethod($method);
 
     /**
-     * Sets headers based on cookie values.
+     * Returns a new instance with the given URI.
+     *
+     * @param string|\Icicle\Http\Message\Uri $uri
+     *
+     * @return self
      */
-    private function setHeadersFromCookies()
-    {
-        $values = [];
+    public function withUri($uri);
 
-        foreach ($this->cookies as $cookie) {
-            $values[] = $cookie->toHeader();
-        }
+    /**
+     * @param string $name
+     * @param string $value
+     *
+     * @return self
+     */
+    public function withCookie($name, $value);
 
-        if (!empty($values)) {
-            $this->setHeader('Cookie', implode('; ', $values));
-        }
-    }
+    /**
+     * @param string $name
+     *
+     * @return self
+     */
+    public function withoutCookie($name);
 }

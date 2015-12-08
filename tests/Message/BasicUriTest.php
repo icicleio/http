@@ -1,10 +1,10 @@
 <?php
 namespace Icicle\Tests\Http\Message;
 
-use Icicle\Http\Message\Uri;
+use Icicle\Http\Message\BasicUri;
 use Icicle\Tests\Http\TestCase;
 
-class UriTest extends TestCase
+class BasicUriTest extends TestCase
 {
     /**
      * @return array
@@ -118,7 +118,7 @@ class UriTest extends TestCase
      */
     public function testConstructor($uri, $scheme, $user, $host, $port, $authority, $path, $query, $fragment)
     {
-        $uri = new Uri($uri);
+        $uri = new BasicUri($uri);
         $this->assertSame($scheme, $uri->getScheme());
         $this->assertSame($user, $uri->getUserInfo());
         $this->assertSame($host, $uri->getHost());
@@ -135,7 +135,7 @@ class UriTest extends TestCase
     public function testToString()
     {
         $uri = 'https://username:password@example.com:8443/async/http?name=value#fragment';
-        $this->assertSame($uri, (string) new Uri($uri));
+        $this->assertSame($uri, (string) new BasicUri($uri));
     }
 
     /**
@@ -143,7 +143,7 @@ class UriTest extends TestCase
      */
     public function testWithScheme()
     {
-        $uri = new Uri('https://username:password@example.com/async/http?name=value#fragment');
+        $uri = new BasicUri('https://username:password@example.com/async/http?name=value#fragment');
 
         $new = $uri->withScheme('http');
 
@@ -163,7 +163,7 @@ class UriTest extends TestCase
      */
     public function testWithInvalidScheme()
     {
-        new Uri('ftp://example.com/path');
+        new BasicUri('ftp://example.com/path');
     }
 
     /**
@@ -194,7 +194,7 @@ class UriTest extends TestCase
      */
     public function testWithPort($uri, $port, $expected)
     {
-        $uri = new Uri($uri);
+        $uri = new BasicUri($uri);
 
         $new = $uri->withPort($port);
 
@@ -222,7 +222,7 @@ class UriTest extends TestCase
      */
     public function testWithInvalidPort($port)
     {
-        $uri = new Uri('http://example.com');
+        $uri = new BasicUri('http://example.com');
         $uri->withPort($port);
     }
 
@@ -231,7 +231,7 @@ class UriTest extends TestCase
      */
     public function testWithUserInfo()
     {
-        $uri = new Uri('https://example.com:8443');
+        $uri = new BasicUri('https://example.com:8443');
 
         $new = $uri->withUserInfo('username', 'password');
 
@@ -257,7 +257,7 @@ class UriTest extends TestCase
      */
     public function testWithHost()
     {
-        $uri = new Uri('https://username:password@example.com:443/path');
+        $uri = new BasicUri('https://username:password@example.com:443/path');
 
         $new = $uri->withHost('example.net');
 
@@ -297,7 +297,7 @@ class UriTest extends TestCase
      */
     public function testGetAuthority($uri, $expected)
     {
-        $uri = new Uri($uri);
+        $uri = new BasicUri($uri);
         $this->assertSame($expected, $uri->getAuthority());
     }
 
@@ -306,7 +306,7 @@ class UriTest extends TestCase
      */
     public function testWithQuery()
     {
-        $uri = new Uri('http://example.com/path?foo=bar');
+        $uri = new BasicUri('http://example.com/path?foo=bar');
 
         $new = $uri->withQuery('?key2=value2&key1=value1');
 
@@ -332,7 +332,7 @@ class UriTest extends TestCase
      */
     public function testWithQueryValue()
     {
-        $uri = new Uri('http://example.com/path?foo=bar');
+        $uri = new BasicUri('http://example.com/path?foo=bar');
 
         $new = $uri->withQueryValue('name', 'valüe');
 
@@ -361,7 +361,7 @@ class UriTest extends TestCase
      */
     public function testWithoutQueryValue()
     {
-        $uri = new Uri('http://example.com/path?key1=value1&key2=value2&key3');
+        $uri = new BasicUri('http://example.com/path?key1=value1&key2=value2&key3');
 
         $new = $uri->withoutQueryValue('key2');
 
@@ -413,7 +413,7 @@ class UriTest extends TestCase
      */
     public function testWithPath($path, $expected)
     {
-        $uri = new Uri('http://example.com/original/path');
+        $uri = new BasicUri('http://example.com/original/path');
 
         $new = $uri->withPath($path);
 
@@ -446,7 +446,7 @@ class UriTest extends TestCase
      */
     public function testWithFragment($path, $expected)
     {
-        $uri = new Uri('http://example.com/path#original-fragment');
+        $uri = new BasicUri('http://example.com/path#original-fragment');
 
         $new = $uri->withFragment($path);
 

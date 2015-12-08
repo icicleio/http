@@ -1,29 +1,30 @@
 <?php
 namespace Icicle\Tests\Http\Message;
 
-use Icicle\Stream\ReadableStreamInterface;
+use Icicle\Http\Message\AbstractMessage;
+use Icicle\Stream\ReadableStream;
 use Icicle\Tests\Http\TestCase;
 
 class MessageTest extends TestCase
 {
     /**
-     * @return \Icicle\Stream\ReadableStreamInterface
+     * @return \Icicle\Stream\ReadableStream
      */
     public function createStream()
     {
-        return $this->getMock('Icicle\Stream\ReadableStreamInterface');
+        return $this->getMock(ReadableStream::class);
     }
 
     /**
-     * @param \Icicle\Stream\ReadableStreamInterface|null $stream
+     * @param \Icicle\Stream\ReadableStream|null $stream
      * @param array|null $headers
      * @param string $protocol
      *
      * @return \Icicle\Http\Message\Message
      */
-    public function createMessage(ReadableStreamInterface $stream = null, array $headers = [], $protocol = '1.1')
+    public function createMessage(ReadableStream $stream = null, array $headers = [], $protocol = '1.1')
     {
-        return $this->getMockForAbstractClass('Icicle\Http\Message\Message', [$headers, $stream, $protocol]);
+        return $this->getMockForAbstractClass(AbstractMessage::class, [$headers, $stream, $protocol]);
     }
 
     public function testGetProtocol()
@@ -76,7 +77,7 @@ class MessageTest extends TestCase
     public function testGetBody()
     {
         $message = $this->createMessage();
-        $this->assertInstanceOf('Icicle\Stream\ReadableStreamInterface', $message->getBody());
+        $this->assertInstanceOf(ReadableStream::class, $message->getBody());
     }
 
     /**

@@ -1,12 +1,12 @@
 <?php
 namespace Icicle\Tests\Http\Message;
 
-use Icicle\Http\Message\Cookie\CookieInterface;
-use Icicle\Http\Message\Request;
-use Icicle\Http\Message\Uri;
+use Icicle\Http\Message\Cookie\Cookie;
+use Icicle\Http\Message\BasicRequest;
+use Icicle\Http\Message\BasicUri;
 use Icicle\Tests\Http\TestCase;
 
-class RequestTest extends TestCase
+class BasicRequestTest extends TestCase
 {
     public function getInvalidMethods()
     {
@@ -41,7 +41,7 @@ class RequestTest extends TestCase
      */
     public function testInvalidMethodThrowsException($method)
     {
-        new Request($method);
+        new BasicRequest($method);
     }
 
     /**
@@ -50,7 +50,7 @@ class RequestTest extends TestCase
      */
     public function testConstructWithValidMethod($method)
     {
-        $request = new Request($method);
+        $request = new BasicRequest($method);
         $this->assertSame($method, $request->getMethod());
     }
 
@@ -61,7 +61,7 @@ class RequestTest extends TestCase
      */
     public function testWithMethodThrowsExceptionWithInvalidMethod($method)
     {
-        $request = new Request('GET');
+        $request = new BasicRequest('GET');
         $request->withMethod($method);
     }
 
@@ -71,7 +71,7 @@ class RequestTest extends TestCase
      */
     public function testWithMethod($method)
     {
-        $request = new Request('GET');
+        $request = new BasicRequest('GET');
         $new = $request->withMethod($method);
         $this->assertNotSame($request, $new);
         $this->assertSame($method, $new->getMethod());
@@ -79,13 +79,13 @@ class RequestTest extends TestCase
 
     public function testUriWithoutHostDoesNotSetHostHeader()
     {
-        $request = new Request('GET', new Uri('/path'));
+        $request = new BasicRequest('GET', new BasicUri('/path'));
         $this->assertFalse($request->hasHeader('Host'));
     }
 
     public function testUriWithHostSetsHostHeader()
     {
-        $request = new Request('GET', new Uri('http://example.com:8080/path'));
+        $request = new BasicRequest('GET', new BasicUri('http://example.com:8080/path'));
         $this->assertTrue($request->hasHeader('Host'));
         $this->assertSame('example.com:8080', $request->getHeaderLine('Host'));
     }
@@ -99,7 +99,7 @@ class RequestTest extends TestCase
             'Host' => 'example.net:8080',
         ];
 
-        $request = new Request('GET', new Uri('http://example.com/path'), $headers);
+        $request = new BasicRequest('GET', new BasicUri('http://example.com/path'), $headers);
 
         $this->assertTrue($request->hasHeader('Host'));
         $this->assertSame('example.net:8080', $request->getHeaderLine('Host'));
@@ -149,10 +149,10 @@ class RequestTest extends TestCase
 
     public function testWithUri()
     {
-        $original = new Uri('http://example.com');
-        $substitute = new Uri('http://example.net');
+        $original = new BasicUri('http://example.com');
+        $substitute = new BasicUri('http://example.net');
 
-        $request = new Request('GET', $original);
+        $request = new BasicRequest('GET', $original);
         $new = $request->withUri($substitute);
         $this->assertNotSame($request, $new);
         $this->assertSame($original, $request->getUri());
@@ -164,7 +164,7 @@ class RequestTest extends TestCase
         $original = 'http://example.com';
         $substitute = 'http://example.net';
 
-        $request = new Request('GET', $original);
+        $request = new BasicRequest('GET', $original);
         $new = $request->withUri($substitute);
         $this->assertNotSame($request, $new);
         $this->assertSame($original, (string) $request->getUri());
@@ -177,8 +177,8 @@ class RequestTest extends TestCase
      */
     public function testWithUriSetsHostHeader()
     {
-        $request = new Request('GET', new Uri('http://example.com'));
-        $new = $request->withUri(new Uri('http://example.net'));
+        $request = new BasicRequest('GET', new BasicUri('http://example.com'));
+        $new = $request->withUri(new BasicUri('http://example.net'));
 
         $this->assertTrue($new->hasHeader('Host'));
         $this->assertSame('example.net:80', $new->getHeaderLine('Host'));
@@ -189,7 +189,7 @@ class RequestTest extends TestCase
      */
     public function testConstructWithInvalidTarget()
     {
-        new Request('GET', '', [], null, 'Invalid target');
+        new BasicRequest('GET', '', [], null, 'Invalid target');
     }
 
     public function getUris()
@@ -211,7 +211,7 @@ class RequestTest extends TestCase
      */
     public function testIsTargetBasedOnUri($uri, $expected)
     {
-        $request = new Request('GET', $uri);
+        $request = new BasicRequest('GET', $uri);
         $this->assertSame($expected, $request->getRequestTarget());
     }
 
@@ -234,7 +234,7 @@ class RequestTest extends TestCase
      */
     public function testConstructWithTarget($target)
     {
-        $request = new Request('GET', 'http://example.org/different/path', [], null, $target);
+        $request = new BasicRequest('GET', 'http://example.org/different/path', [], null, $target);
         $this->assertSame($target, $request->getRequestTarget());
     }
 
@@ -244,7 +244,7 @@ class RequestTest extends TestCase
      */
     public function testWithTarget($target)
     {
-        $request = new Request('GET', 'http://example.org/different/path');
+        $request = new BasicRequest('GET', 'http://example.org/different/path');
         $new = $request->withRequestTarget($target);
         $this->assertNotSame($request, $new);
         $this->assertSame($target, $new->getRequestTarget());
@@ -252,7 +252,7 @@ class RequestTest extends TestCase
 
     public function testCookieDecode()
     {
-        $request = new Request('GET', 'http://example.org/different/path', [
+        $request = new BasicRequest('GET', 'http://example.org/different/path', [
             'Cookie' => 'name1 = value1; name2=value2'
         ]);
 
@@ -276,14 +276,14 @@ class RequestTest extends TestCase
      */
     public function testWithCookie()
     {
-        $request = new Request('GET', 'http://example.com');
+        $request = new BasicRequest('GET', 'http://example.com');
 
         $new = $request->withCookie('name', 'value');
         $this->assertNotSame($request, $new);
 
         $this->assertTrue($new->hasCookie('name'));
         $cookie = $new->getCookie('name');
-        $this->assertInstanceOf(CookieInterface::class, $cookie);
+        $this->assertInstanceOf(Cookie::class, $cookie);
         $this->assertSame('name', $cookie->getName());
         $this->assertSame('value', $cookie->getValue());
         $this->assertSame('value', (string) $cookie);

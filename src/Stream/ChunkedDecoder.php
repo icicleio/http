@@ -2,7 +2,7 @@
 namespace Icicle\Http\Stream;
 
 use Icicle\Http\Exception\MessageException;
-use Icicle\Http\Message\ResponseInterface;
+use Icicle\Http\Message\Response;
 use Icicle\Stream\MemoryStream;
 use Icicle\Stream\Structures\Buffer;
 
@@ -60,7 +60,7 @@ class ChunkedDecoder extends MemoryStream
 
                 if (!preg_match('/^[a-f0-9]+$/i', $length)) {
                     yield parent::send('', $timeout, true);
-                    throw new MessageException(ResponseInterface::BAD_REQUEST, 'Invalid chunk length.');
+                    throw new MessageException(Response::BAD_REQUEST, 'Invalid chunk length.');
                 }
 
                 $this->length = hexdec($length) + 2;

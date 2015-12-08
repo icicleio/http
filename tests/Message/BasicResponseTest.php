@@ -1,11 +1,11 @@
 <?php
 namespace Icicle\Tests\Http\Message;
 
-use Icicle\Http\Message\Cookie\MetaCookieInterface;
-use Icicle\Http\Message\Response;
+use Icicle\Http\Message\Cookie\MetaCookie;
+use Icicle\Http\Message\BasicResponse;
 use Icicle\Tests\Http\TestCase;
 
-class ResponseTest extends TestCase
+class BasicResponseTest extends TestCase
 {
     /**
      * @return array Array of arrays of invalid status codes.
@@ -43,7 +43,7 @@ class ResponseTest extends TestCase
      */
     public function testConstructWithInvalidStatus($code)
     {
-        new Response($code);
+        new BasicResponse($code);
     }
 
     /**
@@ -51,7 +51,7 @@ class ResponseTest extends TestCase
      */
     public function testConstructWithValidStatus($code, $reason)
     {
-        $response = new Response($code);
+        $response = new BasicResponse($code);
         $this->assertSame((int) $code, $response->getStatusCode());
         $this->assertSame($reason, $response->getReasonPhrase());
     }
@@ -63,7 +63,7 @@ class ResponseTest extends TestCase
     {
         $reason = 'Custom Reason';
 
-        $response = new Response($code, [], null, $reason);
+        $response = new BasicResponse($code, [], null, $reason);
         $this->assertSame((int) $code, $response->getStatusCode());
         $this->assertSame($reason, $response->getReasonPhrase());
     }
@@ -73,7 +73,7 @@ class ResponseTest extends TestCase
      */
     public function testWithStatus($code, $reason)
     {
-        $response = new Response();
+        $response = new BasicResponse();
         $new = $response->withStatus($code);
 
         $this->assertNotSame($response, $new);
@@ -88,7 +88,7 @@ class ResponseTest extends TestCase
     {
         $reason = 'Custom Reason';
 
-        $response = new Response();
+        $response = new BasicResponse();
         $new = $response->withStatus($code, $reason);
 
         $this->assertNotSame($response, $new);
@@ -102,12 +102,12 @@ class ResponseTest extends TestCase
      */
     public function testWithStatusWithInvalidCode($code)
     {
-        (new Response())->withStatus($code);
+        (new BasicResponse())->withStatus($code);
     }
 
     public function testCookieDecode()
     {
-        $request = new Response(200, [
+        $request = new BasicResponse(200, [
             'Set-Cookie' => ['name1 = value1; path=/; domain=example.com', 'name2 = value2; path=/test']
         ]);
 
@@ -131,7 +131,7 @@ class ResponseTest extends TestCase
      */
     public function testWithCookie()
     {
-        $response = new Response();
+        $response = new BasicResponse();
 
         $time = 1443657600;
 
@@ -140,7 +140,7 @@ class ResponseTest extends TestCase
 
         $this->assertTrue($new->hasCookie('name'));
         $cookie = $new->getCookie('name');
-        $this->assertInstanceOf(MetaCookieInterface::class, $cookie);
+        $this->assertInstanceOf(MetaCookie::class, $cookie);
         $this->assertSame('name', $cookie->getName());
         $this->assertSame('value', $cookie->getValue());
         $this->assertSame($time, $cookie->getExpires());
@@ -176,7 +176,7 @@ class ResponseTest extends TestCase
         $this->assertTrue($new->hasCookie('key'));
         $this->assertTrue($new->hasCookie('name'));
         $cookie = $new->getCookie('key');
-        $this->assertInstanceOf(MetaCookieInterface::class, $cookie);
+        $this->assertInstanceOf(MetaCookie::class, $cookie);
         $this->assertSame('key', $cookie->getName());
         $this->assertSame('cookie-value', $cookie->getValue());
         $this->assertSame($time, $cookie->getExpires());

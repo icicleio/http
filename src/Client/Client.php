@@ -2,21 +2,21 @@
 namespace Icicle\Http\Client;
 
 use Icicle\Dns\Connector\Connector;
-use Icicle\Dns\Connector\ConnectorInterface;
+use Icicle\Dns\Connector\DefaultConnector;
 use Icicle\Http\Message\Request;
-use Icicle\Http\Message\RequestInterface;
+use Icicle\Http\Message\BasicRequest;
 use Icicle\Socket\Exception\FailureException;
-use Icicle\Stream\ReadableStreamInterface;
+use Icicle\Stream\ReadableStream;
 
-class Client implements ClientInterface
+class Client
 {
     /**
-     * @var \Icicle\Http\Client\RequesterInterface
+     * @var \Icicle\Http\Client\Requester
      */
     private $requester;
 
     /**
-     * @var \Icicle\Dns\Connector\ConnectorInterface
+     * @var \Icicle\Dns\Connector\Connector
      */
     private $connector;
 
@@ -26,15 +26,13 @@ class Client implements ClientInterface
     private $cryptoMethod = self::DEFAULT_CRYPTO_METHOD;
 
     /**
-     * @param \Icicle\Http\Client\RequesterInterface|null $requester
-     * @param \Icicle\Dns\Connector\ConnectorInterface|null $connector
+     * @param \Icicle\Http\Client\Requester|null $requester
+     * @param \Icicle\Dns\Connector\Connector|null $connector
      */
-    public function __construct(
-        RequesterInterface $requester = null,
-        ConnectorInterface $connector = null
-    ) {
+    public function __construct(Requester $requester = null, Connector $connector = null)
+    {
         $this->requester = $requester ?: new Requester();
-        $this->connector = $connector ?: new Connector();
+        $this->connector = $connector ?: new DefaultConnector();
     }
 
     /**
@@ -44,19 +42,17 @@ class Client implements ClientInterface
         $method,
         $uri,
         array $headers = [],
-        ReadableStreamInterface $body = null,
+        ReadableStream $body = null,
         array $options = []
     ) {
-        return $this->send(new Request($method, $uri, $headers, $body), $options);
+        return $this->send(new BasicRequest($method, $uri, $headers, $body), $options);
     }
 
     /**
      * {@inheritdoc}
      */
-    public function send(
-        RequestInterface $request,
-        array $options = []
-    ) {
+    public function send(Request $request, array $options = [])
+    {
         $uri = $request->getUri();
 
         /** @var \Icicle\Socket\Socket $socket */

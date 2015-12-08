@@ -3,27 +3,27 @@
 
 require dirname(__DIR__) . '/vendor/autoload.php';
 
-use Icicle\Http\Message\RequestInterface;
-use Icicle\Http\Message\Response;
-use Icicle\Http\Server\RequestHandlerInterface;
+use Icicle\Http\Message\Request;
+use Icicle\Http\Message\BasicResponse;
+use Icicle\Http\Server\RequestHandler;
 use Icicle\Http\Server\Server;
 use Icicle\Loop;
-use Icicle\Socket\SocketInterface;
+use Icicle\Socket\Socket;
 use Icicle\Stream\MemorySink;
 
-class RequestHandler implements RequestHandlerInterface
+class ExampleRequestHandler implements RequestHandler
 {
     /**
      * @coroutine
      *
-     * @param \Icicle\Http\Message\RequestInterface $request
-     * @param \Icicle\Socket\SocketInterface $socket
+     * @param \Icicle\Http\Message\Request $request
+     * @param \Icicle\Socket\Socket $socket
      *
      * @return \Generator
      *
-     * @resolve \Icicle\Http\Message\ResponseInterface $response
+     * @resolve \Icicle\Http\Message\Response $response
      */
-    public function onRequest(RequestInterface $request, SocketInterface $socket)
+    public function onRequest(Request $request, Socket $socket)
     {
         $data = sprintf(
             'Hello to %s:%d from %s:%d!',
@@ -45,7 +45,7 @@ class RequestHandler implements RequestHandlerInterface
         $sink = new MemorySink();
         yield $sink->end($data);
 
-        $response = new Response(200, [
+        $response = new BasicResponse(200, [
             'Content-Type' => 'text/plain',
             'Content-Length' => $sink->getLength(),
         ], $sink);
@@ -55,19 +55,19 @@ class RequestHandler implements RequestHandlerInterface
 
     /**
      * @param int $code
-     * @param \Icicle\Socket\SocketInterface $socket
+     * @param \Icicle\Socket\Socket $socket
      *
      * @return \Generator
      *
-     * @resolve \Icicle\Http\Message\ResponseInterface
+     * @resolve \Icicle\Http\Message\Response
      */
-    public function onError($code, SocketInterface $socket)
+    public function onError($code, Socket $socket)
     {
-        yield new Response($code);
+        yield new BasicResponse($code);
     }
 }
 
-$server = new Server(new RequestHandler());
+$server = new Server(new ExampleRequestHandler());
 
 $server->listen(8080);
 $server->listen(8888);

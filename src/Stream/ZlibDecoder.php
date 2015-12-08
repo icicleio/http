@@ -4,7 +4,7 @@ namespace Icicle\Http\Stream;
 use Icicle\Http\Exception\InvalidArgumentError;
 use Icicle\Http\Exception\MessageException;
 use Icicle\Http\Exception\UnsupportedError;
-use Icicle\Http\Message\ResponseInterface;
+use Icicle\Http\Message\Response;
 use Icicle\Stream\MemoryStream;
 
 class ZlibDecoder extends MemoryStream
@@ -57,7 +57,7 @@ class ZlibDecoder extends MemoryStream
 
         if (0 !== $this->maxLength && strlen($this->buffer) > $this->maxLength) {
             yield parent::send('', $timeout, true);
-            throw new MessageException(ResponseInterface::REQUEST_ENTITY_TOO_LARGE, 'Message body too long.');
+            throw new MessageException(Response::REQUEST_ENTITY_TOO_LARGE, 'Message body too long.');
         }
 
         if (!$end) {
@@ -71,7 +71,7 @@ class ZlibDecoder extends MemoryStream
 
         if (false === $data) {
             yield parent::send('', $timeout, true);
-            throw new MessageException(ResponseInterface::BAD_REQUEST, 'Could not decode compressed stream.');
+            throw new MessageException(Response::BAD_REQUEST, 'Could not decode compressed stream.');
         }
 
         yield parent::send($data, $timeout, true);

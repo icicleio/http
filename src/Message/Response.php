@@ -1,179 +1,128 @@
 <?php
 namespace Icicle\Http\Message;
 
-use Icicle\Http\Exception\InvalidStatusException;
-use Icicle\Http\Message\Cookie\MetaCookie;
-use Icicle\Stream\ReadableStreamInterface;
-
-class Response extends Message implements ResponseInterface
+interface Response extends Message
 {
+    const CONT = 100;
+    const SWITCHING_PROTOCOLS = 101;
+    const PROCESSING = 102;
+
+    const OK = 200;
+    const CREATED = 201;
+    const ACCEPTED = 202;
+    const NON_AUTHORITATIVE = 203;
+    const NO_CONTENT = 204;
+    const RESET_CONTENT = 205;
+    const PARTIAL_CONTENT = 206;
+    const MULTI_STATUS = 207;
+    const ALREADY_REPORTED = 208;
+    const IM_USED = 226;
+
+    const MULTIPLE_CHOICES = 300;
+    const MOVED_PERMANENTLY = 301;
+    const FOUND = 302;
+    const SEE_OTHER = 303;
+    const NOT_MODIFIED = 304;
+    const USE_PROXY = 305;
+    const SWITCH_PROXY = 306;
+    const TEMPORARY_REDIRECT = 307;
+    const PERMANENT_REDIRECT = 308;
+
+    const BAD_REQUEST = 400;
+    const UNAUTHORIZED = 401;
+    const PAYMENT_REQUIRED = 402;
+    const FORBIDDEN = 403;
+    const NOT_FOUND = 404;
+    const METHOD_NOT_ALLOWED = 405;
+    const NOT_ACCEPTABLE = 406;
+    const PROXY_AUTHENTICATION_REQUIRED = 407;
+    const REQUEST_TIMEOUT = 408;
+    const CONFLICT = 409;
+    const GONE = 410;
+    const LENGTH_REQUIRED = 411;
+    const PRECONDITION_FAILED = 412;
+    const REQUEST_ENTITY_TOO_LARGE = 413;
+    const REQUEST_URI_TOO_LARGE = 414;
+    const UNSUPPORTED_MEDIA_TYPE = 415;
+    const RANGE_NOT_SATISFIABLE = 416;
+    const EXPECTATION_FAILED = 417;
+    const TEAPOT = 418;
+    const UNPROCESSABLE_ENTITY = 422;
+    const LOCKED = 423;
+    const FAILED_DEPENDENCIES = 424;
+    const UNORDERED_COLLECTION = 425;
+    const UPGRADE_REQUIRED = 426;
+    const PRECONDITION_REQUIRED = 428;
+    const TOO_MANY_REQUESTS = 429;
+    const REQUEST_HEADER_TOO_LARGE = 431;
+
+    const INTERNAL_SERVER_ERROR = 500;
+    const NOT_IMPLEMENTED = 501;
+    const BAD_GATEWAY = 502;
+    const SERVICE_UNAVAILABLE = 503;
+    const GATEWAY_TIMEOUT = 504;
+    const HTTP_VERSION_NOT_SUPPORTED = 505;
+    const VARIANT_ALSO_NEGOTIATES = 506;
+    const INSUFFICIENT_STORAGE = 507;
+    const LOOP_DETECTED = 508;
+    const NOT_EXTENDED = 510;
+    const NETWORK_AUTHENTICATION_REQUIRED = 511;
     /**
-     * Map of status codes to reason phrases.
+     * Returns the response status code.
      *
-     * @var string[]
+     * @return int
      */
-    private static $phrases = [
-        100 => 'Continue',
-        101 => 'Switching Protocols',
-        102 => 'Processing',
-        200 => 'OK',
-        201 => 'Created',
-        202 => 'Accepted',
-        203 => 'Non-Authoritative Information',
-        204 => 'No Content',
-        205 => 'Reset Content',
-        206 => 'Partial Content',
-        207 => 'Multi-Status',
-        208 => 'Already Reported',
-        226 => 'IM Used',
-        300 => 'Multiple Choices',
-        301 => 'Moved Permanently',
-        302 => 'Found',
-        303 => 'See Other',
-        304 => 'Not Modified',
-        305 => 'Use Proxy',
-        306 => 'Switch Proxy',
-        307 => 'Temporary Redirect',
-        308 => 'Permanent Redirect',
-        400 => 'Bad Request',
-        401 => 'Unauthorized',
-        402 => 'Payment Required',
-        403 => 'Forbidden',
-        404 => 'Not Found',
-        405 => 'Method Not Allowed',
-        406 => 'Not Acceptable',
-        407 => 'Proxy Authentication Required',
-        408 => 'Request Timeout',
-        409 => 'Conflict',
-        410 => 'Gone',
-        411 => 'Length Required',
-        412 => 'Precondition Failed',
-        413 => 'Request Entity Too Large',
-        414 => 'Request-URI Too Large',
-        415 => 'Unsupported Media Type',
-        416 => 'Requested Range Not Satisfiable',
-        417 => 'Expectation Failed',
-        418 => 'I\'m a teapot',
-        422 => 'Unprocessable Entity',
-        423 => 'Locked',
-        424 => 'Failed Dependency',
-        425 => 'Unordered Collection',
-        426 => 'Upgrade Required',
-        428 => 'Precondition Required',
-        429 => 'Too Many Requests',
-        431 => 'Request Header Fields Too Large',
-        500 => 'Internal Server Error',
-        501 => 'Not Implemented',
-        502 => 'Bad Gateway',
-        503 => 'Service Unavailable',
-        504 => 'Gateway Timeout',
-        505 => 'HTTP Version Not Supported',
-        506 => 'Variant Also Negotiates',
-        507 => 'Insufficient Storage',
-        508 => 'Loop Detected',
-        510 => 'Not Extended',
-        511 => 'Network Authentication Required',
-    ];
+    public function getStatusCode();
 
     /**
-     * @var int
-     */
-    private $status;
-
-    /**
-     * @var string
-     */
-    private $reason;
-
-    /**
-     * @var \Icicle\Http\Message\Cookie\MetaCookieInterface[]
-     */
-    private $cookies = [];
-
-    /**
-     * @param int $code Status code.
-     * @param \Icicle\Stream\ReadableStreamInterface|null $stream
-     * @param string[][] $headers
-     * @param string|null $reason Status code reason.
-     * @param string $protocol
+     * Returns the reason phrase describing the status code.
      *
-     * @throws \Icicle\Http\Exception\MessageException If one of the arguments is invalid.
+     * @return string
      */
-    public function __construct(
-        $code = 200,
-        array $headers = [],
-        ReadableStreamInterface $stream = null,
-        $reason = '',
-        $protocol = '1.1'
-    ) {
-        parent::__construct($headers, $stream, $protocol);
-
-        $this->status = $this->validateStatusCode($code);
-        $this->reason = $this->filterReason($reason);
-
-        if ($this->hasHeader('Set-Cookie')) {
-            $this->setCookiesFromHeaders();
-        }
-    }
+    public function getReasonPhrase();
 
     /**
-     * {@inheritdoc}
+     * @return \Icicle\Http\Message\Cookie\MetaCookie[]
      */
-    public function getStatusCode()
-    {
-        return $this->status;
-    }
+    public function getCookies();
 
     /**
-     * {@inheritdoc}
+     * @param string $name
+     *
+     * @return bool
      */
-    public function getReasonPhrase()
-    {
-        if ('' !== $this->reason) {
-            return $this->reason;
-        }
-
-        return isset(self::$phrases[$this->status]) ? self::$phrases[$this->status] : '';
-    }
+    public function hasCookie($name);
 
     /**
-     * {@inheritdoc}
+     * @param string $name
+     *
+     * @return \Icicle\Http\Message\Cookie\MetaCookie|null
      */
-    public function withStatus($code, $reason = '')
-    {
-        $new = clone $this;
-        $new->status = $new->validateStatusCode($code);
-        $new->reason = $new->filterReason($reason);
-        return $new;
-    }
+    public function getCookie($name);
 
     /**
-     * {@inheritdoc}
+     * Returns a new instance with the given status.
+     *
+     * @param int $code 3-digit status code.
+     * @param string $reason Description of status code or null to use default reason associated with the status
+     *     code given.
+     *
+     * @return self
+     *
+     * @throws \Icicle\Http\Exception\InvalidStatusException
      */
-    public function getCookies()
-    {
-        return $this->cookies;
-    }
+    public function withStatus($code, $reason = '');
 
     /**
-     * {@inheritdoc}
-     */
-    public function hasCookie($name)
-    {
-        return array_key_exists((string) $name, $this->cookies);
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function getCookie($name)
-    {
-        $name = (string) $name;
-        return array_key_exists($name, $this->cookies) ? $this->cookies[$name] : null;
-    }
-
-    /**
-     * {@inheritdoc}
+     * @param string $name
+     * @param string $value
+     * @param int $expires
+     * @param string $path
+     * @param string $domain
+     * @param bool $secure
+     * @param bool $httpOnly
+     *
+     * @return self
      */
     public function withCookie(
         $name,
@@ -183,124 +132,12 @@ class Response extends Message implements ResponseInterface
         $domain = '',
         $secure = false,
         $httpOnly = false
-    ) {
-        $new = clone $this;
-
-        $new->cookies[(string) $name] = new MetaCookie($name, $value, $expires, $path, $domain, $secure, $httpOnly);
-        $new->setHeadersFromCookies();
-        return $new;
-    }
+    );
 
     /**
-     * {@inheritdoc}
-     */
-    public function withoutCookie($name)
-    {
-        $new = clone $this;
-
-        unset($new->cookies[(string) $name]);
-        $new->setHeadersFromCookies();
-        return $new;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function withHeader($name, $value)
-    {
-        $new = parent::withHeader($name, $value);
-
-        if ('set-cookie' === strtolower($name)) {
-            $new->setCookiesFromHeaders();
-        }
-
-        return $new;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function withAddedHeader($name, $value)
-    {
-        $new = parent::withAddedHeader($name, $value);
-
-        if ('set-cookie' === strtolower($name)) {
-            $new->setCookiesFromHeaders();
-        }
-
-        return $new;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function withoutHeader($name)
-    {
-        $new = parent::withoutHeader($name);
-
-        if ('set-cookie' === strtolower($name)) {
-            $new->cookies = [];
-        }
-
-        return $new;
-    }
-
-    /**
-     * @param string|int $code
+     * @param string $name
      *
-     * @return int
-     *
-     * @throws \Icicle\Http\Exception\InvalidStatusException
+     * @return self
      */
-    protected function validateStatusCode($code)
-    {
-        if (!is_numeric($code) || is_float($code) || 100 > $code || 599 < $code) {
-            throw new InvalidStatusException(
-                'Invalid status code. Must be an integer between 100 and 599, inclusive.'
-            );
-        }
-
-        return (int) $code;
-    }
-
-    /**
-     * @param string $reason
-     *
-     * @return string|null
-     */
-    protected function filterReason($reason)
-    {
-        return $reason ? (string) $reason : '';
-    }
-
-    /**
-     * Sets cookies based on headers.
-     *
-     * @throws \Icicle\Http\Exception\InvalidValueException
-     */
-    private function setCookiesFromHeaders()
-    {
-        $this->cookies = [];
-
-        $headers = $this->getHeader('Set-Cookie');
-
-        foreach ($headers as $line) {
-            $cookie = MetaCookie::fromHeader($line);
-            $this->cookies[$cookie->getName()] = $cookie;
-        }
-    }
-
-    /**
-     * Sets headers based on cookie values.
-     */
-    private function setHeadersFromCookies()
-    {
-        $values = [];
-
-        foreach ($this->cookies as $cookie) {
-            $values[] = $cookie->toHeader();
-        }
-
-        $this->setHeader('Set-Cookie', $values);
-    }
+    public function withoutCookie($name);
 }

@@ -1,311 +1,111 @@
 <?php
 namespace Icicle\Http\Message;
 
-use Icicle\Http\Exception\InvalidHeaderException;
-use Icicle\Http\Exception\UnsupportedVersionException;
-use Icicle\Stream\ReadableStreamInterface;
-use Icicle\Stream\MemorySink;
+use Icicle\Stream\ReadableStream;
 
-abstract class Message implements MessageInterface
+/**
+ * HTTP message interface based on PSR-7, modified to use promise-based streams.
+ */
+interface Message
 {
     /**
-     * @var string
-     */
-    private $protocol = '1.1';
-
-    /**
-     * @var string[]
-     */
-    private $headerNameMap = [];
-
-    /**
-     * @var string[][]
-     */
-    private $headers = [];
-
-    /**
-     * @var \Icicle\Stream\ReadableStreamInterface
-     */
-    private $stream;
-
-    /**
-     * @param string[][] $headers
-     * @param \Icicle\Stream\ReadableStreamInterface|null $stream
-     * @param string $protocol
-     *
-     * @throws \Icicle\Http\Exception\MessageException
-     */
-    public function __construct(array $headers = [], ReadableStreamInterface $stream = null, $protocol = '1.1')
-    {
-        if (!empty($headers)) {
-            $this->addHeaders($headers);
-        }
-
-        $this->stream = $stream ?: new MemorySink();
-        $this->protocol = $this->filterProtocolVersion($protocol);
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function getProtocolVersion()
-    {
-        return $this->protocol;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function getHeaders()
-    {
-        return $this->headers;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function hasHeader($name)
-    {
-        return array_key_exists(strtolower($name), $this->headerNameMap);
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function getHeader($name)
-    {
-        $name = strtolower($name);
-
-        if (!array_key_exists($name, $this->headerNameMap)) {
-            return [];
-        }
-
-        $name = $this->headerNameMap[$name];
-
-        return $this->headers[$name];
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function getHeaderLine($name)
-    {
-        $value = $this->getHeader($name);
-
-        return empty($value) ? '' : implode(',', $value);
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function getBody()
-    {
-        return $this->stream;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function withProtocolVersion($version)
-    {
-        $new = clone $this;
-        $new->protocol = $new->filterProtocolVersion($version);
-        return $new;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function withHeader($name, $value)
-    {
-        $new = clone $this;
-        $new->setHeader($name, $value);
-        return $new;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function withAddedHeader($name, $value)
-    {
-        $new = clone $this;
-        $new->addHeader($name, $value);
-        return $new;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function withoutHeader($name)
-    {
-        $new = clone $this;
-        $new->removeHeader($name);
-        return $new;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function withBody(ReadableStreamInterface $stream)
-    {
-        $new = clone $this;
-        $new->stream = $stream;
-        return $new;
-    }
-
-    /**
-     * Sets the headers from the given array.
-     *
-     * @param string[] $headers
-     */
-    protected function setHeaders(array $headers)
-    {
-        $this->headerNameMap = [];
-        $this->headers = [];
-
-        $this->addHeaders($headers);
-    }
-
-    /**
-     * Adds headers from the given array.
-     *
-     * @param string[] $headers
-     */
-    protected function addHeaders(array $headers)
-    {
-        foreach ($headers as $name => $value) {
-            $this->addHeader($name, $value);
-        }
-    }
-
-    /**
-     * Sets the named header to the given value.
-     *
-     * @param string $name
-     * @param string|string[] $value
-     *
-     * @throws \Icicle\Http\Exception\InvalidHeaderException If the header name or value is invalid.
-     */
-    protected function setHeader($name, $value)
-    {
-        if (!$this->isHeaderNameValid($name)) {
-            throw new InvalidHeaderException('Header name is invalid.');
-        }
-
-        $normalized = strtolower($name);
-        $value = $this->filterHeader($value);
-
-        // Header may have been previously set with a different case. If so, remove that header.
-        if (isset($this->headerNameMap[$normalized]) && $this->headerNameMap[$normalized] !== $name) {
-            unset($this->headers[$this->headerNameMap[$normalized]]);
-        }
-
-        $this->headerNameMap[$normalized] = $name;
-        $this->headers[$name] = $value;
-    }
-
-    /**
-     * Adds the value to the named header, or creates the header with the given value if it did not exist.
-     *
-     * @param string $name
-     * @param string|string[] $value
-     *
-     * @throws \Icicle\Http\Exception\InvalidHeaderException If the header name or value is invalid.
-     */
-    protected function addHeader($name, $value)
-    {
-        if (!$this->isHeaderNameValid($name)) {
-            throw new InvalidHeaderException('Header name is invalid.');
-        }
-
-        $normalized = strtolower($name);
-        $value = $this->filterHeader($value);
-
-        if (array_key_exists($normalized, $this->headerNameMap)) {
-            $name = $this->headerNameMap[$normalized]; // Use original case to add header value.
-            $this->headers[$name] = array_merge($this->headers[$name], $value);
-        } else {
-            $this->headerNameMap[$normalized] = $name;
-            $this->headers[$name] = $value;
-        }
-    }
-
-    /**
-     * Removes the given header if it exists.
-     *
-     * @param string $name
-     */
-    protected function removeHeader($name)
-    {
-        $normalized = strtolower($name);
-
-        if (array_key_exists($normalized, $this->headerNameMap)) {
-            $name = $this->headerNameMap[$normalized];
-            unset($this->headers[$name], $this->headerNameMap[$normalized]);
-        }
-    }
-
-    /**
-     * @param string $protocol
-     *
      * @return string
-     *
-     * @throws \Icicle\Http\Exception\UnsupportedVersionException If the protocol is not valid.
      */
-    private function filterProtocolVersion($protocol)
-    {
-        switch ($protocol) {
-            case '1.1':
-            case '1.0':
-                return $protocol;
-
-            default:
-                throw new UnsupportedVersionException('Invalid protocol version.');
-        }
-    }
+    public function getProtocolVersion();
 
     /**
+     * Returns the message headers as a string-indexed array of arrays of strings or an empty array if no headers
+     * have been set.
+     *
+     * @return string[][]
+     */
+    public function getHeaders();
+
+    /**
+     * Determines if the message has the given header.
+     *
      * @param string $name
      *
      * @return bool
      */
-    private function isHeaderNameValid($name)
-    {
-        return (bool) preg_match('/^[A-Za-z0-9`~!#$%^&_|\'\-]+$/', $name);
-    }
+    public function hasHeader($name);
 
     /**
-     * Converts a given header value to an integer-indexed array of strings.
+     * Returns the array of values for the given header or an empty array if the header does not exist.
      *
-     * @param mixed|mixed[] $values
+     * @param string $name
      *
      * @return string[]
-     *
-     * @throws \Icicle\Http\Exception\InvalidHeaderException If the given value cannot be converted to a string and
-     *     is not an array of values that can be converted to strings.
      */
-    private function filterHeader($values)
-    {
-        if (!is_array($values)) {
-            $values = [$values];
-        }
+    public function getHeader($name);
 
-        $lines = [];
+    /**
+     * Returns the values for the given header as a comma separated list. Returns an empty string if the the header
+     * does not exit.
+     * Note that not all headers can be accurately represented as a comma-separated list.
+     *
+     * @param string $name
+     *
+     * @return string
+     */
+    public function getHeaderLine($name);
 
-        foreach ($values as $value) {
-            if (is_numeric($value) || (is_object($value) && method_exists($value, '__toString'))) {
-                $value = (string) $value;
-            } elseif (!is_string($value)) {
-                throw new InvalidHeaderException('Header values must be strings or an array of strings.');
-            }
+    /**
+     * Returns the stream for the message body.
+     *
+     * @return \Icicle\Stream\ReadableStream
+     */
+    public function getBody();
 
-            if (preg_match("/[^\t\r\n\x20-\x7e\x80-\xfe]|\r\n/", $value)) {
-                throw new InvalidHeaderException('Invalid character(s) in header value.');
-            }
+    /**
+     * Returns a new instance with the given protocol version.
+     *
+     * @param string $version
+     *
+     * @return self
+     */
+    public function withProtocolVersion($version);
 
-            $lines[] = $value;
-        }
+    /**
+     * Returns a new instance with the given header. $value may be a string or an array of strings.
+     *
+     * @param string $name
+     * @param string|string[] $value
+     *
+     * @return self
+     *
+     * @throws \Icicle\Http\Exception\InvalidHeaderException If the header name or value is invalid.
+     */
+    public function withHeader($name, $value);
 
-        return $lines;
-    }
+    /**
+     * Returns a new instance with the given value added to the named header. If the header did not exist, the header
+     * is created with the given value.
+     *
+     * @param string $name
+     * @param string|string[] $value
+     *
+     * @return self
+     *
+     * @throws \Icicle\Http\Exception\InvalidHeaderException If the header name or value is invalid.
+     */
+    public function withAddedHeader($name, $value);
+
+    /**
+     * Returns a new instance without the given header.
+     *
+     * @param string $name
+     *
+     * @return self
+     */
+    public function withoutHeader($name);
+
+    /**
+     * Returns a new instance with the given stream for the message body.
+     *
+     * @param \Icicle\Stream\ReadableStream $stream
+     *
+     * @return self
+     */
+    public function withBody(ReadableStream $stream);
 }
