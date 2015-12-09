@@ -7,25 +7,36 @@ use Icicle\Http\Message\BasicRequest;
 use Icicle\Http\Message\BasicResponse;
 use Icicle\Http\Message\BasicUri;
 use Icicle\Http\Message\Response;
+use Icicle\Stream;
 use Icicle\Stream\ReadableStream;
 
 class Http1Reader
 {
     const DEFAULT_MAX_SIZE = 0x4000; // 16 kB
+    const DEFAULT_START_LINE_LENGTH = 0x400; // 1 kB
 
     /**
      * @var int
      */
-    private $maxHeaderSize = self::DEFAULT_MAX_SIZE;
+    private $maxStartLineLength = self::DEFAULT_START_LINE_LENGTH;
+
+    /**
+     * @var int
+     */
+    private $maxSize = self::DEFAULT_MAX_SIZE;
 
     /**
      * @param mixed[] $options
      */
     public function __construct(array $options = [])
     {
-        $this->maxHeaderSize = isset($options['max_header_size'])
+        $this->maxSize = isset($options['max_header_size'])
             ? (int) $options['max_header_size']
             : self::DEFAULT_MAX_SIZE;
+
+        $this->maxStartLineLength = isset($options['max_start_line_length'])
+            ? (int) $options['max_start_line_length']
+            : self::DEFAULT_START_LINE_LENGTH;
     }
 
     /**
@@ -33,7 +44,7 @@ class Http1Reader
      */
     public function readResponse(ReadableStream $stream, $timeout = 0)
     {
-        $data = (yield $stream->read(0, "\n", $timeout));
+        $data = (yield Stream\readUntil($stream, "\r\n", $this->maxStartLineLength, $timeout));
 
         if (!preg_match("/^HTTP\/(\d+(?:\.\d+)?) (\d{3})(?: (.+))?\r\n$/i", $data, $matches)) {
             throw new ParseException('Could not parse start line.');
@@ -53,7 +64,7 @@ class Http1Reader
      */
     public function readRequest(ReadableStream $stream, $timeout = 0)
     {
-        $data = (yield $stream->read(0, "\n", $timeout));
+        $data = (yield Stream\readUntil($stream, "\r\n", $this->maxStartLineLength, $timeout));
 
         if (!preg_match("/^([A-Z]+) (\S+) HTTP\/(\d+(?:\.\d+)?)\r\n$/i", $data, $matches)) {
             throw new ParseException('Could not parse start line.');
@@ -94,10 +105,10 @@ class Http1Reader
         $headers = [];
 
         do {
-            $data = (yield $stream->read(0, "\n", $timeout));
+            $data = (yield Stream\readUntil($stream, "\r\n", $this->maxSize - $size, $timeout));
 
             if (substr($data, -2) !== "\r\n") {
-                throw new ParseException('Invalid header line.');
+                break;
             }
 
             $length = strlen($data);
@@ -124,11 +135,11 @@ class Http1Reader
             } else {
                 $headers[$name][] = $value;
             }
-        } while ($size < $this->maxHeaderSize);
+        } while ($size < $this->maxSize);
 
         throw new MessageException(
             Response::REQUEST_HEADER_TOO_LARGE,
-            sprintf('Message header exceeded maximum size of %d bytes.', $this->maxHeaderSize)
+            sprintf('Message header exceeded maximum size of %d bytes.', $this->maxSize)
         );
     }
 

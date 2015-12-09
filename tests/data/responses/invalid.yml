@@ -9,7 +9,7 @@
   exception: \Icicle\Http\Exception\ParseException
 
 - file: responses/12.txt
-  exception: \Icicle\Http\Exception\ParseException
+  exception: \Icicle\Stream\Exception\UnreadableException
 
 - file: responses/13.txt
   exception: \Icicle\Http\Exception\ParseException
