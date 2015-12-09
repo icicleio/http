@@ -105,7 +105,12 @@ class Http1Driver implements Driver
                     $response = (yield $this->createErrorResponse(Response::BAD_REQUEST, $socket, $timeout));
                 }
 
-                $coroutine = new Coroutine($this->writeResponse($response, $socket, $timeout));
+                $coroutine = new Coroutine($this->writeResponse(
+                    $response,
+                    $socket,
+                    !isset($request) || $request->getMethod() !== 'HEAD',
+                    $timeout
+                ));
             } while ($allowPersistent
                 && strtolower($response->getHeaderLine('Connection')) === 'keep-alive'
                 && $socket->isReadable()
@@ -143,6 +148,7 @@ class Http1Driver implements Driver
     /**
      * @param \Icicle\Http\Message\Response $response
      * @param \Icicle\Socket\Socket $socket
+     * @param bool $body
      * @param float $timeout
      *
      * @return \Generator
@@ -150,14 +156,14 @@ class Http1Driver implements Driver
      * @throws Stream\Exception\UnwritableException
      * @throws \Icicle\Exception\InvalidArgumentError
      */
-    public function writeResponse(Response $response, Socket $socket, $timeout)
+    public function writeResponse(Response $response, Socket $socket, $body, $timeout)
     {
         yield $socket->write($this->encoder->encodeResponse($response));
 
         $stream = $response->getBody();
 
         try {
-            if ($stream->isReadable() && (!isset($request) || $request->getMethod() !== 'HEAD')) {
+            if ($body && $stream->isReadable()) {
                 yield Stream\pipe($stream, $socket, false, 0, null, $timeout);
             }
         } finally {

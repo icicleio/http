@@ -221,9 +221,17 @@ class ReaderTest extends TestCase
         $maxSize = 1;
 
         $stream->shouldReceive('read')
-            ->andReturnUsing(function () {
-                yield "GET / HTTP/1.1\r\nHost: example.com\r\n\r\n";
-            });
+            ->andReturnUsing(
+                function () {
+                    yield "GET / HTTP/1.1\r\n";
+                },
+                function () {
+                    yield "Host: example.com\r\n";
+                },
+                function () {
+                    yield "\r\n";
+                }
+            );
 
         $promise = new Coroutine($reader->readRequest($stream, $maxSize));
 
@@ -247,9 +255,17 @@ class ReaderTest extends TestCase
         $maxSize = 1;
 
         $stream->shouldReceive('read')
-            ->andReturnUsing(function () {
-                yield "HTTP/1.1 200 OK\r\n\r\n";
-            });
+            ->andReturnUsing(
+                function () {
+                    yield "HTTP/1.1 200 OK\r\n";
+                },
+                function () {
+                    yield "Connection: close\r\n";
+                },
+                function () {
+                    yield "\r\n";
+                }
+            );
 
         $promise = new Coroutine($reader->readResponse($stream, $maxSize));
 

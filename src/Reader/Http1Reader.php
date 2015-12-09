@@ -6,15 +6,22 @@ use Icicle\Http\Exception\ParseException;
 use Icicle\Http\Message\BasicRequest;
 use Icicle\Http\Message\BasicResponse;
 use Icicle\Http\Message\BasicUri;
+use Icicle\Http\Message\Response;
 use Icicle\Stream\ReadableStream;
 
 class Http1Reader
 {
     const DEFAULT_MAX_SIZE = 0x4000; // 16 kB
 
+    /**
+     * @var int
+     */
     private $maxHeaderSize = self::DEFAULT_MAX_SIZE;
 
-    public function __construct(array $options = null)
+    /**
+     * @param mixed[] $options
+     */
+    public function __construct(array $options = [])
     {
         $this->maxHeaderSize = isset($options['max_header_size'])
             ? (int) $options['max_header_size']
@@ -26,13 +33,9 @@ class Http1Reader
      */
     public function readResponse(ReadableStream $stream, $timeout = 0)
     {
-        $message = (yield $this->readMessage($stream, $timeout));
+        $data = (yield $stream->read(0, "\n", $timeout));
 
-        $headers = $this->splitHeader($message);
-
-        $start = array_shift($headers);
-
-        if (!preg_match('/^HTTP\/(\d+(?:\.\d+)?) (\d{3})(?: (.+))?$/i', $start, $matches)) {
+        if (!preg_match("/^HTTP\/(\d+(?:\.\d+)?) (\d{3})(?: (.+))?\r\n$/i", $data, $matches)) {
             throw new ParseException('Could not parse start line.');
         }
 
@@ -40,7 +43,7 @@ class Http1Reader
         $code = (int) $matches[2];
         $reason = isset($matches[3]) ? $matches[3] : '';
 
-        $headers = $this->parseHeaders($headers);
+        $headers = (yield $this->readHeaders($stream, $timeout));
 
         yield new BasicResponse($code, $headers, $stream, $reason, $protocol);
     }
@@ -50,13 +53,9 @@ class Http1Reader
      */
     public function readRequest(ReadableStream $stream, $timeout = 0)
     {
-        $message = (yield $this->readMessage($stream, $timeout));
+        $data = (yield $stream->read(0, "\n", $timeout));
 
-        $headers = $this->splitHeader($message);
-
-        $start = array_shift($headers);
-
-        if (!preg_match('/^([A-Z]+) (\S+) HTTP\/(\d+(?:\.\d+)?)$/i', $start, $matches)) {
+        if (!preg_match("/^([A-Z]+) (\S+) HTTP\/(\d+(?:\.\d+)?)\r\n$/i", $data, $matches)) {
             throw new ParseException('Could not parse start line.');
         }
 
@@ -64,7 +63,7 @@ class Http1Reader
         $target = $matches[2];
         $protocol = $matches[3];
 
-        $headers = $this->parseHeaders($headers);
+        $headers = (yield $this->readHeaders($stream, $timeout));
 
         if ('/' === $target[0]) { // origin-form
             $uri = new BasicUri($this->filterHost($this->findHost($headers)) . $target);
@@ -81,48 +80,36 @@ class Http1Reader
     }
 
     /**
-     * @coroutine
-     *
-     * @param \Icicle\Stream\ReadableStream $stream
-     * @param float|int|null $timeout
+     * @param ReadableStream $stream
+     * @param float|int $timeout
      *
      * @return \Generator
      *
-     * @resolve string
-     *
      * @throws \Icicle\Http\Exception\MessageException
-     * @throws \Icicle\Stream\Exception\UnreadableException
-     */
-    protected function readMessage(ReadableStream $stream, $timeout = 0)
-    {
-        $data = '';
-
-        do {
-            $data .= (yield $stream->read(0, "\n", $timeout));
-
-            if (strlen($data) > $this->maxHeaderSize) {
-                throw new MessageException(
-                    431, sprintf('Message header exceeded maximum size of %d bytes.', $this->maxHeaderSize)
-                );
-            }
-        } while (substr($data, -4) !== "\r\n\r\n");
-
-        yield substr($data, 0, -4);
-    }
-
-    /**
-     * @param string[] $lines
-     *
-     * @return string[][]
-     *
      * @throws \Icicle\Http\Exception\ParseException
      */
-    protected function parseHeaders(array $lines)
+    protected function readHeaders(ReadableStream $stream, $timeout = 0)
     {
+        $size = 0;
         $headers = [];
 
-        foreach ($lines as $line) {
-            $parts = explode(':', $line, 2);
+        do {
+            $data = (yield $stream->read(0, "\n", $timeout));
+
+            if (substr($data, -2) !== "\r\n") {
+                throw new ParseException('Invalid header line.');
+            }
+
+            $length = strlen($data);
+
+            if ($length === 2) {
+                yield $headers;
+                return;
+            }
+
+            $size += $length;
+
+            $parts = explode(':', $data, 2);
 
             if (2 !== count($parts)) {
                 throw new ParseException('Found header without colon.');
@@ -137,19 +124,12 @@ class Http1Reader
             } else {
                 $headers[$name][] = $value;
             }
-        }
+        } while ($size < $this->maxHeaderSize);
 
-        return $headers;
-    }
-
-    /**
-     * @param string $header
-     *
-     * @return string[]
-     */
-    protected function splitHeader($header)
-    {
-        return explode("\r\n", $header);
+        throw new MessageException(
+            Response::REQUEST_HEADER_TOO_LARGE,
+            sprintf('Message header exceeded maximum size of %d bytes.', $this->maxHeaderSize)
+        );
     }
 
     /**
@@ -181,6 +161,6 @@ class Http1Reader
             }
         }
 
-        throw new MessageException(400, 'No host header in message.');
+        throw new MessageException(Response::BAD_REQUEST, 'No host header in message.');
     }
 }

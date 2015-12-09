@@ -18,7 +18,7 @@
   exception: \Icicle\Http\Exception\ParseException
 
 - file: requests/15.txt
-  exception: \Icicle\Stream\Exception\UnreadableException
+  exception: \Icicle\Http\Exception\ParseException
 
 - file: requests/16.txt
   exception: \Icicle\Http\Exception\InvalidHeaderException
