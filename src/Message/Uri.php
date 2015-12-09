@@ -36,7 +36,7 @@ interface Uri
     public function getHost();
 
     /**
-     * Returns the port or null if no port is set and no scheme is set.
+     * Returns the port or 0 if no port is set and no scheme is set.
      *
      * @return int
      */

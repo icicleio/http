@@ -67,6 +67,7 @@ interface Response extends Message
     const LOOP_DETECTED = 508;
     const NOT_EXTENDED = 510;
     const NETWORK_AUTHENTICATION_REQUIRED = 511;
+    
     /**
      * Returns the response status code.
      *

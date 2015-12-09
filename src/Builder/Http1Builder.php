@@ -154,6 +154,7 @@ class Http1Builder
     }
 
     /**
+     * @param \Icicle\Socket\Socket $socket
      * @param \Icicle\Http\Message\Message $message
      * @param float|int $timeout
      *
@@ -219,6 +220,7 @@ class Http1Builder
     }
 
     /**
+     * @param \Icicle\Socket\Socket $socket
      * @param \Icicle\Http\Message\Message $message
      * @param float|int $timeout
      *
