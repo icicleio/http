@@ -16,7 +16,7 @@
     ],
     "require": {
         "icicleio/icicle": "^0.9.1",
-        "icicleio/stream": "^0.5",
+        "icicleio/stream": "^0.5.1",
         "icicleio/socket": "^0.5",
         "icicleio/dns": "^0.6"
     },
