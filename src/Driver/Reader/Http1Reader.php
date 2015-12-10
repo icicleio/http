@@ -1,5 +1,5 @@
 <?php
-namespace Icicle\Http\Reader;
+namespace Icicle\Http\Driver\Reader;
 
 use Icicle\Http\Exception\MessageException;
 use Icicle\Http\Exception\ParseException;

@@ -1,7 +1,9 @@
 <?php
 namespace Icicle\Http\Server;
 
+use Icicle\Http\Driver\Http1Driver;
 use Icicle\Socket\Server\DefaultServerFactory;
+use Icicle\Stream;
 use Icicle\Stream\WritableStream;
 
 class Server
@@ -15,8 +17,8 @@ class Server
 
     public function __construct(RequestHandler $handler, WritableStream $log = null, array $options = [])
     {
-        $driver = new Http1Driver($handler, $log, $options);
-        $this->listener = new Listener($driver, new DefaultServerFactory(), $options);
+        $driver = new Http1Driver($options);
+        $this->listener = new Listener($driver, $handler, $log ?: Stream\stderr(), new DefaultServerFactory());
     }
 
     public function isOpen()

@@ -5,7 +5,7 @@ use Icicle\Coroutine\Coroutine;
 use Icicle\Http\Exception\MessageException;
 use Icicle\Http\Message\Request;
 use Icicle\Http\Message\Response;
-use Icicle\Http\Reader\Http1Reader;
+use Icicle\Http\Driver\Reader\Http1Reader;
 use Icicle\Loop;
 use Icicle\Stream\ReadableStream;
 use Icicle\Stream\MemoryStream;
@@ -14,7 +14,7 @@ use Icicle\Tests\Http\TestCase;
 use Mockery;
 use Symfony\Component\Yaml\Yaml;
 
-class ReaderTest extends TestCase
+class Http1ReaderTest extends TestCase
 {
     /**
      * @return \Icicle\Stream\ReadableStream

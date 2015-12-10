@@ -1,5 +1,5 @@
 <?php
-namespace Icicle\Http\Encoder;
+namespace Icicle\Http\Driver\Encoder;
 
 use Icicle\Http\Message\Request;
 use Icicle\Http\Message\Response;
