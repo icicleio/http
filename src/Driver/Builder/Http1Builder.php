@@ -18,6 +18,8 @@ use Icicle\Stream\SeekableStream;
 class Http1Builder
 {
     const DEFAULT_STREAM_HWM = 8192;
+    const DEFAULT_KEEP_ALIVE_TIMEOUT = 15;
+    const DEFAULT_KEEP_ALIVE_MAX = 100;
 
     private $compressTypes = [
         '/^text\/\S+/i',
@@ -37,6 +39,16 @@ class Http1Builder
     private $hwm = self::DEFAULT_STREAM_HWM;
 
     /**
+     * @var int
+     */
+    private $keepAliveTimeout = self::DEFAULT_KEEP_ALIVE_TIMEOUT;
+
+    /**
+     * @var int
+     */
+    private $keepAliveMax = self::DEFAULT_KEEP_ALIVE_MAX;
+
+    /**
      * @param mixed[] $options
      */
     public function __construct(array $options = [])
@@ -50,6 +62,14 @@ class Http1Builder
         }
 
         $this->compressionEnabled = !isset($options['disable_compression']) ? extension_loaded('zlib') : false;
+
+        $this->keepAliveTimeout = isset($options['keep_alive_timeout'])
+            ? (int) $options['keep_alive_timeout']
+            : self::DEFAULT_KEEP_ALIVE_TIMEOUT;
+
+        $this->keepAliveMax = isset($options['keep_alive_max'])
+            ? (int) $options['keep_alive_max']
+            : self::DEFAULT_KEEP_ALIVE_MAX;
     }
 
     /**
@@ -80,7 +100,7 @@ class Http1Builder
         ) {
             $response = $response
                 ->withHeader('Connection', 'keep-alive')
-                ->withHeader('Keep-Alive', sprintf('timeout=%d', $timeout));
+                ->withHeader('Keep-Alive', sprintf('timeout=%d, max=%d', $this->keepAliveTimeout, $this->keepAliveMax));
         } else {
             $response = $response->withHeader('Connection', 'close');
         }
