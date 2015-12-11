@@ -29,17 +29,11 @@ class ChunkedDecoder extends MemoryStream
     }
 
     /**
-     * @param string $data
-     * @param float|int $timeout
-     * @param bool $end
+     * {@inheritdoc}
      *
-     * @return \Generator
-     *
-     * @resolve int
-     *
-     * @throws \Icicle\Http\Exception\MessageException
+     * @throws \Icicle\Http\Exception\MessageException If an invalid chunk length is found.
      */
-    public function send($data, $timeout = 0, $end = false)
+    protected function send($data, $timeout = 0, $end = false)
     {
         $this->buffer->push($data);
 
@@ -47,12 +41,12 @@ class ChunkedDecoder extends MemoryStream
 
         while (!$this->buffer->isEmpty()) {
             if (0 === $this->length) { // Read chunk length.
-                if (false === ($position = $this->buffer->search("\n"))) {
+                if (false === ($position = $this->buffer->search("\r\n"))) {
                     yield parent::send($data, $timeout, $end);
                     return;
                 }
 
-                $length = rtrim($this->buffer->remove($position + 1), "\r\n");
+                $length = rtrim($this->buffer->remove($position + 2), "\r\n");
 
                 if ($position = strpos($length, ';')) {
                     $length = substr($length, 0, $position);

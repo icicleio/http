@@ -1,7 +1,8 @@
 <?php
 namespace Icicle\Http\Stream;
 
-use Icicle\Http\Exception\Error;
+use Icicle\Exception\InvalidArgumentError;
+use Icicle\Exception\UnsupportedError;
 use Icicle\Stream\MemoryStream;
 
 class ZlibEncoder extends MemoryStream
@@ -27,16 +28,17 @@ class ZlibEncoder extends MemoryStream
     private $level;
 
     /**
-     * @param int $type Compression type. Use GZIP or DEFLATE constants.
+     * @param int $type Compression type. Use GZIP or DEFLATE constants defined in this class.
      * @param int $level Compression level.
      *
-     * @throws \Icicle\Http\Exception\Error If the zlib extension is not loaded.
+     * @throws \Icicle\Exception\UnsupportedError If the zlib extension is not loaded.
+     * @throws \Icicle\Exception\InvalidArgumentError If the $type is not a valid compression type.
      */
     public function __construct($type, $level = self::DEFAULT_LEVEL)
     {
         // @codeCoverageIgnoreStart
         if (!extension_loaded('zlib')) {
-            throw new Error('zlib extension required to decode compressed streams.');
+            throw new UnsupportedError('zlib extension required to decode compressed streams.');
         } // @codeCoverageIgnoreEnd
 
         switch ($type) {
@@ -46,7 +48,7 @@ class ZlibEncoder extends MemoryStream
                 break;
 
             default:
-                throw new Error('Invalid compression type.');
+                throw new InvalidArgumentError('Invalid compression type.');
         }
 
         parent::__construct();
@@ -55,13 +57,9 @@ class ZlibEncoder extends MemoryStream
     }
 
     /**
-     * @param string $data
-     * @param float|int $timeout
-     * @param bool $end
-     *
-     * @return \Generator
+     * {@inheritdoc}
      */
-    public function send($data, $timeout = 0, $end = false)
+    protected function send($data, $timeout = 0, $end = false)
     {
         $this->buffer .= $data;
 

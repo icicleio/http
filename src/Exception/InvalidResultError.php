@@ -1,7 +1,7 @@
 <?php
 namespace Icicle\Http\Exception;
 
-class InvalidResultError extends Error
+class InvalidResultError extends \Exception implements Error
 {
     /**
      * @var mixed

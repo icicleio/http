@@ -6,11 +6,7 @@ use Icicle\Stream\MemoryStream;
 class ChunkedEncoder extends MemoryStream
 {
     /**
-     * @param string $data
-     * @param float|int $timeout
-     * @param bool $end
-     *
-     * @return \Generator
+     * {@inheritdoc}
      */
     protected function send($data, $timeout = 0, $end = false)
     {
