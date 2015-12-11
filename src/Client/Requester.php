@@ -1,78 +1,40 @@
 <?php
 namespace Icicle\Http\Client;
 
-use Icicle\Http\Builder\Builder;
-use Icicle\Http\Builder\BuilderInterface;
-use Icicle\Http\Encoder\Encoder;
-use Icicle\Http\Encoder\EncoderInterface;
-use Icicle\Http\Message\RequestInterface;
-use Icicle\Http\Reader\Reader;
-use Icicle\Http\Reader\ReaderInterface;
+use Icicle\Http\Driver\Driver;
+use Icicle\Http\Message\Request;
 use Icicle\Stream;
-use Icicle\Socket\SocketInterface;
+use Icicle\Socket\Socket;
 
-class Requester implements RequesterInterface
+class Requester
 {
-    const DEFAULT_MAX_HEADER_SIZE = 8192;
+    const DEFAULT_TIMEOUT = 15;
 
     /**
-     * @var \Icicle\Http\Reader\ReaderInterface
+     * @var \Icicle\Http\Driver\Driver
      */
-    private $reader;
-
-    /**
-     * @var \Icicle\Http\Encoder\EncoderInterface
-     */
-    private $encoder;
-
-    /**
-     * @var \Icicle\Http\Builder\BuilderInterface
-     */
-    private $builder;
+    private $driver;
 
     /**
      * @param mixed[] $options
      */
-    public function __construct(array $options = [])
+    public function __construct(Driver $driver)
     {
-        $this->reader = isset($options['reader']) && $options['reader'] instanceof ReaderInterface
-            ? $options['reader']
-            : new Reader($options);
-
-        $this->builder = isset($options['builder']) && $options['builder'] instanceof BuilderInterface
-            ? $options['builder']
-            : new Builder($options);
-
-        $this->encoder = isset($options['encoder']) && $options['encoder'] instanceof EncoderInterface
-            ? $options['encoder']
-            : new Encoder($options);
+        $this->driver = $driver;
     }
 
     /**
      * {@inheritdoc}
      */
-    public function request(SocketInterface $socket, RequestInterface $request, array $options = [])
+    public function request(Socket $socket, Request $request, array $options = [])
     {
         $timeout = isset($options['timeout']) ? (float) $options['timeout'] : self::DEFAULT_TIMEOUT;
         $allowPersistent = isset($options['allow_persistent']) ? (bool) $options['allow_persistent'] : true;
 
-        /** @var \Icicle\Http\Message\RequestInterface $request */
-        $request = (yield $this->builder->buildOutgoingRequest($socket, $request, $timeout, $allowPersistent));
+        $request = (yield $this->driver->buildRequest($socket, $request, $timeout, $allowPersistent));
 
-        yield $socket->write($this->encoder->encodeRequest($request));
+        yield $this->driver->writeRequest($socket, $request, $timeout);
 
-        $stream = $request->getBody();
-
-        try {
-            if ($stream->isReadable()) {
-                yield Stream\pipe($stream, $socket, false, 0, null, $timeout);
-            }
-        } finally {
-            $stream->close();
-        }
-
-        $response = (yield $this->reader->readResponse($socket, $timeout));
-
-        yield $this->builder->buildIncomingResponse($socket, $response, $request, $timeout);
+        yield $this->driver->readResponse($socket, $timeout);
     }
 }

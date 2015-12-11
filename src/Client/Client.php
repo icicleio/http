@@ -1,8 +1,9 @@
 <?php
 namespace Icicle\Http\Client;
 
+use Icicle\Dns;
 use Icicle\Dns\Connector\Connector;
-use Icicle\Dns\Connector\DefaultConnector;
+use Icicle\Http\Driver\Http1Driver;
 use Icicle\Http\Message\Request;
 use Icicle\Http\Message\BasicRequest;
 use Icicle\Socket\Exception\FailureException;
@@ -10,6 +11,8 @@ use Icicle\Stream\ReadableStream;
 
 class Client
 {
+    const DEFAULT_CRYPTO_METHOD = STREAM_CRYPTO_METHOD_TLS_CLIENT;
+
     /**
      * @var \Icicle\Http\Client\Requester
      */
@@ -21,18 +24,12 @@ class Client
     private $connector;
 
     /**
-     * @var int
-     */
-    private $cryptoMethod = self::DEFAULT_CRYPTO_METHOD;
-
-    /**
-     * @param \Icicle\Http\Client\Requester|null $requester
      * @param \Icicle\Dns\Connector\Connector|null $connector
      */
-    public function __construct(Requester $requester = null, Connector $connector = null)
+    public function __construct(Connector $connector = null)
     {
-        $this->requester = $requester ?: new Requester();
-        $this->connector = $connector ?: new DefaultConnector();
+        $this->requester = new Requester(new Http1Driver());
+        $this->connector = $connector ?: Dns\connector();
     }
 
     /**

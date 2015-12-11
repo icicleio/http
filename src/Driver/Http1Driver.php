@@ -34,12 +34,7 @@ class Http1Driver implements Driver
     }
 
     /**
-     * @coroutine
-     *
-     * @param \Icicle\Socket\Socket $socket
-     * @param float|int $timeout
-     *
-     * @return \Generator
+     * {@inheritdoc}
      */
     public function readRequest(Socket $socket, $timeout = 0)
     {
@@ -48,6 +43,9 @@ class Http1Driver implements Driver
         yield $this->builder->buildIncomingRequest($socket, $request, $timeout);
     }
 
+    /**
+     * {@inheritdoc}
+     */
     public function buildResponse(
         Socket $socket,
         Response $response,
@@ -61,13 +59,7 @@ class Http1Driver implements Driver
     }
 
     /**
-     * @param \Icicle\Socket\Socket $socket
-     * @param \Icicle\Http\Message\Response $response
-     * @param float|int $timeout
-     *
-     * @return \Generator
-     *
-     * @throws \Icicle\Stream\Exception\UnwritableException
+     * {@inheritdoc}
      */
     public function writeResponse(
         Socket $socket,
@@ -81,6 +73,44 @@ class Http1Driver implements Driver
 
         try {
             if ((!isset($request) || $request->getMethod() !== 'HEAD') && $stream->isReadable()) {
+                $written += (yield Stream\pipe($stream, $socket, false, 0, null, $timeout));
+            }
+        } finally {
+            $stream->close();
+        }
+
+        yield $written;
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function readResponse(Socket $socket, $timeout = 0)
+    {
+        $request = (yield $this->reader->readResponse($socket, $timeout));
+
+        yield $this->builder->buildIncomingResponse($socket, $request, $timeout);
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function buildRequest(Socket $socket, Request $request, $timeout = 0, $allowPersistent = false)
+    {
+        return $this->builder->buildOutgoingRequest($socket, $request, $timeout, $allowPersistent);
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function writeRequest(Socket $socket, Request $request, $timeout = 0)
+    {
+        $written = (yield $socket->write($this->encoder->encodeRequest($request)));
+
+        $stream = $request->getBody();
+
+        try {
+            if ($stream->isReadable()) {
                 $written += (yield Stream\pipe($stream, $socket, false, 0, null, $timeout));
             }
         } finally {

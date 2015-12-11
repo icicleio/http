@@ -11,20 +11,6 @@ interface Driver
      * @coroutine
      *
      * @param \Icicle\Socket\Socket $socket
-     * @param int $cryptoMethod
-     * @param float $timeout
-     * @param bool $allowPersistent
-     *
-     * @return \Generator
-     *
-     * @resolve null
-     */
-    //public function process(Socket $socket, $cryptoMethod, $timeout = 0, $allowPersistent = true);
-
-    /**
-     * @coroutine
-     *
-     * @param \Icicle\Socket\Socket $socket
      * @param float|int $timeout
      *
      * @return \Generator
@@ -34,8 +20,10 @@ interface Driver
     public function readRequest(Socket $socket, $timeout = 0);
 
     /**
-     * @param \Icicle\Http\Message\Request $request
+     * @coroutine
+     *
      * @param \Icicle\Socket\Socket $socket
+     * @param \Icicle\Http\Message\Request $request
      * @param float|int $timeout
      * @param bool $allowPersistent
      *
@@ -52,9 +40,11 @@ interface Driver
     );
 
     /**
-     * @param \Icicle\Http\Message\Response $response
+     * @coroutine
+     *
      * @param \Icicle\Socket\Socket $socket
-     * @param bool $body
+     * @param \Icicle\Http\Message\Response $response
+     * @param \Icicle\Http\Message\Request $request
      * @param float|int $timeout
      *
      * @return \Generator
@@ -62,4 +52,37 @@ interface Driver
      * @resolve int Number of bytes written to the socket.
      */
     public function writeResponse(Socket $socket, Response $response, Request $request = null, $timeout = 0);
+
+    /**
+     * @coroutine
+     *
+     * @param \Icicle\Socket\Socket $socket
+     * @param float|int $timeout
+     *
+     * @return \Generator
+     */
+    public function readResponse(Socket $socket, $timeout = 0);
+
+    /**
+     * @coroutine
+     *
+     * @param \Icicle\Socket\Socket $socket
+     * @param \Icicle\Http\Message\Request $request
+     * @param float|int $timeout
+     * @param bool $allowPersistent
+     *
+     * @return \Generator
+     */
+    public function buildRequest(Socket $socket, Request $request, $timeout = 0, $allowPersistent = false);
+
+    /**
+     * @coroutine
+     *
+     * @param \Icicle\Socket\Socket $socket
+     * @param \Icicle\Http\Message\Request $request
+     * @param float|int $timeout
+     *
+     * @return \Generator
+     */
+    public function writeRequest(Socket $socket, Request $request, $timeout = 0);
 }

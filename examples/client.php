@@ -5,7 +5,7 @@ require dirname(__DIR__) . '/vendor/autoload.php';
 
 use Icicle\Coroutine;
 use Icicle\Http\Client\Client;
-use Icicle\Http\Encoder\Http1Encoder;
+use Icicle\Http\Driver\Encoder\Http1Encoder;
 use Icicle\Loop;
 
 $coroutine = Coroutine\create(function () {
