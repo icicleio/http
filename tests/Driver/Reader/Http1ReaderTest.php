@@ -31,7 +31,7 @@ class Http1ReaderTest extends TestCase
      */
     protected function readMessage($filename)
     {
-        $data = file_get_contents(dirname(__DIR__) . '/data/' . $filename);
+        $data = file_get_contents(dirname(dirname(__DIR__)) . '/data/' . $filename);
 
         $stream = new MemoryStream();
         $coroutine = new Coroutine($stream->end($data));
@@ -45,7 +45,7 @@ class Http1ReaderTest extends TestCase
      */
     public function getValidRequests()
     {
-        return Yaml::parse(file_get_contents(dirname(__DIR__) . '/data/requests/valid.yml'));
+        return Yaml::parse(file_get_contents(dirname(dirname(__DIR__)) . '/data/requests/valid.yml'));
     }
 
     /**
@@ -101,7 +101,7 @@ class Http1ReaderTest extends TestCase
      */
     public function getInvalidRequests()
     {
-        return Yaml::parse(file_get_contents(dirname(__DIR__) . '/data/requests/invalid.yml'));
+        return Yaml::parse(file_get_contents(dirname(dirname(__DIR__)) . '/data/requests/invalid.yml'));
     }
 
     /**
@@ -131,7 +131,7 @@ class Http1ReaderTest extends TestCase
      */
     public function getValidResponses()
     {
-        return Yaml::parse(file_get_contents(dirname(__DIR__) . '/data/responses/valid.yml'));
+        return Yaml::parse(file_get_contents(dirname(dirname(__DIR__)) . '/data/responses/valid.yml'));
     }
 
     /**
@@ -185,7 +185,7 @@ class Http1ReaderTest extends TestCase
      */
     public function getInvalidResponses()
     {
-        return Yaml::parse(file_get_contents(dirname(__DIR__) . '/data/responses/invalid.yml'));
+        return Yaml::parse(file_get_contents(dirname(dirname(__DIR__)) . '/data/responses/invalid.yml'));
     }
 
     /**
