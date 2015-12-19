@@ -36,11 +36,11 @@ class Http1Driver implements Driver
     /**
      * {@inheritdoc}
      */
-    public function readRequest(Socket $socket, $timeout = 0)
+    public function readRequest(Socket $socket, float $timeout = 0): \Generator
     {
-        $request = (yield $this->reader->readRequest($socket, $timeout));
+        $request = yield from $this->reader->readRequest($socket, $timeout);
 
-        yield $this->builder->buildIncomingRequest($socket, $request, $timeout);
+        return yield from $this->builder->buildIncomingRequest($socket, $request, $timeout);
     }
 
     /**
@@ -50,9 +50,9 @@ class Http1Driver implements Driver
         Socket $socket,
         Response $response,
         Request $request = null,
-        $timeout = 0,
-        $allowPersistent = false
-    ) {
+        float $timeout = 0,
+        bool $allowPersistent = false
+    ): \Generator {
         return $this->builder->buildOutgoingResponse(
             $socket, $response, $request, $timeout, $allowPersistent
         );
@@ -65,58 +65,62 @@ class Http1Driver implements Driver
         Socket $socket,
         Response $response,
         Request $request = null,
-        $timeout = 0
-    ) {
-        $written = (yield $socket->write($this->encoder->encodeResponse($response)));
+        float $timeout = 0
+    ): \Generator {
+        $written = yield from $socket->write($this->encoder->encodeResponse($response));
 
         $stream = $response->getBody();
 
         try {
             if ((!isset($request) || $request->getMethod() !== 'HEAD') && $stream->isReadable()) {
-                $written += (yield Stream\pipe($stream, $socket, false, 0, null, $timeout));
+                $written += yield from Stream\pipe($stream, $socket, false, 0, null, $timeout);
             }
         } finally {
             $stream->close();
         }
 
-        yield $written;
+        return $written;
     }
 
     /**
      * {@inheritdoc}
      */
-    public function readResponse(Socket $socket, $timeout = 0)
+    public function readResponse(Socket $socket, float $timeout = 0): \Generator
     {
-        $request = (yield $this->reader->readResponse($socket, $timeout));
+        $request = yield from $this->reader->readResponse($socket, $timeout);
 
-        yield $this->builder->buildIncomingResponse($socket, $request, $timeout);
+        return yield from $this->builder->buildIncomingResponse($socket, $request, $timeout);
     }
 
     /**
      * {@inheritdoc}
      */
-    public function buildRequest(Socket $socket, Request $request, $timeout = 0, $allowPersistent = false)
-    {
+    public function buildRequest(
+        Socket $socket,
+        Request $request,
+        float $timeout = 0,
+        bool $allowPersistent = false
+    ): \Generator {
         return $this->builder->buildOutgoingRequest($socket, $request, $timeout, $allowPersistent);
     }
 
     /**
      * {@inheritdoc}
      */
-    public function writeRequest(Socket $socket, Request $request, $timeout = 0)
+    public function writeRequest(Socket $socket, Request $request, float $timeout = 0): \Generator
     {
-        $written = (yield $socket->write($this->encoder->encodeRequest($request)));
+        $written = yield from $socket->write($this->encoder->encodeRequest($request));
 
         $stream = $request->getBody();
 
         try {
             if ($stream->isReadable()) {
-                $written += (yield Stream\pipe($stream, $socket, false, 0, null, $timeout));
+                $written += yield from Stream\pipe($stream, $socket, false, 0, null, $timeout);
             }
         } finally {
             $stream->close();
         }
 
-        yield $written;
+        return $written;
     }
 }

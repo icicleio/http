@@ -16,7 +16,7 @@ interface RequestHandler
      *
      * @resolve \Icicle\Http\Message\Response $response
      */
-    public function onRequest(Request $request, Socket $socket);
+    public function onRequest(Request $request, Socket $socket): \Generator;
 
     /**
      * @coroutine
@@ -28,5 +28,5 @@ interface RequestHandler
      *
      * @resolve \Icicle\Http\Message\Response
      */
-    public function onError($code, Socket $socket);
+    public function onError(int $code, Socket $socket): \Generator;
 }

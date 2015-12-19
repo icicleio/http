@@ -20,14 +20,15 @@ interface Builder
         Socket $socket,
         Response $response,
         Request $request = null,
-        $timeout = 0,
-        $allowPersistent = false
-    );
+        float $timeout = 0,
+        bool $allowPersistent = false
+    ): \Generator;
 
     /**
      * @param \Icicle\Socket\Socket
      * @param \Icicle\Http\Message\Request $request
      * @param float|int $timeout
+     * @param bool $allowPersistent
      *
      * @return \Generator
      *
@@ -36,9 +37,9 @@ interface Builder
     public function buildOutgoingRequest(
         Socket $socket,
         Request $request,
-        $timeout = 0,
-        $allowPersistent = false
-    );
+        float $timeout = 0,
+        bool $allowPersistent = false
+    ): \Generator;
 
     /**
      * @param \Icicle\Socket\Socket
@@ -47,7 +48,7 @@ interface Builder
      *
      * @return \Icicle\Http\Message\Request
      */
-    public function buildIncomingRequest(Socket $socket, Request $request, $timeout = 0);
+    public function buildIncomingRequest(Socket $socket, Request $request, $timeout = 0): \Generator;
 
     /**
      * @param \Icicle\Socket\Socket
@@ -61,6 +62,6 @@ interface Builder
         Socket $socket,
         Response $response,
         Request $request,
-        $timeout = 0
-    );
+        float $timeout = 0
+    ): \Generator;
 }

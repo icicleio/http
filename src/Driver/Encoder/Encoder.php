@@ -11,12 +11,12 @@ interface Encoder
      *
      * @return string
      */
-    public function encodeResponse(Response $response);
+    public function encodeResponse(Response $response): string;
 
     /**
      * @param \Icicle\Http\Message\Request $request
      *
      * @return string
      */
-    public function encodeRequest(Request $request);
+    public function encodeRequest(Request $request): string;
 }

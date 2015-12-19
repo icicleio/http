@@ -26,7 +26,7 @@ class Requester
     /**
      * {@inheritdoc}
      */
-    public function request(Socket $socket, Request $request, array $options = [])
+    public function request(Socket $socket, Request $request, array $options = []): \Generator
     {
         $timeout = isset($options['timeout']) ? (float) $options['timeout'] : self::DEFAULT_TIMEOUT;
         $allowPersistent = isset($options['allow_persistent']) ? (bool) $options['allow_persistent'] : true;
@@ -38,15 +38,15 @@ class Requester
                 ? (int) $options['crypto_method']
                 : self::DEFAULT_CRYPTO_METHOD;
 
-            yield $socket->enableCrypto($cryptoMethod, $timeout);
+            yield from $socket->enableCrypto($cryptoMethod, $timeout);
         } elseif ($uri->getScheme() === 'http' && $socket->isCryptoEnabled()) {
             throw new \Exception('Crypto is enabled on the socket when making an http request.');
         }
 
-        $request = (yield $this->driver->buildRequest($socket, $request, $timeout, $allowPersistent));
+        $request = yield from $this->driver->buildRequest($socket, $request, $timeout, $allowPersistent);
 
-        yield $this->driver->writeRequest($socket, $request, $timeout);
+        yield from $this->driver->writeRequest($socket, $request, $timeout);
 
-        yield $this->driver->readResponse($socket, $timeout);
+        return yield from $this->driver->readResponse($socket, $timeout);
     }
 }

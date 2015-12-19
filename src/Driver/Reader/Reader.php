@@ -18,7 +18,7 @@ interface Reader
      * @throws \Icicle\Http\Exception\MessageException
      * @throws \Icicle\Stream\Exception\UnreadableException
      */
-    public function readResponse(ReadableStream $stream, $timeout = 0);
+    public function readResponse(ReadableStream $stream, float $timeout = 0): \Generator;
 
     /**
      * @coroutine
@@ -33,5 +33,5 @@ interface Reader
      * @throws \Icicle\Http\Exception\MessageException
      * @throws \Icicle\Stream\Exception\UnreadableException
      */
-    public function readRequest(ReadableStream $stream, $timeout = 0);
+    public function readRequest(ReadableStream $stream, float $timeout = 0): \Generator;
 }

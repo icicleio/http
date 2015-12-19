@@ -223,13 +223,13 @@ class Http1ReaderTest extends TestCase
         $stream->shouldReceive('read')
             ->andReturnUsing(
                 function () {
-                    yield "GET / HTTP/1.1\r\n";
+                    return yield "GET / HTTP/1.1\r\n";
                 },
                 function () {
-                    yield "Host: example.com\r\n";
+                    return yield "Host: example.com\r\n";
                 },
                 function () {
-                    yield "\r\n";
+                    return yield "\r\n";
                 }
             );
 
@@ -257,13 +257,13 @@ class Http1ReaderTest extends TestCase
         $stream->shouldReceive('read')
             ->andReturnUsing(
                 function () {
-                    yield "HTTP/1.1 200 OK\r\n";
+                    return yield "HTTP/1.1 200 OK\r\n";
                 },
                 function () {
-                    yield "Connection: close\r\n";
+                    return yield "Connection: close\r\n";
                 },
                 function () {
-                    yield "\r\n";
+                    return yield "\r\n";
                 }
             );
 

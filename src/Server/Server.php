@@ -35,7 +35,7 @@ final class Server
      *
      * @return bool
      */
-    public function isOpen()
+    public function isOpen(): bool
     {
         return $this->listener->isOpen();
     }
@@ -58,7 +58,7 @@ final class Server
      * @throws \Icicle\Http\Exception\ClosedError If the server has been closed.
      * @throws \Icicle\Socket\Exception\FailureException If creating the server fails.
      */
-    public function listen($port, $address = self::DEFAULT_ADDRESS, array $options = [])
+    public function listen(int $port, string $address = self::DEFAULT_ADDRESS, array $options = [])
     {
         switch ($address) {
             case '*':

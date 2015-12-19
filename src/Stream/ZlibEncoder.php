@@ -34,7 +34,7 @@ class ZlibEncoder extends MemoryStream
      * @throws \Icicle\Exception\UnsupportedError If the zlib extension is not loaded.
      * @throws \Icicle\Exception\InvalidArgumentError If the $type is not a valid compression type.
      */
-    public function __construct($type, $level = self::DEFAULT_LEVEL)
+    public function __construct(int $type, int $level = self::DEFAULT_LEVEL)
     {
         // @codeCoverageIgnoreStart
         if (!extension_loaded('zlib')) {
@@ -53,21 +53,20 @@ class ZlibEncoder extends MemoryStream
 
         parent::__construct();
 
-        $this->level = (int) $level;
+        $this->level = $level;
     }
 
     /**
      * {@inheritdoc}
      */
-    protected function send($data, $timeout = 0, $end = false)
+    protected function send(string $data, float $timeout = 0, bool $end = false): \Generator
     {
         $this->buffer .= $data;
 
         if (!$end) {
-            yield 0;
-            return;
+            return 0;
         }
 
-        yield parent::send(zlib_encode($this->buffer, $this->type, $this->level), $timeout, true);
+        return yield from parent::send(zlib_encode($this->buffer, $this->type, $this->level), $timeout, true);
     }
 }

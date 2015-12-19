@@ -42,9 +42,9 @@ class Http1Reader
     /**
      * {@inheritdoc}
      */
-    public function readResponse(ReadableStream $stream, $timeout = 0)
+    public function readResponse(ReadableStream $stream, float $timeout = 0): \Generator
     {
-        $data = (yield Stream\readUntil($stream, "\r\n", $this->maxStartLineLength, $timeout));
+        $data = yield from Stream\readUntil($stream, "\r\n", $this->maxStartLineLength, $timeout);
 
         if (!preg_match("/^HTTP\/(\d+(?:\.\d+)?) (\d{3})(?: (.+))?\r\n$/i", $data, $matches)) {
             throw new ParseException('Could not parse start line.');
@@ -54,17 +54,17 @@ class Http1Reader
         $code = (int) $matches[2];
         $reason = isset($matches[3]) ? $matches[3] : '';
 
-        $headers = (yield $this->readHeaders($stream, $timeout));
+        $headers = yield from $this->readHeaders($stream, $timeout);
 
-        yield new BasicResponse($code, $headers, $stream, $reason, $protocol);
+        return new BasicResponse($code, $headers, $stream, $reason, $protocol);
     }
 
     /**
      * {@inheritdoc}
      */
-    public function readRequest(ReadableStream $stream, $timeout = 0)
+    public function readRequest(ReadableStream $stream, float $timeout = 0): \Generator
     {
-        $data = (yield Stream\readUntil($stream, "\r\n", $this->maxStartLineLength, $timeout));
+        $data = yield from Stream\readUntil($stream, "\r\n", $this->maxStartLineLength, $timeout);
 
         if (!preg_match("/^([A-Z]+) (\S+) HTTP\/(\d+(?:\.\d+)?)\r\n$/i", $data, $matches)) {
             throw new ParseException('Could not parse start line.');
@@ -74,7 +74,7 @@ class Http1Reader
         $target = $matches[2];
         $protocol = $matches[3];
 
-        $headers = (yield $this->readHeaders($stream, $timeout));
+        $headers = yield from $this->readHeaders($stream, $timeout);
 
         if ('/' === $target[0]) { // origin-form
             $uri = new BasicUri($this->filterHost($this->findHost($headers)) . $target);
@@ -87,7 +87,7 @@ class Http1Reader
             $uri = new BasicUri($this->filterHost($target));
         }
 
-        yield new BasicRequest($method, $uri, $headers, $stream, $target, $protocol);
+        return new BasicRequest($method, $uri, $headers, $stream, $target, $protocol);
     }
 
     /**
@@ -99,13 +99,13 @@ class Http1Reader
      * @throws \Icicle\Http\Exception\MessageException
      * @throws \Icicle\Http\Exception\ParseException
      */
-    protected function readHeaders(ReadableStream $stream, $timeout = 0)
+    protected function readHeaders(ReadableStream $stream, float $timeout = 0): \Generator
     {
         $size = 0;
         $headers = [];
 
         do {
-            $data = (yield Stream\readUntil($stream, "\r\n", $this->maxSize - $size, $timeout));
+            $data = yield from Stream\readUntil($stream, "\r\n", $this->maxSize - $size, $timeout);
 
             if (substr($data, -2) !== "\r\n") {
                 break;
@@ -114,8 +114,7 @@ class Http1Reader
             $length = strlen($data);
 
             if ($length === 2) {
-                yield $headers;
-                return;
+                return $headers;
             }
 
             $size += $length;
@@ -148,7 +147,7 @@ class Http1Reader
      *
      * @return string
      */
-    protected function filterHost($host)
+    protected function filterHost(string $host): string
     {
         if (strrpos($host, ':', -1)) {
             return $host;
@@ -164,7 +163,7 @@ class Http1Reader
      *
      * @throws \Icicle\Http\Exception\MessageException If no host header is find.
      */
-    protected function findHost(array $headers)
+    protected function findHost(array $headers): string
     {
         foreach ($headers as $name => $values) {
             if (strtolower($name) === 'host') {

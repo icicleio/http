@@ -21,7 +21,7 @@ class ChunkedDecoder extends MemoryStream
     /**
      * @param int $hwm
      */
-    public function __construct($hwm = 0)
+    public function __construct(int $hwm = 0)
     {
         parent::__construct($hwm);
 
@@ -33,7 +33,7 @@ class ChunkedDecoder extends MemoryStream
      *
      * @throws \Icicle\Http\Exception\MessageException If an invalid chunk length is found.
      */
-    protected function send($data, $timeout = 0, $end = false)
+    protected function send(string $data, float $timeout = 0, bool $end = false): \Generator
     {
         $this->buffer->push($data);
 
@@ -42,8 +42,7 @@ class ChunkedDecoder extends MemoryStream
         while (!$this->buffer->isEmpty()) {
             if (0 === $this->length) { // Read chunk length.
                 if (false === ($position = $this->buffer->search("\r\n"))) {
-                    yield parent::send($data, $timeout, $end);
-                    return;
+                    return yield from parent::send($data, $timeout, $end);
                 }
 
                 $length = rtrim($this->buffer->remove($position + 2), "\r\n");
@@ -53,7 +52,7 @@ class ChunkedDecoder extends MemoryStream
                 }
 
                 if (!preg_match('/^[a-f0-9]+$/i', $length)) {
-                    yield parent::send('', $timeout, true);
+                    yield from parent::send('', $timeout, true);
                     throw new MessageException(Response::BAD_REQUEST, 'Invalid chunk length.');
                 }
 
@@ -75,6 +74,6 @@ class ChunkedDecoder extends MemoryStream
             }
         }
 
-        yield parent::send($data, $timeout, $end);
+        return yield from parent::send($data, $timeout, $end);
     }
 }

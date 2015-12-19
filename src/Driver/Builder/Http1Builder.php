@@ -79,9 +79,9 @@ class Http1Builder
         Socket $socket,
         Response $response,
         Request $request = null,
-        $timeout = 0,
-        $allowPersistent = false
-    ) {
+        float $timeout = 0,
+        bool $allowPersistent = false
+    ): \Generator {
         if (null === $request) { // Fallback to 1.0 for responses due to message errors.
             $response = $response->withProtocolVersion('1.0');
         } elseif ($request->getProtocolVersion() !== $response->getProtocolVersion()) {
@@ -89,8 +89,7 @@ class Http1Builder
         }
 
         if (strtolower($response->getHeaderLine('Connection')) === 'upgrade') {
-            yield $response;
-            return;
+            return $response;
         }
 
         if ($response->getProtocolVersion() === '1.1'
@@ -124,14 +123,18 @@ class Http1Builder
             }
         }
 
-        yield $this->buildOutgoingStream($socket, $response, $timeout);
+        return $this->buildOutgoingStream($socket, $response, $timeout);
     }
 
     /**
      * {@inheritdoc}
      */
-    public function buildOutgoingRequest(Socket $socket, Request $request, $timeout = 0, $allowPersistent = false)
-    {
+    public function buildOutgoingRequest(
+        Socket $socket,
+        Request $request,
+        float $timeout = 0,
+        bool $allowPersistent = false
+    ): \Generator {
         if (!$request->hasHeader('Connection')) {
             $request = $request->withHeader('Connection', $allowPersistent ? 'keep-alive' : 'close');
         }
@@ -146,29 +149,28 @@ class Http1Builder
             $request = $request->withoutHeader('Accept-Encoding');
         }
 
-        yield $this->buildOutgoingStream($socket, $request, $timeout);
+        return $this->buildOutgoingStream($socket, $request, $timeout);
     }
 
     /**
      * {@inheritdoc}
      */
-    public function buildIncomingRequest(Socket $socket, Request $request, $timeout = 0)
+    public function buildIncomingRequest(Socket $socket, Request $request, float $timeout = 0): \Generator
     {
         if ($request->getMethod() === 'POST' || $request->getMethod() === 'PUT') {
-            yield $this->buildIncomingStream($socket, $request, $timeout);
-            return;
+            return $this->buildIncomingStream($socket, $request, $timeout);
         }
 
         $stream = new MemoryStream();
-        yield $stream->end(); // No body in other requests.
+        yield from $stream->end(); // No body in other requests.
 
-        yield $request->withBody($stream);
+        return $request->withBody($stream);
     }
 
     /**
      * {@inheritdoc}
      */
-    public function buildIncomingResponse(Socket $socket, Response $response, $timeout = 0)
+    public function buildIncomingResponse(Socket $socket, Response $response, float $timeout = 0): \Generator
     {
         return $this->buildIncomingStream($socket, $response, $timeout);
     }
@@ -184,17 +186,16 @@ class Http1Builder
      *
      * @throws \Icicle\Http\Exception\MessageException
      */
-    private function buildOutgoingStream(Socket $socket, Message $message, $timeout = 0)
+    private function buildOutgoingStream(Socket $socket, Message $message, float $timeout = 0): \Generator
     {
         $body = $message->getBody();
 
         if ($body instanceof SeekableStream) {
-            yield $body->seek(0);
+            yield from $body->seek(0);
         }
 
         if (!$body->isReadable()) {
-            yield $message->withHeader('Content-Length', 0);
-            return;
+            return $message->withHeader('Content-Length', 0);
         }
 
         $contentEncoding = strtolower($message->getHeaderLine('Content-Encoding'));
@@ -216,7 +217,7 @@ class Http1Builder
                     );
             }
 
-            yield Stream\pipe($message->getBody(), $stream, true, 0, null, $timeout);
+            yield from Stream\pipe($message->getBody(), $stream, true, 0, null, $timeout);
             $message = $message
                 ->withBody($stream)
                 ->withoutHeader('Content-Length');
@@ -230,13 +231,12 @@ class Http1Builder
                 $socket->close();
             });
 
-            yield $message
+            return $message
                 ->withBody($stream)
                 ->withHeader('Transfer-Encoding', 'chunked');
-            return;
         }
 
-        yield $message;
+        return $message;
     }
 
     /**
@@ -250,17 +250,16 @@ class Http1Builder
      *
      * @throws \Icicle\Http\Exception\MessageException
      */
-    private function buildIncomingStream(Socket $socket, Message $message, $timeout = 0)
+    private function buildIncomingStream(Socket $socket, Message $message, float $timeout = 0): \Generator
     {
         $stream = $message->getBody();
 
         if ($stream instanceof SeekableStream) {
-            $stream->seek(0);
+            yield from $stream->seek(0);
         }
 
         if (!$stream->isReadable()) {
-            yield $message;
-            return;
+            return $message;
         }
 
         if (strtolower($message->getHeaderLine('Transfer-Encoding') === 'chunked')) {
@@ -296,13 +295,11 @@ class Http1Builder
             case 'deflate':
             case 'gzip':
                 $stream = new ZlibDecoder();
-                yield Stream\pipe($message->getBody(), $stream, true, 0, null, $timeout);
-                yield $message->withBody($stream);
-                return;
+                yield from Stream\pipe($message->getBody(), $stream, true, 0, null, $timeout);
+                return $message->withBody($stream);
 
             case '':
-                yield $message;
-                return;
+                return $message;
 
             default:
                 throw new MessageException(

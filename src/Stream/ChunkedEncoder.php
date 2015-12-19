@@ -8,7 +8,7 @@ class ChunkedEncoder extends MemoryStream
     /**
      * {@inheritdoc}
      */
-    protected function send($data, $timeout = 0, $end = false)
+    protected function send(string $data, float $timeout = 0, bool $end = false): \Generator
     {
         $length = strlen($data);
 

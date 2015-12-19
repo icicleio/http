@@ -76,7 +76,7 @@ class Listener
     /**
      * @return bool
      */
-    public function isOpen()
+    public function isOpen(): bool
     {
         return $this->open;
     }
@@ -103,7 +103,7 @@ class Listener
      * @see \Icicle\Socket\Server\ServerFactory::create() Options are similar to this method with the
      *     addition of the crypto_method option.
      */
-    public function listen($port, $address, array $options = [])
+    public function listen(int $port, string $address, array $options = [])
     {
         if (!$this->open) {
             throw new ClosedError('The server has been closed.');
@@ -138,12 +138,12 @@ class Listener
      *
      * @return \Generator
      */
-    private function accept(SocketServer $server, $cryptoMethod, $timeout, $allowPersistent)
+    private function accept(SocketServer $server, int $cryptoMethod, float $timeout, bool $allowPersistent): \Generator
     {
         while ($server->isOpen()) {
             try {
                 $coroutine = new Coroutine(
-                    $this->process((yield $server->accept()), $cryptoMethod, $timeout, $allowPersistent)
+                    $this->process(yield from $server->accept(), $cryptoMethod, $timeout, $allowPersistent)
                 );
                 $coroutine->done();
             } catch (Exception $exception) {
@@ -165,13 +165,13 @@ class Listener
      *
      * @resolve null
      */
-    private function process(Socket $socket, $cryptoMethod, $timeout, $allowPersistent)
+    private function process(Socket $socket, int $cryptoMethod, float $timeout, bool $allowPersistent): \Generator
     {
         $count = 0;
 
         try {
             if (0 !== $cryptoMethod) {
-                yield $socket->enableCrypto($cryptoMethod, $timeout);
+                yield from $socket->enableCrypto($cryptoMethod, $timeout);
             }
 
             do {
@@ -179,31 +179,31 @@ class Listener
 
                 try {
                     /** @var \Icicle\Http\Message\Request $request */
-                    $request = (yield $this->driver->readRequest($socket, $timeout));
+                    $request = yield from $this->driver->readRequest($socket, $timeout);
                     ++$count;
 
                     /** @var \Icicle\Http\Message\Response $response */
-                    $response = (yield $this->createResponse($request, $socket));
+                    $response = yield from $this->createResponse($request, $socket);
                 } catch (TimeoutException $exception) { // Request timeout.
                     if (0 < $count) {
                         return; // Keep-alive timeout expired.
                     }
-                    $response = (yield $this->createErrorResponse(Response::REQUEST_TIMEOUT, $socket));
+                    $response = yield from $this->createErrorResponse(Response::REQUEST_TIMEOUT, $socket);
                 } catch (MessageException $exception) { // Bad request.
-                    $response = (yield $this->createErrorResponse($exception->getCode(), $socket));
+                    $response = yield from $this->createErrorResponse($exception->getCode(), $socket);
                 } catch (InvalidValueException $exception) { // Invalid value in message header.
-                    $response = (yield $this->createErrorResponse(Response::BAD_REQUEST, $socket));
+                    $response = yield from $this->createErrorResponse(Response::BAD_REQUEST, $socket);
                 } catch (ParseException $exception) { // Parse error in request.
-                    $response = (yield $this->createErrorResponse(Response::BAD_REQUEST, $socket));
+                    $response = yield from $this->createErrorResponse(Response::BAD_REQUEST, $socket);
                 }
 
-                $response = (yield $this->driver->buildResponse(
+                $response = yield from $this->driver->buildResponse(
                     $socket,
                     $response,
                     $request,
                     $timeout,
                     $allowPersistent
-                ));
+                );
 
                 $coroutine = new Coroutine($this->driver->writeResponse($socket, $response, $request, $timeout));
             } while ($allowPersistent
@@ -214,7 +214,7 @@ class Listener
 
             yield $coroutine; // Wait until response has completed writing.
         } catch (\Exception $exception) {
-            yield $this->log->write(sprintf(
+            yield from $this->log->write(sprintf(
                 "Error when handling request from %s:%d: %s\n",
                 $socket->getRemoteAddress(),
                 $socket->getRemotePort(),
@@ -235,10 +235,10 @@ class Listener
      *
      * @resolve \Icicle\Http\Message|Response
      */
-    private function createResponse(Request $request, Socket $socket)
+    private function createResponse(Request $request, Socket $socket): \Generator
     {
         try {
-            $response = (yield $this->handler->onRequest($request, $socket));
+            $response = yield from $this->handler->onRequest($request, $socket);
 
             if (!$response instanceof Response) {
                 throw new InvalidResultError(
@@ -247,7 +247,7 @@ class Listener
                 );
             }
         } catch (\Exception $exception) {
-            yield $this->log->write(sprintf(
+            yield from $this->log->write(sprintf(
                 "Uncaught exception when creating response to a request from %s:%d in file %s on line %d: %s\n",
                 $socket->getRemoteAddress(),
                 $socket->getRemotePort(),
@@ -255,10 +255,10 @@ class Listener
                 $exception->getLine(),
                 $exception->getMessage()
             ));
-            $response = (yield $this->createDefaultErrorResponse(500));
+            $response = yield from $this->createDefaultErrorResponse(500);
         }
 
-        yield $response;
+        return $response;
     }
 
     /**
@@ -271,10 +271,10 @@ class Listener
      *
      * @resolve \Icicle\Http\Message|Response
      */
-    private function createErrorResponse($code, Socket $socket)
+    private function createErrorResponse(int $code, Socket $socket): \Generator
     {
         try {
-            $response = (yield $this->handler->onError($code, $socket));
+            $response = yield from $this->handler->onError($code, $socket);
 
             if (!$response instanceof Response) {
                 throw new InvalidResultError(
@@ -283,7 +283,7 @@ class Listener
                 );
             }
         } catch (\Exception $exception) {
-            yield $this->log->write(sprintf(
+            yield from $this->log->write(sprintf(
                 "Uncaught exception when creating response to an error from %s:%d in file %s on line %d: %s\n",
                 $socket->getRemoteAddress(),
                 $socket->getRemotePort(),
@@ -291,10 +291,10 @@ class Listener
                 $exception->getLine(),
                 $exception->getMessage()
             ));
-            $response = (yield $this->createDefaultErrorResponse(500));
+            $response = yield from $this->createDefaultErrorResponse(500);
         }
 
-        yield $response;
+        return $response;
     }
 
     /**
@@ -306,7 +306,7 @@ class Listener
      *
      * @resolve \Icicle\Http\Message\Response
      */
-    protected function createDefaultErrorResponse($code)
+    protected function createDefaultErrorResponse(int $code): \Generator
     {
         $sink = new MemorySink(sprintf('%d Error', $code));
 
@@ -317,5 +317,6 @@ class Listener
         ];
 
         return new BasicResponse($code, $headers, $sink);
+        yield; // Unreachable, but makes method a coroutine.
     }
 }

@@ -26,19 +26,19 @@ class Client
      */
     public function request(
         Socket $socket,
-        $method,
+        string $method,
         $uri,
         array $headers = [],
         ReadableStream $body = null,
         array $options = []
-    ) {
+    ): \Generator {
         return $this->send($socket, new BasicRequest($method, $uri, $headers, $body), $options);
     }
 
     /**
      * {@inheritdoc}
      */
-    public function send(Socket $socket, Request $request, array $options = [])
+    public function send(Socket $socket, Request $request, array $options = []): \Generator
     {
         return $this->requester->request($socket, $request, $options);
     }

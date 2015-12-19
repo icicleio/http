@@ -9,7 +9,7 @@ class Http1Encoder
     /**
      * {@inheritdoc}
      */
-    public function encodeResponse(Response $response)
+    public function encodeResponse(Response $response): string
     {
         return sprintf(
             "HTTP/%s %d %s\r\n%s\r\n",
@@ -23,7 +23,7 @@ class Http1Encoder
     /**
      * {@inheritdoc}
      */
-    public function encodeRequest(Request $request)
+    public function encodeRequest(Request $request): string
     {
         return sprintf(
             "%s %s HTTP/%s\r\n%s\r\n",
@@ -39,7 +39,7 @@ class Http1Encoder
      *
      * @return string
      */
-    protected function encodeHeaders(array $headers)
+    protected function encodeHeaders(array $headers): string
     {
         $data = '';
 

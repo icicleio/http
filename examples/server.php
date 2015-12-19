@@ -23,7 +23,7 @@ class ExampleRequestHandler implements RequestHandler
      *
      * @resolve \Icicle\Http\Message\Response $response
      */
-    public function onRequest(Request $request, Socket $socket)
+    public function onRequest(Request $request, Socket $socket): Generator
     {
         $data = sprintf(
             'Hello to %s:%d from %s:%d!',
@@ -43,14 +43,14 @@ class ExampleRequestHandler implements RequestHandler
         }
 
         $sink = new MemorySink();
-        yield $sink->end($data);
+        yield from $sink->end($data);
 
         $response = new BasicResponse(200, [
             'Content-Type' => 'text/plain',
             'Content-Length' => $sink->getLength(),
         ], $sink);
 
-        yield $response;
+        return $response;
     }
 
     /**
@@ -61,9 +61,10 @@ class ExampleRequestHandler implements RequestHandler
      *
      * @resolve \Icicle\Http\Message\Response
      */
-    public function onError($code, Socket $socket)
+    public function onError(int $code, Socket $socket): Generator
     {
-        yield new BasicResponse($code);
+        return new BasicResponse($code);
+        yield; // Unreachable, but makes method a coroutine.
     }
 }
 

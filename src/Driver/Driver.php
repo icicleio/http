@@ -17,7 +17,7 @@ interface Driver
      *
      * @resolve \Icicle\Http\Message\Request
      */
-    public function readRequest(Socket $socket, $timeout = 0);
+    public function readRequest(Socket $socket, float $timeout = 0): \Generator;
 
     /**
      * @coroutine
@@ -35,9 +35,9 @@ interface Driver
         Socket $socket,
         Response $response,
         Request $request = null,
-        $timeout = 0,
-        $allowPersistent = false
-    );
+        float $timeout = 0,
+        bool $allowPersistent = false
+    ): \Generator;
 
     /**
      * @coroutine
@@ -51,7 +51,12 @@ interface Driver
      *
      * @resolve int Number of bytes written to the socket.
      */
-    public function writeResponse(Socket $socket, Response $response, Request $request = null, $timeout = 0);
+    public function writeResponse(
+        Socket $socket,
+        Response $response,
+        Request $request = null,
+        float $timeout = 0
+    ): \Generator;
 
     /**
      * @coroutine
@@ -61,7 +66,7 @@ interface Driver
      *
      * @return \Generator
      */
-    public function readResponse(Socket $socket, $timeout = 0);
+    public function readResponse(Socket $socket, float $timeout = 0): \Generator;
 
     /**
      * @coroutine
@@ -73,7 +78,12 @@ interface Driver
      *
      * @return \Generator
      */
-    public function buildRequest(Socket $socket, Request $request, $timeout = 0, $allowPersistent = false);
+    public function buildRequest(
+        Socket $socket,
+        Request $request,
+        float $timeout = 0,
+        bool $allowPersistent = false
+    ): \Generator;
 
     /**
      * @coroutine
@@ -84,5 +94,5 @@ interface Driver
      *
      * @return \Generator
      */
-    public function writeRequest(Socket $socket, Request $request, $timeout = 0);
+    public function writeRequest(Socket $socket, Request $request, float $timeout = 0): \Generator;
 }
