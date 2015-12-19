@@ -11,7 +11,6 @@ use Icicle\Stream\ReadableStream;
 use Icicle\Stream\MemoryStream;
 use Icicle\Stream\SeekableStream;
 use Icicle\Tests\Http\TestCase;
-use Mockery;
 use Symfony\Component\Yaml\Yaml;
 
 class Http1ReaderTest extends TestCase
@@ -21,7 +20,7 @@ class Http1ReaderTest extends TestCase
      */
     protected function createStream()
     {
-        return Mockery::mock(ReadableStream::class);
+        return $this->getMock(ReadableStream::class);
     }
 
     /**
@@ -220,18 +219,18 @@ class Http1ReaderTest extends TestCase
         $stream = $this->createStream();
         $maxSize = 1;
 
-        $stream->shouldReceive('read')
-            ->andReturnUsing(
-                function () {
+        $stream->method('read')
+            ->will($this->onConsecutiveCalls(
+                $this->returnCallback(function () {
                     yield "GET / HTTP/1.1\r\n";
-                },
-                function () {
+                }),
+                $this->returnCallback(function () {
                     yield "Host: example.com\r\n";
-                },
-                function () {
+                }),
+                $this->returnCallback(function () {
                     yield "\r\n";
-                }
-            );
+                })
+            ));
 
         $promise = new Coroutine($reader->readRequest($stream, $maxSize));
 
@@ -254,18 +253,18 @@ class Http1ReaderTest extends TestCase
         $stream = $this->createStream();
         $maxSize = 1;
 
-        $stream->shouldReceive('read')
-            ->andReturnUsing(
-                function () {
+        $stream->method('read')
+            ->will($this->onConsecutiveCalls(
+                $this->returnCallback(function () {
                     yield "HTTP/1.1 200 OK\r\n";
-                },
-                function () {
+                }),
+                $this->returnCallback(function () {
                     yield "Connection: close\r\n";
-                },
-                function () {
+                }),
+                $this->returnCallback(function () {
                     yield "\r\n";
-                }
-            );
+                })
+            ));
 
         $promise = new Coroutine($reader->readResponse($stream, $maxSize));
 
