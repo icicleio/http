@@ -100,11 +100,11 @@ class BasicResponse extends AbstractMessage implements Response
      * @throws \Icicle\Http\Exception\MessageException If one of the arguments is invalid.
      */
     public function __construct(
-        $code = 200,
+        int $code = 200,
         array $headers = [],
         ReadableStream $stream = null,
-        $reason = '',
-        $protocol = '1.1'
+        string $reason = '',
+        string $protocol = '1.1'
     ) {
         parent::__construct($headers, $stream, $protocol);
 
@@ -119,7 +119,7 @@ class BasicResponse extends AbstractMessage implements Response
     /**
      * {@inheritdoc}
      */
-    public function getStatusCode()
+    public function getStatusCode(): int
     {
         return $this->status;
     }
@@ -127,7 +127,7 @@ class BasicResponse extends AbstractMessage implements Response
     /**
      * {@inheritdoc}
      */
-    public function getReasonPhrase()
+    public function getReasonPhrase(): string
     {
         if ('' !== $this->reason) {
             return $this->reason;
@@ -139,7 +139,7 @@ class BasicResponse extends AbstractMessage implements Response
     /**
      * {@inheritdoc}
      */
-    public function withStatus($code, $reason = '')
+    public function withStatus(int $code, string $reason = null): Response
     {
         $new = clone $this;
         $new->status = $new->validateStatusCode($code);
@@ -150,7 +150,7 @@ class BasicResponse extends AbstractMessage implements Response
     /**
      * {@inheritdoc}
      */
-    public function getCookies()
+    public function getCookies(): array
     {
         return $this->cookies;
     }
@@ -158,7 +158,7 @@ class BasicResponse extends AbstractMessage implements Response
     /**
      * {@inheritdoc}
      */
-    public function hasCookie($name)
+    public function hasCookie(string $name): bool
     {
         return array_key_exists((string) $name, $this->cookies);
     }
@@ -166,7 +166,7 @@ class BasicResponse extends AbstractMessage implements Response
     /**
      * {@inheritdoc}
      */
-    public function getCookie($name)
+    public function getCookie(string $name)
     {
         $name = (string) $name;
         return array_key_exists($name, $this->cookies) ? $this->cookies[$name] : null;
@@ -176,14 +176,14 @@ class BasicResponse extends AbstractMessage implements Response
      * {@inheritdoc}
      */
     public function withCookie(
-        $name,
+        string $name,
         $value = '',
-        $expires = 0,
-        $path = '',
-        $domain = '',
-        $secure = false,
-        $httpOnly = false
-    ) {
+        int $expires = 0,
+        string $path = null,
+        string $domain = null,
+        bool $secure = false,
+        bool $httpOnly = false
+    ): Response {
         $new = clone $this;
 
         $new->cookies[(string) $name] = new SetCookie($name, $value, $expires, $path, $domain, $secure, $httpOnly);
@@ -194,7 +194,7 @@ class BasicResponse extends AbstractMessage implements Response
     /**
      * {@inheritdoc}
      */
-    public function withoutCookie($name)
+    public function withoutCookie(string $name): Response
     {
         $new = clone $this;
 
@@ -206,7 +206,7 @@ class BasicResponse extends AbstractMessage implements Response
     /**
      * {@inheritdoc}
      */
-    public function withHeader($name, $value)
+    public function withHeader(string $name, $value): Message
     {
         $new = parent::withHeader($name, $value);
 
@@ -220,7 +220,7 @@ class BasicResponse extends AbstractMessage implements Response
     /**
      * {@inheritdoc}
      */
-    public function withAddedHeader($name, $value)
+    public function withAddedHeader(string $name, $value): Message
     {
         $new = parent::withAddedHeader($name, $value);
 
@@ -234,7 +234,7 @@ class BasicResponse extends AbstractMessage implements Response
     /**
      * {@inheritdoc}
      */
-    public function withoutHeader($name)
+    public function withoutHeader(string $name): Message
     {
         $new = parent::withoutHeader($name);
 
@@ -252,7 +252,7 @@ class BasicResponse extends AbstractMessage implements Response
      *
      * @throws \Icicle\Http\Exception\InvalidStatusException
      */
-    protected function validateStatusCode($code)
+    protected function validateStatusCode(int $code): int
     {
         if (!is_numeric($code) || is_float($code) || 100 > $code || 599 < $code) {
             throw new InvalidStatusException(
@@ -260,17 +260,17 @@ class BasicResponse extends AbstractMessage implements Response
             );
         }
 
-        return (int) $code;
+        return $code;
     }
 
     /**
-     * @param string $reason
+     * @param string|null $reason
      *
-     * @return string|null
+     * @return string
      */
-    protected function filterReason($reason)
+    protected function filterReason(string $reason = null): string
     {
-        return $reason ? (string) $reason : '';
+        return $reason ?? '';
     }
 
     /**

@@ -11,7 +11,7 @@ interface Message
     /**
      * @return string
      */
-    public function getProtocolVersion();
+    public function getProtocolVersion(): string;
 
     /**
      * Returns the message headers as a string-indexed array of arrays of strings or an empty array if no headers
@@ -19,7 +19,7 @@ interface Message
      *
      * @return string[][]
      */
-    public function getHeaders();
+    public function getHeaders(): array;
 
     /**
      * Determines if the message has the given header.
@@ -28,7 +28,7 @@ interface Message
      *
      * @return bool
      */
-    public function hasHeader($name);
+    public function hasHeader(string $name): bool;
 
     /**
      * Returns the array of values for the given header or an empty array if the header does not exist.
@@ -37,7 +37,7 @@ interface Message
      *
      * @return string[]
      */
-    public function getHeader($name);
+    public function getHeader(string $name): array;
 
     /**
      * Returns the values for the given header as a comma separated list. Returns an empty string if the the header
@@ -48,14 +48,14 @@ interface Message
      *
      * @return string
      */
-    public function getHeaderLine($name);
+    public function getHeaderLine(string $name): string;
 
     /**
      * Returns the stream for the message body.
      *
      * @return \Icicle\Stream\ReadableStream
      */
-    public function getBody();
+    public function getBody(): ReadableStream;
 
     /**
      * Returns a new instance with the given protocol version.
@@ -64,7 +64,7 @@ interface Message
      *
      * @return self
      */
-    public function withProtocolVersion($version);
+    public function withProtocolVersion(string $version): Message;
 
     /**
      * Returns a new instance with the given header. $value may be a string or an array of strings.
@@ -76,7 +76,7 @@ interface Message
      *
      * @throws \Icicle\Http\Exception\InvalidHeaderException If the header name or value is invalid.
      */
-    public function withHeader($name, $value);
+    public function withHeader(string $name, $value): Message;
 
     /**
      * Returns a new instance with the given value added to the named header. If the header did not exist, the header
@@ -89,7 +89,7 @@ interface Message
      *
      * @throws \Icicle\Http\Exception\InvalidHeaderException If the header name or value is invalid.
      */
-    public function withAddedHeader($name, $value);
+    public function withAddedHeader(string $name, $value): Message;
 
     /**
      * Returns a new instance without the given header.
@@ -98,7 +98,7 @@ interface Message
      *
      * @return self
      */
-    public function withoutHeader($name);
+    public function withoutHeader(string $name): Message;
 
     /**
      * Returns a new instance with the given stream for the message body.
@@ -107,5 +107,5 @@ interface Message
      *
      * @return self
      */
-    public function withBody(ReadableStream $stream);
+    public function withBody(ReadableStream $stream): Message;
 }

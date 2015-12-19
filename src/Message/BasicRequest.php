@@ -4,6 +4,7 @@ namespace Icicle\Http\Message;
 use Icicle\Http\Exception\InvalidMethodException;
 use Icicle\Http\Exception\InvalidValueException;
 use Icicle\Http\Message\Cookie\BasicCookie;
+use Icicle\Http\Message\Cookie\Cookie;
 use Icicle\Stream\ReadableStream;
 
 class BasicRequest extends AbstractMessage implements Request
@@ -44,12 +45,12 @@ class BasicRequest extends AbstractMessage implements Request
      * @throws \Icicle\Http\Exception\MessageException If one of the arguments is invalid.
      */
     public function __construct(
-        $method,
+        string $method,
         $uri = '',
         array $headers = [],
         ReadableStream $stream = null,
-        $target = '',
-        $protocol = '1.1'
+        string $target = null,
+        string $protocol = '1.1'
     ) {
         parent::__construct($headers, $stream, $protocol);
 
@@ -70,7 +71,7 @@ class BasicRequest extends AbstractMessage implements Request
     /**
      * {@inheritdoc}
      */
-    public function getRequestTarget()
+    public function getRequestTarget(): string
     {
         if ('' !== $this->target) {
             return $this->target;
@@ -93,7 +94,7 @@ class BasicRequest extends AbstractMessage implements Request
     /**
      * {@inheritdoc}
      */
-    public function getUri()
+    public function getUri(): Uri
     {
         return $this->uri;
     }
@@ -101,7 +102,7 @@ class BasicRequest extends AbstractMessage implements Request
     /**
      * {@inheritdoc}
      */
-    public function getMethod()
+    public function getMethod(): string
     {
         return $this->method;
     }
@@ -109,7 +110,7 @@ class BasicRequest extends AbstractMessage implements Request
     /**
      * {@inheritdoc}
      */
-    public function withRequestTarget($target)
+    public function withRequestTarget(string $target = null): Request
     {
         $new = clone $this;
         $new->target = $new->filterTarget($target);
@@ -119,7 +120,7 @@ class BasicRequest extends AbstractMessage implements Request
     /**
      * {@inheritdoc}
      */
-    public function withMethod($method)
+    public function withMethod(string $method): Request
     {
         $new = clone $this;
         $new->method = $new->filterMethod($method);
@@ -129,7 +130,7 @@ class BasicRequest extends AbstractMessage implements Request
     /**
      * {@inheritdoc}
      */
-    public function withHeader($name, $value)
+    public function withHeader(string $name, $value): Message
     {
         $new = parent::withHeader($name, $value);
 
@@ -146,7 +147,7 @@ class BasicRequest extends AbstractMessage implements Request
     /**
      * {@inheritdoc}
      */
-    public function withAddedHeader($name, $value)
+    public function withAddedHeader(string $name, $value): Message
     {
         $normalized = strtolower($name);
 
@@ -167,7 +168,7 @@ class BasicRequest extends AbstractMessage implements Request
     /**
      * {@inheritdoc}
      */
-    public function withoutHeader($name)
+    public function withoutHeader(string $name): Message
     {
         $new = parent::withoutHeader($name);
 
@@ -184,7 +185,7 @@ class BasicRequest extends AbstractMessage implements Request
     /**
      * {@inheritdoc}
      */
-    public function withUri($uri)
+    public function withUri($uri): Request
     {
         if (!$uri instanceof Uri) {
             $uri = new BasicUri($uri);
@@ -203,7 +204,7 @@ class BasicRequest extends AbstractMessage implements Request
     /**
      * {@inheritdoc}
      */
-    public function getCookies()
+    public function getCookies(): array
     {
         return $this->cookies;
     }
@@ -211,7 +212,7 @@ class BasicRequest extends AbstractMessage implements Request
     /**
      * {@inheritdoc}
      */
-    public function getCookie($name)
+    public function getCookie(string $name)
     {
         $name = (string) $name;
         return array_key_exists($name, $this->cookies) ? $this->cookies[$name] : null;
@@ -220,7 +221,7 @@ class BasicRequest extends AbstractMessage implements Request
     /**
      * {@inheritdoc}
      */
-    public function hasCookie($name)
+    public function hasCookie(string $name): bool
     {
         return array_key_exists((string) $name, $this->cookies);
     }
@@ -228,7 +229,7 @@ class BasicRequest extends AbstractMessage implements Request
     /**
      * {@inheritdoc}
      */
-    public function withCookie($name, $value)
+    public function withCookie(string $name, $value): Request
     {
         $new = clone $this;
         $new->cookies[(string) $name] = new BasicCookie($name, $value);
@@ -239,7 +240,7 @@ class BasicRequest extends AbstractMessage implements Request
     /**
      * {@inheritdoc}
      */
-    public function withoutCookie($name)
+    public function withoutCookie(string $name): Request
     {
         $new = clone $this;
         unset($new->cookies[(string) $name]);
@@ -254,7 +255,7 @@ class BasicRequest extends AbstractMessage implements Request
      *
      * @throws \Icicle\Http\Exception\InvalidMethodException If the method is not valid.
      */
-    protected function filterMethod($method)
+    protected function filterMethod(string $method): string
     {
         if (!is_string($method)) {
             throw new InvalidMethodException('Request method must be a string.');
@@ -264,14 +265,18 @@ class BasicRequest extends AbstractMessage implements Request
     }
 
     /**
-     * @param string $target
+     * @param string|null $target
      *
      * @return string
      *
      * @throws \Icicle\Http\Exception\InvalidValueException If the target contains whitespace.
      */
-    protected function filterTarget($target)
+    protected function filterTarget(string $target = null): string
     {
+        if (null === $target) {
+            return '';
+        }
+
         if (!is_string($target)) {
             throw new InvalidMethodException('Request target must be a string.');
         }

@@ -22,7 +22,7 @@ class BasicCookie implements Cookie
      *
      * @throws \Icicle\Http\Exception\InvalidValueException Thrown if the string format is invalid.
      */
-    public static function fromHeader($string)
+    public static function fromHeader(string $string): Cookie
     {
         $parts = array_map('trim', explode('=', $string, 2));
 
@@ -35,7 +35,7 @@ class BasicCookie implements Cookie
         return new self($name, $value);
     }
 
-    public function __construct($name, $value = '')
+    public function __construct(string $name, $value = '')
     {
         $this->name = $this->filterValue($name);
         $this->value = $this->filterValue($value);
@@ -44,7 +44,7 @@ class BasicCookie implements Cookie
     /**
      * {@inheritdoc}
      */
-    public function getName()
+    public function getName(): string
     {
         return $this->name;
     }
@@ -52,7 +52,7 @@ class BasicCookie implements Cookie
     /**
      * {@inheritdoc}
      */
-    public function getValue()
+    public function getValue(): string
     {
         return $this->value;
     }
@@ -60,7 +60,7 @@ class BasicCookie implements Cookie
     /**
      * {@inheritdoc}
      */
-    public function __toString()
+    public function __toString(): string
     {
         return $this->value;
     }
@@ -68,7 +68,7 @@ class BasicCookie implements Cookie
     /**
      * {@inheritdoc}
      */
-    public function toHeader()
+    public function toHeader(): string
     {
         return $this->name . '=' . $this->value;
     }
@@ -79,7 +79,7 @@ class BasicCookie implements Cookie
      *
      * @throws \Icicle\Http\Exception\InvalidValueException
      */
-    protected function filterValue($value)
+    protected function filterValue($value): string
     {
         $value = (string) $value;
 

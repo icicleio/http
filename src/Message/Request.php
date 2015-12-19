@@ -8,7 +8,7 @@ interface Request extends Message
      *
      * @return string[][]
      */
-    public function getHeaders();
+    public function getHeaders(): array;
 
     /**
      * Same as Message::getHeader(), except if the Host header is request and previously unset, the value
@@ -18,7 +18,7 @@ interface Request extends Message
      *
      * @return string[]
      */
-    public function getHeader($name);
+    public function getHeader(string $name): array;
 
     /**
      * Same as Message::getHeaderLine(), except if the Host header is request and previously unset, the value
@@ -28,7 +28,7 @@ interface Request extends Message
      *
      * @return string
      */
-    public function getHeaderLine($name);
+    public function getHeaderLine(string $name): string;
 
     /**
      * Returns the target of the request. Unless explicitly set, this will usually be the path and query portion
@@ -36,40 +36,40 @@ interface Request extends Message
      *
      * @return string
      */
-    public function getRequestTarget();
+    public function getRequestTarget(): string;
 
     /**
      * Returns the request method.
      *
      * @return string
      */
-    public function getMethod();
+    public function getMethod(): string;
 
     /**
      * Returns the request URI.
      *
      * @return \Icicle\Http\Message\Uri
      */
-    public function getUri();
+    public function getUri(): Uri;
 
     /**
      * @return \Icicle\Http\Message\Cookie\Cookie[]
      */
-    public function getCookies();
+    public function getCookies(): array;
 
     /**
      * @param string $name
      *
-     * @return \Icicle\Http\Message\Cookie\Cookie
+     * @return \Icicle\Http\Message\Cookie\Cookie|null
      */
-    public function getCookie($name);
+    public function getCookie(string $name);
 
     /**
      * @param string $name
      *
      * @return bool
      */
-    public function hasCookie($name);
+    public function hasCookie(string $name): bool;
 
     /**
      * Returns a new instance with the given request target.
@@ -80,7 +80,7 @@ interface Request extends Message
      *
      * @throws \Icicle\Http\Exception\InvalidValueException If the target contains whitespace.
      */
-    public function withRequestTarget($target);
+    public function withRequestTarget(string $target): Request;
 
     /**
      * Returns a new instance with the given request method.
@@ -91,16 +91,16 @@ interface Request extends Message
      *
      * @throws \Icicle\Http\Exception\InvalidValueException If the given method is invalid.
      */
-    public function withMethod($method);
+    public function withMethod(string $method): Request;
 
     /**
      * Returns a new instance with the given URI.
      *
-     * @param string|\Icicle\Http\Message\Uri $uri
+     * @param \Icicle\Http\Message\Uri $uri
      *
      * @return self
      */
-    public function withUri($uri);
+    public function withUri($uri): Request;
 
     /**
      * @param string $name
@@ -108,12 +108,12 @@ interface Request extends Message
      *
      * @return self
      */
-    public function withCookie($name, $value);
+    public function withCookie(string $name, $value): Request;
 
     /**
      * @param string $name
      *
      * @return self
      */
-    public function withoutCookie($name);
+    public function withoutCookie(string $name): Request;
 }

@@ -12,56 +12,56 @@ interface Uri
      *
      * @return string
      */
-    public function getScheme();
+    public function getScheme(): string;
 
     /**
      * Returns the authority portion of the URI or an empty string if no host is set.
      *
      * @return string String in [user[:password]@]host[:port] format.
      */
-    public function getAuthority();
+    public function getAuthority(): string;
 
     /**
      * Returns the user and password portion of the URI, or an empty string.
      *
      * @return string String in user[:password] format.
      */
-    public function getUserInfo();
+    public function getUserInfo(): string;
 
     /**
      * Returns the host or an empty string if no host is set.
      *
      * @return string
      */
-    public function getHost();
+    public function getHost(): string;
 
     /**
      * Returns the port or 0 if no port is set and no scheme is set.
      *
      * @return int
      */
-    public function getPort();
+    public function getPort(): int;
 
     /**
      * Returns the path portion of the URI.
      *
      * @return string Path including / prefix unless path is empty, then an empty string is returned.
      */
-    public function getPath();
+    public function getPath(): string;
 
     /**
      * Returns the query portion of the URI (does not include ? prefix). Key names are sorted through ksort().
      *
      * @return string
      */
-    public function getQuery();
+    public function getQuery(): string;
 
     /**
      * Returns an array of the key/value pairs corresponding to the query portion of the URI.
      *
      * @return string[]
      */
-    public function getQueryValues();
+    public function getQueryValues(): array;
 
     /**
      * Returns the value for the given query key name or null if the key name does not exist. Returns an empty string
@@ -71,14 +71,14 @@ interface Uri
      *
      * @return string
      */
-    public function getQueryValue($name);
+    public function getQueryValue(string $name): string;
 
     /**
      * Returns the fragment portion of the URI (does not include # prefix).
      *
      * @return string
      */
-    public function getFragment();
+    public function getFragment(): string;
 
     /**
      * Returns a new instance with the given scheme or no scheme if null. :// or : suffix should be trimmed.
@@ -87,7 +87,7 @@ interface Uri
      *
      * @return static
      */
-    public function withScheme($scheme);
+    public function withScheme(string $scheme = null): Uri;
 
     /**
      * Returns a new instance with the given user and password. Use null for $user to remove user info.
@@ -97,7 +97,7 @@ interface Uri
      *
      * @return static
      */
-    public function withUserInfo($user, $password = null);
+    public function withUserInfo(string $user = null, string $password = null): Uri;
 
     /**
      * Returns a new instance with the given port or null to remove port.
@@ -106,7 +106,7 @@ interface Uri
      *
      * @return static
      */
-    public function withPort($port);
+    public function withPort(int $port = null): Uri;
 
     /**
      * Returns a new instance with the given query string or null to remove query string. Any ? prefix should be
@@ -116,7 +116,7 @@ interface Uri
      *
      * @return static
      */
-    public function withQuery($query);
+    public function withQuery(string $query = null): Uri;
 
     /**
      * Returns a new instance with the given name and value pair in the query string (i.e., $name=$value)
@@ -126,7 +126,7 @@ interface Uri
      *
      * @return static
      */
-    public function withQueryValue($name, $value);
+    public function withQueryValue(string $name, $value): Uri;
 
     /**
      * Returns a new instance with the given key name removed from the query string.
@@ -135,7 +135,7 @@ interface Uri
      *
      * @return static
      */
-    public function withoutQueryValue($name);
+    public function withoutQueryValue(string $name): Uri;
 
     /**
      * Returns a new instance with the given fragment or null to remove fragment. Any # prefix should be trimmed.
@@ -144,12 +144,12 @@ interface Uri
      *
      * @return static
      */
-    public function withFragment($fragment);
+    public function withFragment(string $fragment = null): Uri;
 
     /**
      * Returns the URI string representation.
      *
      * @return string
      */
-    public function __toString();
+    public function __toString(): string;
 }

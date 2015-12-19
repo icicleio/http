@@ -73,33 +73,33 @@ interface Response extends Message
      *
      * @return int
      */
-    public function getStatusCode();
+    public function getStatusCode(): int;
 
     /**
      * Returns the reason phrase describing the status code.
      *
      * @return string
      */
-    public function getReasonPhrase();
+    public function getReasonPhrase(): string;
 
     /**
      * @return \Icicle\Http\Message\Cookie\MetaCookie[]
      */
-    public function getCookies();
+    public function getCookies(): array;
 
     /**
      * @param string $name
      *
      * @return bool
      */
-    public function hasCookie($name);
+    public function hasCookie(string $name): bool;
 
     /**
      * @param string $name
      *
      * @return \Icicle\Http\Message\Cookie\MetaCookie|null
      */
-    public function getCookie($name);
+    public function getCookie(string $name);
 
     /**
      * Returns a new instance with the given status.
@@ -112,7 +112,7 @@ interface Response extends Message
      *
      * @throws \Icicle\Http\Exception\InvalidStatusException
      */
-    public function withStatus($code, $reason = '');
+    public function withStatus(int $code, string $reason = ''): Response;
 
     /**
      * @param string $name
@@ -126,19 +126,19 @@ interface Response extends Message
      * @return self
      */
     public function withCookie(
-        $name,
+        string $name,
         $value = '',
-        $expires = 0,
-        $path = '',
-        $domain = '',
-        $secure = false,
-        $httpOnly = false
-    );
+        int $expires = 0,
+        string $path = '',
+        string $domain = '',
+        bool $secure = false,
+        bool $httpOnly = false
+    ): Response;
 
     /**
      * @param string $name
      *
      * @return self
      */
-    public function withoutCookie($name);
+    public function withoutCookie(string $name): Response;
 }

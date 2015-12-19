@@ -35,7 +35,7 @@ abstract class AbstractMessage implements Message
      *
      * @throws \Icicle\Http\Exception\MessageException
      */
-    public function __construct(array $headers = [], ReadableStream $stream = null, $protocol = '1.1')
+    public function __construct(array $headers = [], ReadableStream $stream = null, string $protocol = '1.1')
     {
         if (!empty($headers)) {
             $this->addHeaders($headers);
@@ -48,7 +48,7 @@ abstract class AbstractMessage implements Message
     /**
      * {@inheritdoc}
      */
-    public function getProtocolVersion()
+    public function getProtocolVersion(): string
     {
         return $this->protocol;
     }
@@ -56,7 +56,7 @@ abstract class AbstractMessage implements Message
     /**
      * {@inheritdoc}
      */
-    public function getHeaders()
+    public function getHeaders(): array
     {
         return $this->headers;
     }
@@ -64,7 +64,7 @@ abstract class AbstractMessage implements Message
     /**
      * {@inheritdoc}
      */
-    public function hasHeader($name)
+    public function hasHeader(string $name): bool
     {
         return array_key_exists(strtolower($name), $this->headerNameMap);
     }
@@ -72,7 +72,7 @@ abstract class AbstractMessage implements Message
     /**
      * {@inheritdoc}
      */
-    public function getHeader($name)
+    public function getHeader(string $name): array
     {
         $name = strtolower($name);
 
@@ -88,7 +88,7 @@ abstract class AbstractMessage implements Message
     /**
      * {@inheritdoc}
      */
-    public function getHeaderLine($name)
+    public function getHeaderLine(string $name): string
     {
         $value = $this->getHeader($name);
 
@@ -98,7 +98,7 @@ abstract class AbstractMessage implements Message
     /**
      * {@inheritdoc}
      */
-    public function getBody()
+    public function getBody(): ReadableStream
     {
         return $this->stream;
     }
@@ -106,7 +106,7 @@ abstract class AbstractMessage implements Message
     /**
      * {@inheritdoc}
      */
-    public function withProtocolVersion($version)
+    public function withProtocolVersion(string $version): Message
     {
         $new = clone $this;
         $new->protocol = $new->filterProtocolVersion($version);
@@ -116,7 +116,7 @@ abstract class AbstractMessage implements Message
     /**
      * {@inheritdoc}
      */
-    public function withHeader($name, $value)
+    public function withHeader(string $name, $value): Message
     {
         $new = clone $this;
         $new->setHeader($name, $value);
@@ -126,7 +126,7 @@ abstract class AbstractMessage implements Message
     /**
      * {@inheritdoc}
      */
-    public function withAddedHeader($name, $value)
+    public function withAddedHeader(string $name, $value): Message
     {
         $new = clone $this;
         $new->addHeader($name, $value);
@@ -136,7 +136,7 @@ abstract class AbstractMessage implements Message
     /**
      * {@inheritdoc}
      */
-    public function withoutHeader($name)
+    public function withoutHeader(string $name): Message
     {
         $new = clone $this;
         $new->removeHeader($name);
@@ -146,7 +146,7 @@ abstract class AbstractMessage implements Message
     /**
      * {@inheritdoc}
      */
-    public function withBody(ReadableStream $stream)
+    public function withBody(ReadableStream $stream): Message
     {
         $new = clone $this;
         $new->stream = $stream;
@@ -186,7 +186,7 @@ abstract class AbstractMessage implements Message
      *
      * @throws \Icicle\Http\Exception\InvalidHeaderException If the header name or value is invalid.
      */
-    protected function setHeader($name, $value)
+    protected function setHeader(string $name, $value)
     {
         if (!$this->isHeaderNameValid($name)) {
             throw new InvalidHeaderException('Header name is invalid.');
@@ -212,7 +212,7 @@ abstract class AbstractMessage implements Message
      *
      * @throws \Icicle\Http\Exception\InvalidHeaderException If the header name or value is invalid.
      */
-    protected function addHeader($name, $value)
+    protected function addHeader(string $name, $value)
     {
         if (!$this->isHeaderNameValid($name)) {
             throw new InvalidHeaderException('Header name is invalid.');
@@ -235,7 +235,7 @@ abstract class AbstractMessage implements Message
      *
      * @param string $name
      */
-    protected function removeHeader($name)
+    protected function removeHeader(string $name)
     {
         $normalized = strtolower($name);
 
@@ -252,7 +252,7 @@ abstract class AbstractMessage implements Message
      *
      * @throws \Icicle\Http\Exception\UnsupportedVersionException If the protocol is not valid.
      */
-    private function filterProtocolVersion($protocol)
+    private function filterProtocolVersion(string $protocol)
     {
         switch ($protocol) {
             case '1.1':
@@ -269,7 +269,7 @@ abstract class AbstractMessage implements Message
      *
      * @return bool
      */
-    private function isHeaderNameValid($name)
+    private function isHeaderNameValid(string $name): bool
     {
         return (bool) preg_match('/^[A-Za-z0-9`~!#$%^&_|\'\-]+$/', $name);
     }
@@ -284,7 +284,7 @@ abstract class AbstractMessage implements Message
      * @throws \Icicle\Http\Exception\InvalidHeaderException If the given value cannot be converted to a string and
      *     is not an array of values that can be converted to strings.
      */
-    private function filterHeader($values)
+    private function filterHeader($values): array
     {
         if (!is_array($values)) {
             $values = [$values];

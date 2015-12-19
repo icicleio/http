@@ -15,12 +15,6 @@ class BasicResponseTest extends TestCase
         return [
             [99], // Too Low
             [600], // Too High
-            [null], // null
-            [false], // boolean
-            [3.14], // float
-            [[404]], // array
-            ['200+'], // string (non-numeric)
-            [new \stdClass()], // object
         ];
     }
 
@@ -32,8 +26,8 @@ class BasicResponseTest extends TestCase
         return [
             [200, 'OK'],
             [404, 'Not Found'],
-            ['101', 'Switching Protocols'],
-            ['500', 'Internal Server Error'],
+            [101, 'Switching Protocols'],
+            [500, 'Internal Server Error'],
         ];
     }
 

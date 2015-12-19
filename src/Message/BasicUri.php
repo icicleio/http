@@ -78,7 +78,7 @@ class BasicUri implements Uri
     /**
      * {@inheritdoc}
      */
-    public function getScheme()
+    public function getScheme(): string
     {
         return $this->scheme;
     }
@@ -86,7 +86,7 @@ class BasicUri implements Uri
     /**
      * {@inheritdoc}
      */
-    public function getAuthority()
+    public function getAuthority(): string
     {
         $authority = $this->getHost();
         if (!$authority) {
@@ -109,7 +109,7 @@ class BasicUri implements Uri
     /**
      * {@inheritdoc}
      */
-    public function getUserInfo()
+    public function getUserInfo(): string
     {
         if ('' !== $this->password) {
             return sprintf('%s:%s', $this->user, $this->password);
@@ -121,7 +121,7 @@ class BasicUri implements Uri
     /**
      * {@inheritdoc}
      */
-    public function getHost()
+    public function getHost(): string
     {
         return $this->host;
     }
@@ -129,7 +129,7 @@ class BasicUri implements Uri
     /**
      * {@inheritdoc}
      */
-    public function getPort()
+    public function getPort(): int
     {
         if (0 === $this->port) {
             return $this->getPortForScheme();
@@ -141,7 +141,7 @@ class BasicUri implements Uri
     /**
      * {@inheritdoc}
      */
-    public function getPath()
+    public function getPath(): string
     {
         return $this->path;
     }
@@ -149,7 +149,7 @@ class BasicUri implements Uri
     /**
      * {@inheritdoc}
      */
-    public function getQuery()
+    public function getQuery(): string
     {
         if (empty($this->query)) {
             return '';
@@ -171,7 +171,7 @@ class BasicUri implements Uri
     /**
      * {@inheritdoc}
      */
-    public function getQueryValues()
+    public function getQueryValues(): array
     {
         return $this->query;
     }
@@ -179,17 +179,17 @@ class BasicUri implements Uri
     /**
      * {@inheritdoc}
      */
-    public function getQueryValue($name)
+    public function getQueryValue(string $name): string
     {
         $name = $this->encodeValue($name);
 
-        return isset($this->query[$name]) ? $this->query[$name] : null;
+        return isset($this->query[$name]) ? $this->query[$name] : '';
     }
 
     /**
      * {@inheritdoc}
      */
-    public function getFragment()
+    public function getFragment(): string
     {
         return $this->fragment;
     }
@@ -197,7 +197,7 @@ class BasicUri implements Uri
     /**
      * {@inheritdoc}
      */
-    public function withScheme($scheme)
+    public function withScheme(string $scheme = null): Uri
     {
         $new = clone $this;
         $new->scheme = $new->filterScheme($scheme);
@@ -208,7 +208,7 @@ class BasicUri implements Uri
     /**
      * {@inheritdoc}
      */
-    public function withUserInfo($user, $password = '')
+    public function withUserInfo(string $user = null, string $password = null): Uri
     {
         $new = clone $this;
 
@@ -221,7 +221,7 @@ class BasicUri implements Uri
     /**
      * {@inheritdoc}
      */
-    public function withHost($host)
+    public function withHost(string $host = null): Uri
     {
         $new = clone $this;
         $new->host = (string) $host;
@@ -232,7 +232,7 @@ class BasicUri implements Uri
     /**
      * {@inheritdoc}
      */
-    public function withPort($port)
+    public function withPort(int $port = null): Uri
     {
         $new = clone $this;
         $new->port = $new->filterPort($port);
@@ -243,7 +243,7 @@ class BasicUri implements Uri
     /**
      * {@inheritdoc}
      */
-    public function withPath($path)
+    public function withPath(string $path = null): Uri
     {
         $new = clone $this;
         $new->path = $new->parsePath($path);
@@ -254,7 +254,7 @@ class BasicUri implements Uri
     /**
      * {@inheritdoc}
      */
-    public function withQuery($query)
+    public function withQuery(string $query = null): Uri
     {
         $new = clone $this;
         $new->query = $new->parseQuery($query);
@@ -265,7 +265,7 @@ class BasicUri implements Uri
     /**
      * {@inheritdoc}
      */
-    public function withFragment($fragment)
+    public function withFragment(string $fragment = null): Uri
     {
         $new = clone $this;
         $new->fragment = $new->parseFragment($fragment);
@@ -276,7 +276,7 @@ class BasicUri implements Uri
     /**
      * {@inheritdoc}
      */
-    public function withQueryValue($name, $value)
+    public function withQueryValue(string $name, $value): Uri
     {
         $new = clone $this;
 
@@ -291,7 +291,7 @@ class BasicUri implements Uri
     /**
      * {@inheritdoc}
      */
-    public function withoutQueryValue($name)
+    public function withoutQueryValue(string $name): Uri
     {
         $new = clone $this;
 
@@ -305,7 +305,7 @@ class BasicUri implements Uri
     /**
      * {@inheritdoc}
      */
-    public function __toString()
+    public function __toString(): string
     {
         $uri = $this->getAuthority();
 
@@ -334,9 +334,9 @@ class BasicUri implements Uri
     /**
      * Returns the default port for the current scheme or null if no scheme is set.
      *
-     * @return int|null
+     * @return int
      */
-    protected function getPortForScheme()
+    protected function getPortForScheme(): int
     {
         $scheme = $this->getScheme();
 
@@ -373,19 +373,19 @@ class BasicUri implements Uri
     /**
      * @return int[] Array indexed by valid scheme names to their corresponding ports.
      */
-    protected function allowedSchemes()
+    protected function allowedSchemes(): array
     {
         return self::$schemes;
     }
 
     /**
-     * @param string $scheme
+     * @param string|null $scheme
      *
      * @return string
      *
      * @throws \Icicle\Http\Exception\InvalidValueException
      */
-    protected function filterScheme($scheme)
+    protected function filterScheme(string $scheme = null): string
     {
         if (null === $scheme) {
             return '';
@@ -412,9 +412,9 @@ class BasicUri implements Uri
      *
      * @throws \Icicle\Http\Exception\InvalidValueException
      */
-    protected function filterPort($port)
+    protected function filterPort(int $port = null): int
     {
-        $port = (int) $port;
+        $port = (int) $port; // Cast null to 0.
 
         if (0 > $port || 0xffff < $port) {
             throw new InvalidValueException(
@@ -430,7 +430,7 @@ class BasicUri implements Uri
      *
      * @return string
      */
-    protected function parsePath($path)
+    protected function parsePath(string $path = null): string
     {
         if ('' === $path || null === $path) {
             return '';
@@ -448,7 +448,7 @@ class BasicUri implements Uri
      *
      * @return string[]
      */
-    protected function parseQuery($query)
+    protected function parseQuery(string $query = null): array
     {
         $query = ltrim($query, '?');
 
@@ -469,9 +469,9 @@ class BasicUri implements Uri
     /**
      * @param string $data
      *
-     * @return string
+     * @return array
      */
-    protected function parseQueryPair($data)
+    protected function parseQueryPair(string $data): array
     {
         $data = explode('=', $data, 2);
         if (1 === count($data)) {
@@ -485,7 +485,7 @@ class BasicUri implements Uri
      *
      * @return string
      */
-    protected function parseFragment($fragment)
+    protected function parseFragment(string $fragment = null): string
     {
         $fragment = ltrim($fragment, '#');
 
@@ -499,7 +499,7 @@ class BasicUri implements Uri
      *
      * @return string
      */
-    protected function encodePath($string)
+    protected function encodePath(string $string = null): string
     {
         return preg_replace_callback(
             '/(?:[^' . self::UNRESERVED_CHARS . '\/%]+|' . self::ENCODED_CHAR . ')/',
@@ -517,7 +517,7 @@ class BasicUri implements Uri
      *
      * @return string
      */
-    protected function encodeValue($string)
+    protected function encodeValue(string $string = null): string
     {
         return preg_replace_callback(
             '/(?:[^' . self::UNRESERVED_CHARS . self::SUB_DELIMITERS . '\/%]+|' . self::ENCODED_CHAR . ')/',

@@ -37,7 +37,7 @@ class SetCookie extends BasicCookie implements MetaCookie
      *
      * @throws \Icicle\Http\Exception\InvalidValueException Thrown if the string format is invalid.
      */
-    public static function fromHeader($string)
+    public static function fromHeader(string $string): Cookie
     {
         $parts = array_filter(array_map('trim', explode(';', $string)));
 
@@ -113,27 +113,27 @@ class SetCookie extends BasicCookie implements MetaCookie
      * @param bool $httpOnly
      */
     public function __construct(
-        $name,
+        string $name,
         $value = '',
-        $expires = 0,
-        $path = '',
-        $domain = '',
-        $secure = false,
-        $httpOnly = false
+        int $expires = 0,
+        string $path = null,
+        string $domain = null,
+        bool $secure = false,
+        bool $httpOnly = false
     ) {
         parent::__construct($name, $value);
 
-        $this->expires = (int) $expires;
+        $this->expires = $expires;
         $this->path = $this->filterValue($path);
         $this->domain = $this->filterValue($domain);
-        $this->secure = (bool) $secure;
-        $this->httpOnly = (bool) $httpOnly;
+        $this->secure = $secure;
+        $this->httpOnly = $httpOnly;
     }
 
     /**
      * {@inheritdoc}
      */
-    public function getExpires()
+    public function getExpires(): int
     {
         return $this->expires;
     }
@@ -141,7 +141,7 @@ class SetCookie extends BasicCookie implements MetaCookie
     /**
      * {@inheritdoc}
      */
-    public function getPath()
+    public function getPath(): string
     {
         return $this->path;
     }
@@ -149,7 +149,7 @@ class SetCookie extends BasicCookie implements MetaCookie
     /**
      * {@inheritdoc}
      */
-    public function getDomain()
+    public function getDomain(): string
     {
         return $this->domain;
     }
@@ -157,7 +157,7 @@ class SetCookie extends BasicCookie implements MetaCookie
     /**
      * {@inheritdoc}
      */
-    public function isSecure()
+    public function isSecure(): bool
     {
         return $this->secure;
     }
@@ -165,7 +165,7 @@ class SetCookie extends BasicCookie implements MetaCookie
     /**
      * {@inheritdoc}
      */
-    public function isHttpOnly()
+    public function isHttpOnly(): bool
     {
         return $this->httpOnly;
     }
@@ -173,7 +173,7 @@ class SetCookie extends BasicCookie implements MetaCookie
     /**
      * {@inheritdoc}
      */
-    public function toHeader()
+    public function toHeader(): string
     {
         $line = parent::toHeader();
 

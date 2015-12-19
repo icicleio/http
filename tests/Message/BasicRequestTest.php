@@ -8,17 +8,6 @@ use Icicle\Tests\Http\TestCase;
 
 class BasicRequestTest extends TestCase
 {
-    public function getInvalidMethods()
-    {
-        return [
-            [null], // null
-            [100], // integer
-            [3.14], // float
-            [['GET']], // array
-            [new \stdClass()], // object
-        ];
-    }
-
     public function getValidMethods()
     {
         return [
@@ -35,16 +24,6 @@ class BasicRequestTest extends TestCase
     }
 
     /**
-     * @expectedException \Icicle\Http\Exception\InvalidMethodException
-     * @dataProvider getInvalidMethods
-     * @param string $method
-     */
-    public function testInvalidMethodThrowsException($method)
-    {
-        new BasicRequest($method);
-    }
-
-    /**
      * @dataProvider getValidMethods
      * @param string $method
      */
@@ -52,17 +31,6 @@ class BasicRequestTest extends TestCase
     {
         $request = new BasicRequest($method);
         $this->assertSame($method, $request->getMethod());
-    }
-
-    /**
-     * @expectedException \Icicle\Http\Exception\InvalidMethodException
-     * @dataProvider getInvalidMethods
-     * @param string $method
-     */
-    public function testWithMethodThrowsExceptionWithInvalidMethod($method)
-    {
-        $request = new BasicRequest('GET');
-        $request->withMethod($method);
     }
 
     /**
