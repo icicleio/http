@@ -88,7 +88,7 @@ class MessageTest extends TestCase
         $stream = $this->createStream();
 
         $message = $this->createMessage($stream);
-        $this->assertSame($stream, $message->getBody());
+        $this->assertTrue($stream === $message->getBody());
     }
 
     /**
@@ -102,8 +102,8 @@ class MessageTest extends TestCase
         $new = $message->withBody($stream);
 
         $this->assertNotSame($message, $new);
-        $this->assertSame($stream, $new->getBody());
-        $this->assertNotSame($stream, $message->getBody());
+        $this->assertTrue($stream === $new->getBody());
+        $this->assertFalse($stream === $message->getBody());
     }
 
     public function testGetHeadersWhenNoHeadersProvided()
