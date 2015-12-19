@@ -179,11 +179,19 @@ class BasicUri implements Uri
     /**
      * {@inheritdoc}
      */
+    public function hasQueryValue($name)
+    {
+        return isset($this->query[$this->encodeValue($name)]);
+    }
+
+    /**
+     * {@inheritdoc}
+     */
     public function getQueryValue($name)
     {
         $name = $this->encodeValue($name);
 
-        return isset($this->query[$name]) ? $this->query[$name] : null;
+        return isset($this->query[$name]) ? $this->query[$name] : '';
     }
 
     /**

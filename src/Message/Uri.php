@@ -64,8 +64,16 @@ interface Uri
     public function getQueryValues();
 
     /**
-     * Returns the value for the given query key name or null if the key name does not exist. Returns an empty string
-     * if the key name is set but has no value.
+     * Determines if a query key exists for the given name.
+     *
+     * @param string $name
+     *
+     * @return bool
+     */
+    public function hasQueryValue($name);
+
+    /**
+     * Returns the value for the given query key name or an empty if the key name does not exist.
      *
      * @param string $name
      *
