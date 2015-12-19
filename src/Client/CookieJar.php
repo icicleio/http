@@ -1,23 +1,23 @@
 <?php
 namespace Icicle\Http\Client;
 
-use Icicle\Http\Message\Cookie\MetaCookieInterface;
-use Icicle\Http\Message\RequestInterface;
-use Icicle\Http\Message\ResponseInterface;
+use Icicle\Http\Message\Cookie\MetaCookie;
+use Icicle\Http\Message\Request;
+use Icicle\Http\Message\Response;
 
 class CookieJar
 {
     /**
-     * @var \Icicle\Http\Message\Cookie\MetaCookieInterface[]
+     * @var \Icicle\Http\Message\Cookie\MetaCookie[]
      */
     private $cookies = [];
 
     /**
-     * @param \Icicle\Http\Message\ResponseInterface $response
+     * @param \Icicle\Http\Message\Response $response
      *
      * @return \Icicle\Http\Client\CookieJar
      */
-    public static function fromResponse(ResponseInterface $response)
+    public static function fromResponse(Response $response)
     {
         $jar = new self();
         $jar->addFromResponse($response);
@@ -25,9 +25,9 @@ class CookieJar
     }
 
     /**
-     * @param \Icicle\Http\Message\Cookie\MetaCookieInterface $cookie
+     * @param \Icicle\Http\Message\Cookie\MetaCookie $cookie
      */
-    public function insert(MetaCookieInterface $cookie)
+    public function insert(MetaCookie $cookie)
     {
         $this->cookies[$cookie->getName()] = $cookie;
     }
@@ -45,7 +45,7 @@ class CookieJar
     /**
      * @param string $name
      *
-     * @return \Icicle\Http\Message\Cookie\MetaCookieInterface|null
+     * @return \Icicle\Http\Message\Cookie\MetaCookie|null
      */
     public function get($name)
     {
@@ -54,9 +54,9 @@ class CookieJar
     }
 
     /**
-     * @param \Icicle\Http\Message\ResponseInterface $response
+     * @param \Icicle\Http\Message\Response $response
      */
-    public function addFromResponse(ResponseInterface $response)
+    public function addFromResponse(Response $response)
     {
         foreach ($response->getCookies() as $cookie) {
             $this->insert($cookie);
@@ -64,11 +64,11 @@ class CookieJar
     }
 
     /**
-     * @param \Icicle\Http\Message\RequestInterface $request
+     * @param \Icicle\Http\Message\Request $request
      *
-     * @return \Icicle\Http\Message\RequestInterface
+     * @return \Icicle\Http\Message\Request
      */
-    public function addToRequest(RequestInterface $request)
+    public function addToRequest(Request $request)
     {
         foreach ($this->cookies as $cookie) {
             $request = $request->withCookie($cookie->getName(), $cookie->getValue());
