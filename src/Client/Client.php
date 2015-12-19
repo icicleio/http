@@ -1,7 +1,6 @@
 <?php
 namespace Icicle\Http\Client;
 
-use Icicle\Dns;
 use Icicle\Http\Driver\Http1Driver;
 use Icicle\Http\Message\Request;
 use Icicle\Http\Message\BasicRequest;
@@ -11,15 +10,15 @@ use Icicle\Stream\ReadableStream;
 class Client
 {
     /**
-     * @var \Icicle\Http\Client\Requester
+     * @var \Icicle\Http\Client\Internal\Requester
      */
     private $requester;
 
     /**
      */
-    public function __construct()
+    public function __construct($options)
     {
-        $this->requester = new Requester(new Http1Driver());
+        $this->requester = new Internal\Requester(new Http1Driver($options));
     }
 
     /**

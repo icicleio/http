@@ -4,7 +4,7 @@ namespace Icicle\Http\Message;
 use Icicle\Stream\ReadableStream;
 
 /**
- * HTTP message interface based on PSR-7, modified to use promise-based streams.
+ * HTTP message interface based on PSR-7, modified to use coroutine-based streams.
  */
 interface Message
 {

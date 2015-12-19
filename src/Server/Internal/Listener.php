@@ -1,10 +1,11 @@
 <?php
-namespace Icicle\Http\Server;
+namespace Icicle\Http\Server\Internal;
 
 use Exception;
 use Icicle\Awaitable\Exception\TimeoutException;
 use Icicle\Coroutine\Coroutine;
 use Icicle\Http\Driver\Driver;
+use Icicle\Http\Exception\ClosedError;
 use Icicle\Http\Exception\InvalidResultError;
 use Icicle\Http\Exception\InvalidValueException;
 use Icicle\Http\Exception\MessageException;
@@ -12,6 +13,7 @@ use Icicle\Http\Exception\ParseException;
 use Icicle\Http\Message\BasicResponse;
 use Icicle\Http\Message\Request;
 use Icicle\Http\Message\Response;
+use Icicle\Http\Server\RequestHandler;
 use Icicle\Socket\Server\ServerFactory;
 use Icicle\Socket\Server\Server as SocketServer;
 use Icicle\Socket\Socket;
@@ -55,6 +57,8 @@ class Listener
 
     /**
      * @param \Icicle\Http\Driver\Driver $driver
+     * @param \Icicle\Http\Server\RequestHandler $handler
+     * @param \Icicle\Stream\WritableStream $log
      * @param \Icicle\Socket\Server\ServerFactory $factory
      */
     public function __construct(
@@ -90,11 +94,11 @@ class Listener
     }
 
     /**
-     * @param string $address
      * @param int $port
+     * @param string $address
      * @param mixed[] $options
      *
-     * @throws \Icicle\Http\Exception\Error If the server has been closed.
+     * @throws \Icicle\Http\Exception\ClosedError If the server has been closed.
      *
      * @see \Icicle\Socket\Server\ServerFactory::create() Options are similar to this method with the
      *     addition of the crypto_method option.
@@ -102,7 +106,7 @@ class Listener
     public function listen($port, $address, array $options = [])
     {
         if (!$this->open) {
-            throw new Error('The server has been closed.');
+            throw new ClosedError('The server has been closed.');
         }
 
         $cryptoMethod = isset($options['crypto_method'])
@@ -111,7 +115,12 @@ class Listener
         $timeout = isset($options['timeout']) ? (float) $options['timeout'] : self::DEFAULT_TIMEOUT;
         $allowPersistent = isset($options['allow_persistent']) ? (bool) $options['allow_persistent'] : true;
 
-        $server = $this->factory->create($address, $port, $options);
+        try {
+            $server = $this->factory->create($address, $port, $options);
+        } catch (\Exception $exception) {
+            $this->close();
+            throw $exception;
+        }
 
         $this->servers[] = $server;
 

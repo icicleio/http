@@ -1,5 +1,5 @@
 <?php
-namespace Icicle\Http\Client;
+namespace Icicle\Http\Client\Internal;
 
 use Icicle\Http\Driver\Driver;
 use Icicle\Http\Message\Request;
