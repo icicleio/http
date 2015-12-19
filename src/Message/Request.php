@@ -74,13 +74,13 @@ interface Request extends Message
     /**
      * Returns a new instance with the given request target.
      *
-     * @param string $target
+     * @param string|null $target
      *
      * @return self
      *
      * @throws \Icicle\Http\Exception\InvalidValueException If the target contains whitespace.
      */
-    public function withRequestTarget($target);
+    public function withRequestTarget($target = null);
 
     /**
      * Returns a new instance with the given request method.

@@ -105,14 +105,14 @@ interface Response extends Message
      * Returns a new instance with the given status.
      *
      * @param int $code 3-digit status code.
-     * @param string $reason Description of status code or null to use default reason associated with the status
+     * @param string|null $reason Description of status code or null to use default reason associated with the status
      *     code given.
      *
      * @return self
      *
      * @throws \Icicle\Http\Exception\InvalidStatusException
      */
-    public function withStatus($code, $reason = '');
+    public function withStatus($code, $reason = null);
 
     /**
      * @param string $name

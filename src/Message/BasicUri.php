@@ -197,7 +197,7 @@ class BasicUri implements Uri
     /**
      * {@inheritdoc}
      */
-    public function withScheme($scheme)
+    public function withScheme($scheme = null)
     {
         $new = clone $this;
         $new->scheme = $new->filterScheme($scheme);
@@ -208,7 +208,7 @@ class BasicUri implements Uri
     /**
      * {@inheritdoc}
      */
-    public function withUserInfo($user, $password = '')
+    public function withUserInfo($user, $password = null)
     {
         $new = clone $this;
 
@@ -221,7 +221,7 @@ class BasicUri implements Uri
     /**
      * {@inheritdoc}
      */
-    public function withHost($host)
+    public function withHost($host = null)
     {
         $new = clone $this;
         $new->host = (string) $host;
@@ -232,7 +232,7 @@ class BasicUri implements Uri
     /**
      * {@inheritdoc}
      */
-    public function withPort($port)
+    public function withPort($port = null)
     {
         $new = clone $this;
         $new->port = $new->filterPort($port);
@@ -243,7 +243,7 @@ class BasicUri implements Uri
     /**
      * {@inheritdoc}
      */
-    public function withPath($path)
+    public function withPath($path = null)
     {
         $new = clone $this;
         $new->path = $new->parsePath($path);
@@ -254,7 +254,7 @@ class BasicUri implements Uri
     /**
      * {@inheritdoc}
      */
-    public function withQuery($query)
+    public function withQuery($query = null)
     {
         $new = clone $this;
         $new->query = $new->parseQuery($query);
@@ -265,7 +265,7 @@ class BasicUri implements Uri
     /**
      * {@inheritdoc}
      */
-    public function withFragment($fragment)
+    public function withFragment($fragment = null)
     {
         $new = clone $this;
         $new->fragment = $new->parseFragment($fragment);

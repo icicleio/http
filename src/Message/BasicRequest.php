@@ -109,7 +109,7 @@ class BasicRequest extends AbstractMessage implements Request
     /**
      * {@inheritdoc}
      */
-    public function withRequestTarget($target)
+    public function withRequestTarget($target = null)
     {
         $new = clone $this;
         $new->target = $new->filterTarget($target);
@@ -264,7 +264,7 @@ class BasicRequest extends AbstractMessage implements Request
     }
 
     /**
-     * @param string $target
+     * @param string|null $target
      *
      * @return string
      *
@@ -272,6 +272,10 @@ class BasicRequest extends AbstractMessage implements Request
      */
     protected function filterTarget($target)
     {
+        if (null === $target) {
+            return '';
+        }
+
         if (!is_string($target)) {
             throw new InvalidMethodException('Request target must be a string.');
         }

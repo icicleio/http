@@ -116,8 +116,8 @@ class SetCookie extends BasicCookie implements MetaCookie
         $name,
         $value = '',
         $expires = 0,
-        $path = '',
-        $domain = '',
+        $path = null,
+        $domain = null,
         $secure = false,
         $httpOnly = false
     ) {

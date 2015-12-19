@@ -139,7 +139,7 @@ class BasicResponse extends AbstractMessage implements Response
     /**
      * {@inheritdoc}
      */
-    public function withStatus($code, $reason = '')
+    public function withStatus($code, $reason = null)
     {
         $new = clone $this;
         $new->status = $new->validateStatusCode($code);
@@ -179,8 +179,8 @@ class BasicResponse extends AbstractMessage implements Response
         $name,
         $value = '',
         $expires = 0,
-        $path = '',
-        $domain = '',
+        $path = null,
+        $domain = null,
         $secure = false,
         $httpOnly = false
     ) {

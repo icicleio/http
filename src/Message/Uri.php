@@ -85,9 +85,9 @@ interface Uri
      *
      * @param string $scheme
      *
-     * @return static
+     * @return self
      */
-    public function withScheme($scheme);
+    public function withScheme($scheme = null);
 
     /**
      * Returns a new instance with the given user and password. Use null for $user to remove user info.
@@ -95,28 +95,46 @@ interface Uri
      * @param string $user
      * @param string|null $password
      *
-     * @return static
+     * @return self
      */
     public function withUserInfo($user, $password = null);
+
+    /**
+     * Returns a new instance with the given host or null to remove the host.
+     *
+     * @param string|null $host
+     *
+     * @return self
+     */
+    public function withHost($host = null);
 
     /**
      * Returns a new instance with the given port or null to remove port.
      *
      * @param int|null $port
      *
-     * @return static
+     * @return self
      */
-    public function withPort($port);
+    public function withPort($port = null);
+
+    /**
+     * Returns a new instance with the given path or null to remove the path.
+     *
+     * @param string|null $path
+     *
+     * @return self
+     */
+    public function withPath($path = null);
 
     /**
      * Returns a new instance with the given query string or null to remove query string. Any ? prefix should be
      * trimmed.
      *
-     * @param string $query
+     * @param string|null $query
      *
-     * @return static
+     * @return self
      */
-    public function withQuery($query);
+    public function withQuery($query = null);
 
     /**
      * Returns a new instance with the given name and value pair in the query string (i.e., $name=$value)
@@ -124,7 +142,7 @@ interface Uri
      * @param string $name
      * @param string $value
      *
-     * @return static
+     * @return self
      */
     public function withQueryValue($name, $value);
 
@@ -133,7 +151,7 @@ interface Uri
      *
      * @param string $name
      *
-     * @return static
+     * @return self
      */
     public function withoutQueryValue($name);
 
@@ -142,9 +160,9 @@ interface Uri
      *
      * @param string|null $fragment
      *
-     * @return static
+     * @return self
      */
-    public function withFragment($fragment);
+    public function withFragment($fragment = null);
 
     /**
      * Returns the URI string representation.
