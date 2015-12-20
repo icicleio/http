@@ -15,8 +15,9 @@ class Client
     private $requester;
 
     /**
+     * @param mixed[] $options
      */
-    public function __construct($options)
+    public function __construct(array $options = [])
     {
         $this->requester = new Internal\Requester(new Http1Driver($options));
     }
