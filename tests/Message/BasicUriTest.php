@@ -367,6 +367,8 @@ class BasicUriTest extends TestCase
 
         $this->assertNotSame($uri, $new);
         $this->assertSame('key1=value1&key3', $new->getQuery());
+        $this->assertTrue($new->hasQueryValue('key1'));
+        $this->assertFalse($new->hasQueryValue('key2'));
         $this->assertSame('', $new->getQueryValue('key2'));
         $this->assertSame(['key1' => 'value1', 'key3' => ''], $new->getQueryValues());
         $this->assertSame('http://example.com/path?key1=value1&key3', (string) $new);
@@ -375,6 +377,8 @@ class BasicUriTest extends TestCase
 
         $this->assertNotSame($uri, $new);
         $this->assertSame('key2=value2&key3', $new->getQuery());
+        $this->assertFalse($new->hasQueryValue('key1'));
+        $this->assertTrue($new->hasQueryValue('key2'));
         $this->assertSame('', $new->getQueryValue('key1'));
         $this->assertSame(['key2' => 'value2', 'key3' => ''], $new->getQueryValues());
         $this->assertSame('http://example.com/path?key2=value2&key3', (string) $new);
