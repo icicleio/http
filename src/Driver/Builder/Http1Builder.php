@@ -255,7 +255,7 @@ class Http1Builder
         $stream = $message->getBody();
 
         if ($stream instanceof SeekableStream) {
-            $stream->seek(0);
+            yield $stream->seek(0);
         }
 
         if (!$stream->isReadable()) {
