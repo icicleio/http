@@ -70,7 +70,9 @@ class Http1Reader
 
         $headers = (yield $this->readHeaders($buffer, $socket, $timeout));
 
-        $socket->unshift((string) $buffer);
+        if ($buffer->getLength()) {
+            $socket->unshift((string) $buffer);
+        }
 
         yield new BasicResponse($code, $headers, $socket, $reason, $protocol);
     }
@@ -105,7 +107,9 @@ class Http1Reader
 
         $headers = (yield $this->readHeaders($buffer, $socket, $timeout));
 
-        $socket->unshift((string) $buffer);
+        if ($buffer->getLength()) {
+            $socket->unshift((string) $buffer);
+        }
 
         if ('/' === $target[0]) { // origin-form
             $uri = new BasicUri($this->filterHost($this->findHost($headers)) . $target);

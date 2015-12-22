@@ -82,14 +82,15 @@ class Http1Builder
         $timeout = 0,
         $allowPersistent = false
     ) {
-        $connection = strtolower($response->getHeaderLine('Connection'));
-
-        if ('upgrade' === $connection) {
+        if ('upgrade' === strtolower($response->getHeaderLine('Connection'))) {
             yield $response;
             return;
         }
 
-        if ($allowPersistent  && null !== $request && 'keep-alive' === $connection) {
+        if ($allowPersistent
+            && null !== $request
+            && 'keep-alive' === strtolower($request->getHeaderLine('Connection'))
+        ) {
             $response = $response
                 ->withHeader('Connection', 'keep-alive')
                 ->withHeader('Keep-Alive', sprintf('timeout=%d, max=%d', $this->keepAliveTimeout, $this->keepAliveMax));
