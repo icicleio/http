@@ -7,9 +7,9 @@ use Icicle\Http\Message\Request;
 use Icicle\Http\Message\Response;
 use Icicle\Http\Driver\Reader\Http1Reader;
 use Icicle\Loop;
-use Icicle\Stream\ReadableStream;
-use Icicle\Stream\MemoryStream;
-use Icicle\Stream\SeekableStream;
+use Icicle\Socket\NetworkSocket;
+use Icicle\Stream;
+use Icicle\Socket\Socket;
 use Icicle\Tests\Http\TestCase;
 use Symfony\Component\Yaml\Yaml;
 
@@ -18,25 +18,33 @@ class Http1ReaderTest extends TestCase
     /**
      * @return \Icicle\Stream\ReadableStream
      */
-    protected function createStream()
+    protected function createSocket()
     {
-        return $this->getMock(ReadableStream::class);
+        return $this->getMock(Socket::class);
     }
 
     /**
      * @param string $filename
      *
-     * @return \Icicle\Stream\ReadableStream
+     * @return \Icicle\Socket\Socket
      */
     protected function readMessage($filename)
     {
         $data = file_get_contents(dirname(dirname(__DIR__)) . '/data/' . $filename);
 
-        $stream = new MemoryStream();
-        $coroutine = new Coroutine($stream->end($data));
-        $coroutine->wait();
+        $socket = $this->getMock(Socket::class);
 
-        return $stream;
+        $socket->method('read')
+            ->will($this->returnCallback(function () use (&$data) {
+                return yield $data;
+            }));
+
+        $socket->method('unshift')
+            ->will($this->returnCallback(function ($string) use (&$data) {
+                $data = $string;
+            }));
+
+        return $socket;
     }
 
     /**
@@ -60,9 +68,9 @@ class Http1ReaderTest extends TestCase
     {
         $reader = new Http1Reader();
 
-        $stream = $this->readMessage($filename);
+        $socket = $this->readMessage($filename);
 
-        $promise = new Coroutine($reader->readRequest($stream));
+        $promise = new Coroutine($reader->readRequest($socket));
 
         $promise->done(function (Request $request) use (
             $method, $target, $protocolVersion, $headers, $body
@@ -74,11 +82,6 @@ class Http1ReaderTest extends TestCase
 
             if (null !== $body) { // Check body only if not null.
                 $stream = $request->getBody();
-
-                if ($stream instanceof SeekableStream) {
-                    $stream->seek(0);
-                    $this->assertSame(strlen($body), $stream->getLength());
-                }
 
                 $promise = new Coroutine($stream->read());
 
@@ -112,9 +115,9 @@ class Http1ReaderTest extends TestCase
     {
         $reader = new Http1Reader();
 
-        $stream = $this->readMessage($filename);
+        $socket = $this->readMessage($filename);
 
-        $promise = new Coroutine($reader->readRequest($stream));
+        $promise = new Coroutine($reader->readRequest($socket));
 
         $callback = $this->createCallback(1);
         $callback->method('__invoke')
@@ -146,9 +149,9 @@ class Http1ReaderTest extends TestCase
     {
         $reader = new Http1Reader();
 
-        $stream = $this->readMessage($filename);
+        $socket = $this->readMessage($filename);
 
-        $promise = new Coroutine($reader->readResponse($stream));
+        $promise = new Coroutine($reader->readResponse($socket));
 
         $promise->done(function (Response $response) use (
             $code, $reason, $protocolVersion, $headers, $body
@@ -160,11 +163,6 @@ class Http1ReaderTest extends TestCase
 
             if (null !== $body) { // Check body only if not null.
                 $stream = $response->getBody();
-
-                if ($stream instanceof SeekableStream) {
-                    $stream->seek(0);
-                    $this->assertSame(strlen($body), $stream->getLength());
-                }
 
                 $promise = new Coroutine($stream->read());
 
@@ -196,9 +194,9 @@ class Http1ReaderTest extends TestCase
     {
         $reader = new Http1Reader();
 
-        $stream = $this->readMessage($filename);
+        $socket = $this->readMessage($filename);
 
-        $promise = new Coroutine($reader->readResponse($stream));
+        $promise = new Coroutine($reader->readResponse($socket));
 
         $callback = $this->createCallback(1);
         $callback->method('__invoke')
@@ -216,10 +214,10 @@ class Http1ReaderTest extends TestCase
     {
         $reader = new Http1Reader(['max_header_size' => 1]);
 
-        $stream = $this->createStream();
+        $socket = $this->createSocket();
         $maxSize = 1;
 
-        $stream->method('read')
+        $socket->method('read')
             ->will($this->onConsecutiveCalls(
                 $this->returnCallback(function () {
                     return yield "GET / HTTP/1.1\r\n";
@@ -232,7 +230,7 @@ class Http1ReaderTest extends TestCase
                 })
             ));
 
-        $promise = new Coroutine($reader->readRequest($stream, $maxSize));
+        $promise = new Coroutine($reader->readRequest($socket, $maxSize));
 
         $callback = $this->createCallback(1);
         $callback->method('__invoke')
@@ -250,10 +248,10 @@ class Http1ReaderTest extends TestCase
     {
         $reader = new Http1Reader(['max_header_size' => 1]);
 
-        $stream = $this->createStream();
+        $socket = $this->createSocket();
         $maxSize = 1;
 
-        $stream->method('read')
+        $socket->method('read')
             ->will($this->onConsecutiveCalls(
                 $this->returnCallback(function () {
                     return yield "HTTP/1.1 200 OK\r\n";
@@ -266,7 +264,7 @@ class Http1ReaderTest extends TestCase
                 })
             ));
 
-        $promise = new Coroutine($reader->readResponse($stream, $maxSize));
+        $promise = new Coroutine($reader->readResponse($socket, $maxSize));
 
         $callback = $this->createCallback(1);
         $callback->method('__invoke')

@@ -117,7 +117,7 @@ class Listener
 
         try {
             $server = $this->factory->create($address, $port, $options);
-        } catch (\Exception $exception) {
+        } catch (Exception $exception) {
             $this->close();
             throw $exception;
         }
@@ -206,14 +206,10 @@ class Listener
                 );
 
                 $coroutine = new Coroutine($this->driver->writeResponse($socket, $response, $request, $timeout));
-            } while ($allowPersistent
-                && strtolower($response->getHeaderLine('Connection')) === 'keep-alive'
-                && $socket->isReadable()
-                && $socket->isWritable()
-            );
+            } while (strtolower($response->getHeaderLine('Connection')) === 'keep-alive');
 
             yield $coroutine; // Wait until response has completed writing.
-        } catch (\Exception $exception) {
+        } catch (Exception $exception) {
             yield from $this->log->write(sprintf(
                 "Error when handling request from %s:%d: %s\n",
                 $socket->getRemoteAddress(),
@@ -246,7 +242,7 @@ class Listener
                     $response
                 );
             }
-        } catch (\Exception $exception) {
+        } catch (Exception $exception) {
             yield from $this->log->write(sprintf(
                 "Uncaught exception when creating response to a request from %s:%d in file %s on line %d: %s\n",
                 $socket->getRemoteAddress(),
@@ -282,7 +278,7 @@ class Listener
                     $response
                 );
             }
-        } catch (\Exception $exception) {
+        } catch (Exception $exception) {
             yield from $this->log->write(sprintf(
                 "Uncaught exception when creating response to an error from %s:%d in file %s on line %d: %s\n",
                 $socket->getRemoteAddress(),

@@ -81,22 +81,14 @@ class Http1Builder
         Request $request = null,
         float $timeout = 0,
         bool $allowPersistent = false
-    ): \Generator {
-        if (null === $request) { // Fallback to 1.0 for responses due to message errors.
-            $response = $response->withProtocolVersion('1.0');
-        } elseif ($request->getProtocolVersion() !== $response->getProtocolVersion()) {
-            $response = $response->withProtocolVersion($request->getProtocolVersion());
-        }
+    ) {
+        $connection = strtolower($response->getHeaderLine('Connection'));
 
-        if (strtolower($response->getHeaderLine('Connection')) === 'upgrade') {
+        if ('upgrade' === $connection) {
             return $response;
         }
 
-        if ($response->getProtocolVersion() === '1.1'
-            && !$response->hasHeader('Connection')
-            && $allowPersistent
-            && strtolower($request->getHeaderLine('Connection')) === 'keep-alive'
-        ) {
+        if ($allowPersistent  && null !== $request && 'keep-alive' === $connection) {
             $response = $response
                 ->withHeader('Connection', 'keep-alive')
                 ->withHeader('Keep-Alive', sprintf('timeout=%d, max=%d', $this->keepAliveTimeout, $this->keepAliveMax));
@@ -303,7 +295,7 @@ class Http1Builder
 
             default:
                 throw new MessageException(
-                    Response::LENGTH_REQUIRED,
+                    Response::BAD_REQUEST,
                     sprintf('Unsupported content encoding received: %s', $contentEncoding)
                 );
         }

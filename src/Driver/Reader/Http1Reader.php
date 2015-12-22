@@ -7,8 +7,9 @@ use Icicle\Http\Message\BasicRequest;
 use Icicle\Http\Message\BasicResponse;
 use Icicle\Http\Message\BasicUri;
 use Icicle\Http\Message\Response;
+use Icicle\Socket\Socket;
 use Icicle\Stream;
-use Icicle\Stream\ReadableStream;
+use Icicle\Stream\Structures\Buffer;
 
 class Http1Reader
 {
@@ -42,11 +43,24 @@ class Http1Reader
     /**
      * {@inheritdoc}
      */
-    public function readResponse(ReadableStream $stream, float $timeout = 0): \Generator
+    public function readResponse(Socket $socket, float $timeout = 0): \Generator
     {
-        $data = yield from Stream\readUntil($stream, "\r\n", $this->maxStartLineLength, $timeout);
+        $buffer = new Buffer();
 
-        if (!preg_match("/^HTTP\/(\d+(?:\.\d+)?) (\d{3})(?: (.+))?\r\n$/i", $data, $matches)) {
+        do {
+            $buffer->push(yield from $socket->read(0, null, $timeout));
+        } while (false === ($position = $buffer->search("\r\n")) && $buffer->getLength() >= $this->maxStartLineLength);
+
+        if (false === $position) {
+            throw new MessageException(
+                Response::REQUEST_HEADER_TOO_LARGE,
+                sprintf('Message start line exceeded maximum size of %d bytes.', $this->maxStartLineLength)
+            );
+        }
+
+        $line = $buffer->shift($position + 2);
+
+        if (!preg_match("/^HTTP\/(\d+(?:\.\d+)?) (\d{3})(?: (.+))?\r\n$/i", $line, $matches)) {
             throw new ParseException('Could not parse start line.');
         }
 
@@ -54,19 +68,34 @@ class Http1Reader
         $code = (int) $matches[2];
         $reason = isset($matches[3]) ? $matches[3] : '';
 
-        $headers = yield from $this->readHeaders($stream, $timeout);
+        $headers = yield from $this->readHeaders($buffer, $socket, $timeout);
 
-        return new BasicResponse($code, $headers, $stream, $reason, $protocol);
+        $socket->unshift((string) $buffer);
+
+        return new BasicResponse($code, $headers, $socket, $reason, $protocol);
     }
 
     /**
      * {@inheritdoc}
      */
-    public function readRequest(ReadableStream $stream, float $timeout = 0): \Generator
+    public function readRequest(Socket $socket, float $timeout = 0): \Generator
     {
-        $data = yield from Stream\readUntil($stream, "\r\n", $this->maxStartLineLength, $timeout);
+        $buffer = new Buffer();
 
-        if (!preg_match("/^([A-Z]+) (\S+) HTTP\/(\d+(?:\.\d+)?)\r\n$/i", $data, $matches)) {
+        do {
+            $buffer->push(yield from $socket->read(0, null, $timeout));
+        } while (false === ($position = $buffer->search("\r\n")) && $buffer->getLength() >= $this->maxStartLineLength);
+
+        if (false === $position) {
+            throw new MessageException(
+                Response::REQUEST_HEADER_TOO_LARGE,
+                sprintf('Message start line exceeded maximum size of %d bytes.', $this->maxStartLineLength)
+            );
+        }
+
+        $line = $buffer->shift($position + 2);
+
+        if (!preg_match("/^([A-Z]+) (\S+) HTTP\/(\d+(?:\.\d+)?)\r\n$/i", $line, $matches)) {
             throw new ParseException('Could not parse start line.');
         }
 
@@ -74,7 +103,9 @@ class Http1Reader
         $target = $matches[2];
         $protocol = $matches[3];
 
-        $headers = yield from $this->readHeaders($stream, $timeout);
+        $headers = yield from $this->readHeaders($buffer, $socket, $timeout);
+
+        $socket->unshift((string) $buffer);
 
         if ('/' === $target[0]) { // origin-form
             $uri = new BasicUri($this->filterHost($this->findHost($headers)) . $target);
@@ -87,11 +118,12 @@ class Http1Reader
             $uri = new BasicUri($this->filterHost($target));
         }
 
-        return new BasicRequest($method, $uri, $headers, $stream, $target, $protocol);
+        return new BasicRequest($method, $uri, $headers, $socket, $target, $protocol);
     }
 
     /**
-     * @param ReadableStream $stream
+     * @param \Icicle\Stream\Structures\Buffer $buffer
+     * @param \Icicle\Socket\Socket $socket
      * @param float|int $timeout
      *
      * @return \Generator
@@ -99,27 +131,33 @@ class Http1Reader
      * @throws \Icicle\Http\Exception\MessageException
      * @throws \Icicle\Http\Exception\ParseException
      */
-    protected function readHeaders(ReadableStream $stream, float $timeout = 0): \Generator
+    protected function readHeaders(Buffer $buffer, Socket $socket, float $timeout = 0): \Generator
     {
         $size = 0;
         $headers = [];
 
         do {
-            $data = yield from Stream\readUntil($stream, "\r\n", $this->maxSize - $size, $timeout);
+            while (false === ($position = $buffer->search("\r\n"))) {
+                if ($buffer->getLength() >= $this->maxSize) {
+                    throw new MessageException(
+                        Response::REQUEST_HEADER_TOO_LARGE,
+                        sprintf('Message header exceeded maximum size of %d bytes.', $this->maxSize)
+                    );
+                }
 
-            if (substr($data, -2) !== "\r\n") {
-                break;
+                $buffer->push(yield from $socket->read(0, null, $timeout));
             }
 
-            $length = strlen($data);
+            $length = $position + 2;
+            $line = $buffer->shift($length);
 
-            if ($length === 2) {
+            if (2 === $length) {
                 return $headers;
             }
 
             $size += $length;
 
-            $parts = explode(':', $data, 2);
+            $parts = explode(':', $line, 2);
 
             if (2 !== count($parts)) {
                 throw new ParseException('Found header without colon.');
