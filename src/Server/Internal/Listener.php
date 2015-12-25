@@ -206,7 +206,7 @@ class Listener
                 ));
 
                 $coroutine = new Coroutine($this->driver->writeResponse($socket, $response, $request, $timeout));
-            } while (strtolower($response->getHeaderLine('Connection')) === 'keep-alive');
+            } while (strtolower($response->getHeader('Connection')) === 'keep-alive');
 
             yield $coroutine; // Wait until response has completed writing.
         } catch (Exception $exception) {

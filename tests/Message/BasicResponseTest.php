@@ -155,7 +155,7 @@ class BasicResponseTest extends TestCase
         $this->assertTrue($new->hasHeader('Set-Cookie'));
         $this->assertSame([
             'name=value; Expires=Thu, 1 Oct 2015 0:00:00 GMT; Path=/; Domain=example.com; Secure; HttpOnly'
-        ], $new->getHeader('Set-Cookie'));
+        ], $new->getHeaderAsArray('Set-Cookie'));
 
         return $new;
     }
@@ -192,7 +192,7 @@ class BasicResponseTest extends TestCase
         $this->assertEquals([
             'name=value; Expires=Thu, 1 Oct 2015 0:00:00 GMT; Path=/; Domain=example.com; Secure; HttpOnly',
             'key=cookie-value; Expires=Thu, 1 Oct 2015 0:00:00 GMT; Path=/test; Domain=example.net; Secure',
-        ], $new->getHeader('Set-Cookie'));
+        ], $new->getHeaderAsArray('Set-Cookie'));
 
         return $new;
     }
@@ -218,7 +218,7 @@ class BasicResponseTest extends TestCase
         $this->assertTrue($new->hasHeader('Set-Cookie'));
         $this->assertEquals([
             'key=cookie-value; Expires=Thu, 1 Oct 2015 0:00:00 GMT; Path=/test; Domain=example.net; Secure',
-        ], $new->getHeader('Set-Cookie'));
+        ], $new->getHeaderAsArray('Set-Cookie'));
 
         return $new;
     }

@@ -18,17 +18,17 @@ interface Request extends Message
      *
      * @return string[]
      */
-    public function getHeader($name);
+    public function getHeaderAsArray($name);
 
     /**
-     * Same as Message::getHeaderLine(), except if the Host header is request and previously unset, the value
+     * Same as Message::getHeader(), except if the Host header is request and previously unset, the value
      * will be determined from the URI.
      *
      * @param string $name
      *
      * @return string
      */
-    public function getHeaderLine($name);
+    public function getHeader($name);
 
     /**
      * Returns the target of the request. Unless explicitly set, this will usually be the path and query portion

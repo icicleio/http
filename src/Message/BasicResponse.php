@@ -282,7 +282,7 @@ class BasicResponse extends AbstractMessage implements Response
     {
         $this->cookies = [];
 
-        $headers = $this->getHeader('Set-Cookie');
+        $headers = $this->getHeaderAsArray('Set-Cookie');
 
         foreach ($headers as $line) {
             $cookie = SetCookie::fromHeader($line);

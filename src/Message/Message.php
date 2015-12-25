@@ -37,18 +37,18 @@ interface Message
      *
      * @return string[]
      */
-    public function getHeader($name);
+    public function getHeaderAsArray($name);
 
     /**
-     * Returns the values for the given header as a comma separated list. Returns an empty string if the the header
-     * does not exit.
-     * Note that not all headers can be accurately represented as a comma-separated list.
+     * Returns the value of the given header. If multiple headers were present for the named header, only the first
+     * header value will be returned. Use getHeaderAsArray() to return an array of all values for the particular header.
+     * Returns an empty string if the header does not exist.
      *
      * @param string $name
      *
      * @return string
      */
-    public function getHeaderLine($name);
+    public function getHeader($name);
 
     /**
      * Returns the stream for the message body.

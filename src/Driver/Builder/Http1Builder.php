@@ -82,14 +82,14 @@ class Http1Builder
         $timeout = 0,
         $allowPersistent = false
     ) {
-        if ('upgrade' === strtolower($response->getHeaderLine('Connection'))) {
+        if ('upgrade' === strtolower($response->getHeader('Connection'))) {
             yield $response;
             return;
         }
 
         if ($allowPersistent
             && null !== $request
-            && 'keep-alive' === strtolower($request->getHeaderLine('Connection'))
+            && 'keep-alive' === strtolower($request->getHeader('Connection'))
         ) {
             $response = $response
                 ->withHeader('Connection', 'keep-alive')
@@ -104,10 +104,10 @@ class Http1Builder
             && null !== $request
             && $request->hasHeader('Accept-Encoding')
             && $response->hasHeader('Content-Type')
-            && preg_match('/gzip|deflate/i', $request->getHeaderLine('Accept-Encoding'), $matches)
+            && preg_match('/gzip|deflate/i', $request->getHeader('Accept-Encoding'), $matches)
         ) {
             $encoding = strtolower($matches[0]);
-            $contentType = $response->getHeaderLine('Content-Type');
+            $contentType = $response->getHeader('Content-Type');
 
             foreach ($this->compressTypes as $pattern) {
                 if (preg_match($pattern, $contentType)) {
@@ -190,7 +190,7 @@ class Http1Builder
             return;
         }
 
-        $contentEncoding = strtolower($message->getHeaderLine('Content-Encoding'));
+        $contentEncoding = strtolower($message->getHeader('Content-Encoding'));
 
         if ('' !== $contentEncoding) {
             switch ($contentEncoding) {
@@ -256,7 +256,7 @@ class Http1Builder
             return;
         }
 
-        if (strtolower($message->getHeaderLine('Transfer-Encoding') === 'chunked')) {
+        if (strtolower($message->getHeader('Transfer-Encoding') === 'chunked')) {
             $stream = new ChunkedDecoder($this->hwm);
             $body = $message->getBody();
             $coroutine = new Coroutine(Stream\pipe($body, $stream, true, 0, null, $timeout));
@@ -265,7 +265,7 @@ class Http1Builder
             });
             $message = $message->withBody($stream);
         } elseif ($message->hasHeader('Content-Length')) {
-            $length = (int) $message->getHeaderLine('Content-Length');
+            $length = (int) $message->getHeader('Content-Length');
             if (0 >= $length) {
                 throw new MessageException(Response::BAD_REQUEST, 'Content-Length header invalid.');
             }
@@ -278,12 +278,12 @@ class Http1Builder
             $message = $message->withBody($stream);
         } elseif (
             !$message instanceof Response // Response may have no length on incoming stream.
-            && strtolower($message->getHeaderLine('Connection')) !== 'close'
+            && strtolower($message->getHeader('Connection')) !== 'close'
         ) {
             throw new MessageException(Response::LENGTH_REQUIRED, 'Content-Length header required.');
         }
 
-        $contentEncoding = strtolower($message->getHeaderLine('Content-Encoding'));
+        $contentEncoding = strtolower($message->getHeader('Content-Encoding'));
 
         switch ($contentEncoding) {
             case 'deflate':
