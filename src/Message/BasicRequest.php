@@ -316,7 +316,7 @@ class BasicRequest extends AbstractMessage implements Request
     {
         $this->cookies = [];
 
-        $headers = $this->getHeader('Cookie');
+        $headers = $this->getHeaderAsArray('Cookie');
 
         foreach ($headers as $line) {
             foreach (explode(';', $line) as $pair) {

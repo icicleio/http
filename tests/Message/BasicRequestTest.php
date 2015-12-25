@@ -55,7 +55,7 @@ class BasicRequestTest extends TestCase
     {
         $request = new BasicRequest('GET', new BasicUri('http://example.com:8080/path'));
         $this->assertTrue($request->hasHeader('Host'));
-        $this->assertSame('example.com:8080', $request->getHeaderLine('Host'));
+        $this->assertSame('example.com:8080', $request->getHeader('Host'));
     }
 
     /**
@@ -70,7 +70,7 @@ class BasicRequestTest extends TestCase
         $request = new BasicRequest('GET', new BasicUri('http://example.com/path'), $headers);
 
         $this->assertTrue($request->hasHeader('Host'));
-        $this->assertSame('example.net:8080', $request->getHeaderLine('Host'));
+        $this->assertSame('example.net:8080', $request->getHeader('Host'));
 
         return $request;
     }
@@ -85,7 +85,7 @@ class BasicRequestTest extends TestCase
     {
         $new = $request->withoutHeader('Host');
         $this->assertTrue($new->hasHeader('Host'));
-        $this->assertSame('example.com:80', $new->getHeaderLine('Host'));
+        $this->assertSame('example.com:80', $new->getHeader('Host'));
 
         return $new;
     }
@@ -98,7 +98,7 @@ class BasicRequestTest extends TestCase
     {
         $new = $request->withHeader('Host', 'example.org:443');
         $this->assertTrue($new->hasHeader('Host'));
-        $this->assertSame('example.org:443', $new->getHeaderLine('Host'));
+        $this->assertSame('example.org:443', $new->getHeader('Host'));
     }
 
     /**
@@ -109,10 +109,10 @@ class BasicRequestTest extends TestCase
     {
         $new = $request->withAddedHeader('Host', 'example.org:443');
         $this->assertTrue($new->hasHeader('Host'));
-        $this->assertSame('example.org:443', $new->getHeaderLine('Host'));
+        $this->assertSame('example.org:443', $new->getHeader('Host'));
 
         $new = $new->withAddedHeader('Host', 'example.org:80');
-        $this->assertSame('example.org:443,example.org:80', $new->getHeaderLine('Host'));
+        $this->assertSame('example.org:443', $new->getHeader('Host'));
     }
 
     public function testWithUri()
@@ -149,7 +149,7 @@ class BasicRequestTest extends TestCase
         $new = $request->withUri(new BasicUri('http://example.net'));
 
         $this->assertTrue($new->hasHeader('Host'));
-        $this->assertSame('example.net:80', $new->getHeaderLine('Host'));
+        $this->assertSame('example.net:80', $new->getHeader('Host'));
     }
 
     /**
@@ -259,7 +259,7 @@ class BasicRequestTest extends TestCase
         $this->assertSame($cookie, $new->getCookies()['name']);
 
         $this->assertTrue($new->hasHeader('Cookie'));
-        $this->assertSame(['name=value'], $new->getHeader('Cookie'));
+        $this->assertSame(['name=value'], $new->getHeaderAsArray('Cookie'));
 
         return $new;
     }
@@ -282,7 +282,7 @@ class BasicRequestTest extends TestCase
         $this->assertSame('cookie-value', $cookie->getValue());
 
         $this->assertTrue($new->hasHeader('Cookie'));
-        $this->assertEquals(['name=value', 'key=cookie-value'], explode('; ', $new->getHeader('Cookie')[0]));
+        $this->assertEquals(['name=value', 'key=cookie-value'], explode('; ', $new->getHeaderAsArray('Cookie')[0]));
 
         return $new;
     }
@@ -304,7 +304,7 @@ class BasicRequestTest extends TestCase
         $this->assertSame($cookie, $new->getCookies()['key']);
 
         $this->assertTrue($new->hasHeader('Cookie'));
-        $this->assertEquals(['key=cookie-value'], $new->getHeader('Cookie'));
+        $this->assertEquals(['key=cookie-value'], $new->getHeaderAsArray('Cookie'));
 
         return $new;
     }

@@ -7,7 +7,6 @@ use Icicle\Http\Message\Request;
 use Icicle\Http\Message\Response;
 use Icicle\Http\Driver\Reader\Http1Reader;
 use Icicle\Loop;
-use Icicle\Socket\NetworkSocket;
 use Icicle\Stream;
 use Icicle\Socket\Socket;
 use Icicle\Tests\Http\TestCase;

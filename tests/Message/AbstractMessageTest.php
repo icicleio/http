@@ -5,7 +5,7 @@ use Icicle\Http\Message\AbstractMessage;
 use Icicle\Stream\ReadableStream;
 use Icicle\Tests\Http\TestCase;
 
-class MessageTest extends TestCase
+class AbstractMessageTest extends TestCase
 {
     /**
      * @return \Icicle\Stream\ReadableStream
@@ -150,10 +150,10 @@ class MessageTest extends TestCase
      */
     public function testGetHeaderCaseInsensitive($message)
     {
-        $this->assertSame(['example.com:80'], $message->getHeader('host'));
-        $this->assertSame(['example.com:80'], $message->getHeader('host'));
-        $this->assertSame(['close'], $message->getHeader('connection'));
-        $this->assertSame(['close'], $message->getHeader('CONNECTION'));
+        $this->assertSame(['example.com:80'], $message->getHeaderAsArray('host'));
+        $this->assertSame(['example.com:80'], $message->getHeaderAsArray('host'));
+        $this->assertSame(['close'], $message->getHeaderAsArray('connection'));
+        $this->assertSame(['close'], $message->getHeaderAsArray('CONNECTION'));
     }
 
     /**
@@ -162,10 +162,10 @@ class MessageTest extends TestCase
      */
     public function testGetHeaderLineCaseInsensitive($message)
     {
-        $this->assertSame('example.com:80', $message->getHeaderLine('host'));
-        $this->assertSame('example.com:80', $message->getHeaderLine('host'));
-        $this->assertSame('close', $message->getHeaderLine('connection'));
-        $this->assertSame('close', $message->getHeaderLine('CONNECTION'));
+        $this->assertSame('example.com:80', $message->getHeader('host'));
+        $this->assertSame('example.com:80', $message->getHeader('host'));
+        $this->assertSame('close', $message->getHeader('connection'));
+        $this->assertSame('close', $message->getHeader('CONNECTION'));
     }
 
     public function testNonExistentHeader()
@@ -173,8 +173,8 @@ class MessageTest extends TestCase
         $message = $this->createMessage();
 
         $this->assertFalse($message->hasHeader('Connection'));
-        $this->assertSame([], $message->getHeader('Connection'));
-        $this->assertSame('', $message->getHeaderLine('Connection'));
+        $this->assertSame([], $message->getHeaderAsArray('Connection'));
+        $this->assertSame('', $message->getHeader('Connection'));
     }
 
     public function testHeaderCreationWithArrayOfArrayOfStrings()
@@ -224,12 +224,9 @@ class MessageTest extends TestCase
             'Accept' => ['text/html', 'text/plain'],
         ];
 
-        $line = 'text/html,text/plain';
-
         $message = $this->createMessage(null, $headers);
 
         $this->assertSame($expected, $message->getHeaders());
-        $this->assertSame($line, $message->getHeaderLine('Accept'));
     }
 
     public function testWithHeader()
@@ -238,8 +235,8 @@ class MessageTest extends TestCase
         $new = $message->withHeader('Accept', 'text/html');
 
         $this->assertNotSame($message, $new);
-        $this->assertSame('text/html', $new->getHeaderLine('Accept'));
-        $this->assertSame('', $message->getHeaderLine('Accept'));
+        $this->assertSame('text/html', $new->getHeader('Accept'));
+        $this->assertSame('', $message->getHeader('Accept'));
 
         return $new;
     }
@@ -253,11 +250,11 @@ class MessageTest extends TestCase
 
         $new = $message->withHeader('Content-Length', 100);
 
-        $this->assertSame('100', $new->getHeaderLine('Content-Length'));
+        $this->assertSame('100', $new->getHeader('Content-Length'));
 
         $new = $message->withHeader('Null-Value-Header', null);
 
-        $this->assertSame('', $new->getHeaderLine('Null-Value-Header'));
+        $this->assertSame('', $new->getHeader('Null-Value-Header'));
 
         $new = $message->withHeader('Invalid-Type', new \stdClass());
     }
@@ -305,8 +302,8 @@ class MessageTest extends TestCase
     {
         $new = $message->withHeader('Content-Length', 123);
 
-        $this->assertSame(['123'], $new->getHeader('Content-Length'));
-        $this->assertSame('123', $new->getHeaderLine('Content-Length'));
+        $this->assertSame(['123'], $new->getHeaderAsArray('Content-Length'));
+        $this->assertSame('123', $new->getHeader('Content-Length'));
     }
 
     /**
@@ -321,10 +318,7 @@ class MessageTest extends TestCase
             'Accept' => ['text/html', 'text/plain'],
         ];
 
-        $line = 'text/html,text/plain';
-
         $this->assertSame($expected, $new->getHeaders());
-        $this->assertSame($line, $new->getHeaderLine('Accept'));
     }
 
     /**
@@ -336,16 +330,13 @@ class MessageTest extends TestCase
     {
         $new = $message->withAddedHeader('Content-Length', 100);
 
-        $this->assertSame('100', $new->getHeaderLine('Content-Length'));
+        $this->assertSame('100', $new->getHeader('Content-Length'));
 
         $new = $message->withAddedHeader('Accept', null);
 
         $expected = ['text/html', ''];
 
-        $line = 'text/html,';
-
-        $this->assertSame($expected, $new->getHeader('Accept'));
-        $this->assertSame($line, $new->getHeaderLine('Accept'));
+        $this->assertSame($expected, $new->getHeaderAsArray('Accept'));
 
         $new = $message->withAddedHeader('Invalid-Type', new \stdClass());
     }
@@ -363,10 +354,7 @@ class MessageTest extends TestCase
             'Accept' => ['text/html', 'text/plain', '*/*'],
         ];
 
-        $line = 'text/html,text/plain,*/*';
-
         $this->assertSame($expected, $new->getHeaders());
-        $this->assertSame($line, $new->getHeaderLine('Accept'));
     }
 
     /**
@@ -413,8 +401,8 @@ class MessageTest extends TestCase
     {
         $new = $message->withAddedHeader('Content-Length', 321);
 
-        $this->assertSame(['321'], $new->getHeader('Content-Length'));
-        $this->assertSame('321', $new->getHeaderLine('Content-Length'));
+        $this->assertSame(['321'], $new->getHeaderAsArray('Content-Length'));
+        $this->assertSame('321', $new->getHeader('Content-Length'));
     }
 
     /**

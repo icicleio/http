@@ -66,17 +66,17 @@ abstract class AbstractMessage implements Message
      */
     public function hasHeader(string $name): bool
     {
-        return array_key_exists(strtolower($name), $this->headerNameMap);
+        return isset($this->headerNameMap[strtolower($name)]);
     }
 
     /**
      * {@inheritdoc}
      */
-    public function getHeader(string $name): array
+    public function getHeaderAsArray(string $name): array
     {
         $name = strtolower($name);
 
-        if (!array_key_exists($name, $this->headerNameMap)) {
+        if (!isset($this->headerNameMap[$name])) {
             return [];
         }
 
@@ -88,11 +88,17 @@ abstract class AbstractMessage implements Message
     /**
      * {@inheritdoc}
      */
-    public function getHeaderLine(string $name): string
+    public function getHeader(string $name): string
     {
-        $value = $this->getHeader($name);
+        $name = strtolower($name);
 
-        return empty($value) ? '' : implode(',', $value);
+        if (!isset($this->headerNameMap[$name])) {
+            return '';
+        }
+
+        $name = $this->headerNameMap[$name];
+
+        return isset($this->headers[$name][0]) ? $this->headers[$name][0] : '';
     }
 
     /**
@@ -221,7 +227,7 @@ abstract class AbstractMessage implements Message
         $normalized = strtolower($name);
         $value = $this->filterHeader($value);
 
-        if (array_key_exists($normalized, $this->headerNameMap)) {
+        if (isset($this->headerNameMap[$normalized])) {
             $name = $this->headerNameMap[$normalized]; // Use original case to add header value.
             $this->headers[$name] = array_merge($this->headers[$name], $value);
         } else {
@@ -239,7 +245,7 @@ abstract class AbstractMessage implements Message
     {
         $normalized = strtolower($name);
 
-        if (array_key_exists($normalized, $this->headerNameMap)) {
+        if (isset($this->headerNameMap[$normalized])) {
             $name = $this->headerNameMap[$normalized];
             unset($this->headers[$name], $this->headerNameMap[$normalized]);
         }
