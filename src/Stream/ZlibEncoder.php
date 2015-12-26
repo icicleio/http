@@ -3,6 +3,7 @@ namespace Icicle\Http\Stream;
 
 use Icicle\Exception\InvalidArgumentError;
 use Icicle\Exception\UnsupportedError;
+use Icicle\Stream\Exception\FailureException;
 use Icicle\Stream\MemoryStream;
 
 class ZlibEncoder extends MemoryStream
@@ -13,19 +14,9 @@ class ZlibEncoder extends MemoryStream
     const DEFAULT_LEVEL = -1;
 
     /**
-     * @var string
+     * @var resource
      */
-    private $buffer = '';
-
-    /**
-     * @var int
-     */
-    private $type;
-
-    /**
-     * @var int
-     */
-    private $level;
+    private $resource;
 
     /**
      * @param int $type Compression type. Use GZIP or DEFLATE constants defined in this class.
@@ -42,19 +33,25 @@ class ZlibEncoder extends MemoryStream
             throw new UnsupportedError('zlib extension required to decode compressed streams.');
         } // @codeCoverageIgnoreEnd
 
+        if (-1 > $level || 9 < $level) {
+            throw new InvalidArgumentError('Level must be between -1 (default) and 9.');
+        }
+
         switch ($type) {
             case self::GZIP:
             case self::DEFLATE:
-                $this->type = $type;
+                $this->resource = deflate_init($type, ['level' => $level]);
                 break;
 
             default:
                 throw new InvalidArgumentError('Invalid compression type.');
         }
 
-        parent::__construct();
+        if (null === $this->resource) {
+            throw new FailureException('Could not initialize deflate handle.');
+        }
 
-        $this->level = $level;
+        parent::__construct($hwm);
     }
 
     /**
@@ -62,12 +59,14 @@ class ZlibEncoder extends MemoryStream
      */
     protected function send(string $data, float $timeout = 0, bool $end = false): \Generator
     {
-        $this->buffer .= $data;
+        if (false === ($data = deflate_add($this->resource, $data, $end ? ZLIB_FINISH : 0))) {
+            throw new FailureException('Failed adding date to deflate stream.');
+        }
 
-        if (!$end) {
+        if ('' === $data) {
             return 0;
         }
 
-        return yield from parent::send(zlib_encode($this->buffer, $this->type, $this->level), $timeout, true);
+        return yield from parent::send($data, $timeout, $end);
     }
 }

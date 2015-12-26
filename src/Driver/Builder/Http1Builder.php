@@ -45,11 +45,6 @@ class Http1Builder
     private $hwm = self::DEFAULT_STREAM_HWM;
 
     /**
-     * @var int Max body length for compressed streams.
-     */
-    private $maxBodyLength = self::DEFAULT_MAX_COMP_LENGTH;
-
-    /**
      * @var int
      */
     private $keepAliveTimeout = self::DEFAULT_KEEP_ALIVE_TIMEOUT;
@@ -73,8 +68,6 @@ class Http1Builder
             : ZlibEncoder::DEFAULT_LEVEL;
 
         $this->hwm = isset($options['hwm']) ? (int) $options['hwm'] : self::DEFAULT_STREAM_HWM;
-
-        $this->maxBodyLength = isset($options['max_length']) ? $options['max_length'] : self::DEFAULT_MAX_COMP_LENGTH;
 
         $this->compressionEnabled = !isset($options['disable_compression']) ? extension_loaded('zlib') : false;
 
@@ -311,7 +304,7 @@ class Http1Builder
         switch ($contentEncoding) {
             case 'deflate':
             case 'gzip':
-                $stream = new ZlibDecoder($this->hwm, $this->maxBodyLength);
+                $stream = new ZlibDecoder($this->hwm);
 
                 $coroutine = new Coroutine(Stream\pipe($message->getBody(), $stream, true, 0, null, $timeout));
                 $coroutine->done(null, function () use ($socket) {

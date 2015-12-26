@@ -1,31 +1,21 @@
 <?php
 namespace Icicle\Http\Stream;
 
-use Icicle\Exception\InvalidArgumentError;
 use Icicle\Exception\UnsupportedError;
-use Icicle\Http\Exception\MessageException;
-use Icicle\Http\Message\Response;
+use Icicle\Stream\Exception\FailureException;
 use Icicle\Stream\MemoryStream;
 
 class ZlibDecoder extends MemoryStream
 {
     /**
-     * @var string
+     * @var resource
      */
-    private $buffer = '';
+    private $resource;
 
     /**
-     * @var int
-     */
-    private $maxLength;
-
-    /**
-     * @param int|null $maxLength Maximum length of compressed data; 0 for no max length.
-     *
-     * @throws \Icicle\Exception\InvalidArgumentError If the max length is negative.
      * @throws \Icicle\Exception\UnsupportedError If the zlib extension is not loaded.
      */
-    public function __construct(int $hwm = 0, int $maxLength = 0)
+    public function __construct(int $hwm = 0)
     {
         // @codeCoverageIgnoreStart
         if (!extension_loaded('zlib')) {
@@ -34,11 +24,11 @@ class ZlibDecoder extends MemoryStream
 
         parent::__construct($hwm);
 
-        $this->maxLength = $maxLength;
-        if (0 > $this->maxLength) {
-            throw new InvalidArgumentError('The max length must be a non-negative integer.');
-        }
+        $this->resource = inflate_init();
 
+        if (false === $this->resource) {
+            throw new FailureException('Could not initialize inflate handle.');
+        }
     }
 
     /**
@@ -49,26 +39,14 @@ class ZlibDecoder extends MemoryStream
      */
     protected function send(string $data, float $timeout = 0, bool $end = false): \Generator
     {
-        $this->buffer .= $data;
-
-        if (0 !== $this->maxLength && strlen($this->buffer) > $this->maxLength) {
-            yield from parent::send('', $timeout, true);
-            throw new MessageException(Response::REQUEST_ENTITY_TOO_LARGE, 'Message body too long.');
+        if (false === ($data = inflate_add($this->resource, $data, ZLIB_SYNC_FLUSH))) {
+            throw new FailureException('Failed adding date to inflate stream.');
         }
 
-        if (!$end) {
+        if ('' === $data) {
             return 0;
         }
 
-        // Error reporting suppressed since zlib_decode() emits a warning if decompressing fails. Checked below.
-        $data = @zlib_decode($this->buffer);
-        $this->buffer = '';
-
-        if (false === $data) {
-            yield from parent::send('', $timeout, true);
-            throw new MessageException(Response::BAD_REQUEST, 'Could not decode compressed stream.');
-        }
-
-        return yield from parent::send($data, $timeout, true);
+        return yield from parent::send($data, $timeout, $end);
     }
 }
