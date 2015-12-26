@@ -30,11 +30,12 @@ class ZlibEncoder extends MemoryStream
     /**
      * @param int $type Compression type. Use GZIP or DEFLATE constants defined in this class.
      * @param int $level Compression level.
+     * @param int $hwm
      *
      * @throws \Icicle\Exception\UnsupportedError If the zlib extension is not loaded.
      * @throws \Icicle\Exception\InvalidArgumentError If the $type is not a valid compression type.
      */
-    public function __construct($type, $level = self::DEFAULT_LEVEL)
+    public function __construct($type, $level = self::DEFAULT_LEVEL, $hwm = 0)
     {
         // @codeCoverageIgnoreStart
         if (!extension_loaded('zlib')) {
