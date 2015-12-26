@@ -25,14 +25,14 @@ class ZlibDecoder extends MemoryStream
      * @throws \Icicle\Exception\InvalidArgumentError If the max length is negative.
      * @throws \Icicle\Exception\UnsupportedError If the zlib extension is not loaded.
      */
-    public function __construct(int $maxLength = 0)
+    public function __construct(int $hwm = 0, int $maxLength = 0)
     {
         // @codeCoverageIgnoreStart
         if (!extension_loaded('zlib')) {
             throw new UnsupportedError('zlib extension required to decode compressed streams.');
         } // @codeCoverageIgnoreEnd
 
-        parent::__construct();
+        parent::__construct($hwm);
 
         $this->maxLength = $maxLength;
         if (0 > $this->maxLength) {

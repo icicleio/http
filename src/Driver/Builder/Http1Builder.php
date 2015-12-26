@@ -18,6 +18,7 @@ use Icicle\Stream\SeekableStream;
 class Http1Builder
 {
     const DEFAULT_STREAM_HWM = 8192;
+    const DEFAULT_MAX_COMP_LENGTH = 0x10000;
     const DEFAULT_KEEP_ALIVE_TIMEOUT = 15;
     const DEFAULT_KEEP_ALIVE_MAX = 100;
 
@@ -36,7 +37,17 @@ class Http1Builder
     /**
      * @var int
      */
+    private $compressionLevel = ZlibEncoder::DEFAULT_LEVEL;
+
+    /**
+     * @var int
+     */
     private $hwm = self::DEFAULT_STREAM_HWM;
+
+    /**
+     * @var int Max body length for compressed streams.
+     */
+    private $maxBodyLength = self::DEFAULT_MAX_COMP_LENGTH;
 
     /**
      * @var int
@@ -57,9 +68,13 @@ class Http1Builder
             $this->compressTypes = $options['compress_types'];
         }
 
-        if (isset($options['hwm'])) {
-            $this->hwm = (int) $options['hwm'];
-        }
+        $this->compressionLevel = isset($options['compression_level'])
+            ? $options['compression_level']
+            : ZlibEncoder::DEFAULT_LEVEL;
+
+        $this->hwm = isset($options['hwm']) ? (int) $options['hwm'] : self::DEFAULT_STREAM_HWM;
+
+        $this->maxBodyLength = isset($options['max_length']) ? $options['max_length'] : self::DEFAULT_MAX_COMP_LENGTH;
 
         $this->compressionEnabled = !isset($options['disable_compression']) ? extension_loaded('zlib') : false;
 
@@ -196,11 +211,11 @@ class Http1Builder
         if ('' !== $contentEncoding) {
             switch ($contentEncoding) {
                 case 'deflate':
-                    $stream = new ZlibEncoder(ZlibEncoder::DEFLATE);
+                    $stream = new ZlibEncoder(ZlibEncoder::DEFLATE, $this->compressionLevel, $this->hwm);
                     break;
 
                 case 'gzip':
-                    $stream = new ZlibEncoder(ZlibEncoder::GZIP);
+                    $stream = new ZlibEncoder(ZlibEncoder::GZIP, $this->compressionLevel, $this->hwm);
                     break;
 
                 default:
@@ -210,7 +225,11 @@ class Http1Builder
                     );
             }
 
-            yield from Stream\pipe($message->getBody(), $stream, true, 0, null, $timeout);
+            $coroutine = new Coroutine(Stream\pipe($body, $stream, true, 0, null, $timeout));
+            $coroutine->done(null, function () use ($socket) {
+                $socket->close();
+            });
+
             $message = $message
                 ->withBody($stream)
                 ->withoutHeader('Content-Length');
@@ -219,6 +238,7 @@ class Http1Builder
         if ($message->getProtocolVersion() === '1.1' && !$message->hasHeader('Content-Length')) {
             $stream = new ChunkedEncoder($this->hwm);
             $body = $message->getBody();
+
             $coroutine = new Coroutine(Stream\pipe($body, $stream, true, 0, null, $timeout));
             $coroutine->done(null, function () use ($socket) {
                 $socket->close();
@@ -258,22 +278,26 @@ class Http1Builder
         if (strtolower($message->getHeader('Transfer-Encoding') === 'chunked')) {
             $stream = new ChunkedDecoder($this->hwm);
             $body = $message->getBody();
+
             $coroutine = new Coroutine(Stream\pipe($body, $stream, true, 0, null, $timeout));
             $coroutine->done(null, function () use ($socket) {
                 $socket->close();
             });
+
             $message = $message->withBody($stream);
         } elseif ($message->hasHeader('Content-Length')) {
             $length = (int) $message->getHeader('Content-Length');
-            if (0 >= $length) {
+            if (0 > $length) {
                 throw new MessageException(Response::BAD_REQUEST, 'Content-Length header invalid.');
             }
             $stream = new MemoryStream($this->hwm);
             $body = $message->getBody();
+
             $coroutine = new Coroutine(Stream\pipe($body, $stream, true, $length, null, $timeout));
             $coroutine->done(null, function () use ($socket) {
                 $socket->close();
             });
+
             $message = $message->withBody($stream);
         } elseif (
             !$message instanceof Response // Response may have no length on incoming stream.
@@ -287,8 +311,13 @@ class Http1Builder
         switch ($contentEncoding) {
             case 'deflate':
             case 'gzip':
-                $stream = new ZlibDecoder();
-                yield from Stream\pipe($message->getBody(), $stream, true, 0, null, $timeout);
+                $stream = new ZlibDecoder($this->hwm, $this->maxBodyLength);
+
+                $coroutine = new Coroutine(Stream\pipe($message->getBody(), $stream, true, 0, null, $timeout));
+                $coroutine->done(null, function () use ($socket) {
+                    $socket->close();
+                });
+
                 return $message->withBody($stream);
 
             case '':
