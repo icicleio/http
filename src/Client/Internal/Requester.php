@@ -7,7 +7,6 @@ use Icicle\Socket\Socket;
 
 class Requester
 {
-    const DEFAULT_CRYPTO_METHOD = STREAM_CRYPTO_METHOD_TLS_CLIENT;
     const DEFAULT_TIMEOUT = 15;
 
     /**
@@ -24,24 +23,20 @@ class Requester
     }
 
     /**
-     * {@inheritdoc}
+     * @coroutine
+     *
+     * @param \Icicle\Socket\Socket $socket
+     * @param \Icicle\Http\Message\Request $request
+     * @param mixed[] $options
+     *
+     * @return \Generator
+     *
+     * @resolve \Icicle\Http\Message\Response
      */
-    public function request(Socket $socket, Request $request, array $options = [])
+    public function send(Socket $socket, Request $request, array $options = [])
     {
         $timeout = isset($options['timeout']) ? (float) $options['timeout'] : self::DEFAULT_TIMEOUT;
         $allowPersistent = isset($options['allow_persistent']) ? (bool) $options['allow_persistent'] : true;
-
-        $uri = $request->getUri();
-
-        if ($uri->getScheme() === 'https' && !$socket->isCryptoEnabled()) {
-            $cryptoMethod = isset($options['crypto_method'])
-                ? (int) $options['crypto_method']
-                : self::DEFAULT_CRYPTO_METHOD;
-
-            yield $socket->enableCrypto($cryptoMethod, $timeout);
-        } elseif ($uri->getScheme() === 'http' && $socket->isCryptoEnabled()) {
-            throw new \Exception('Crypto is enabled on the socket when making an http request.');
-        }
 
         $request = (yield $this->driver->buildRequest($socket, $request, $timeout, $allowPersistent));
 
