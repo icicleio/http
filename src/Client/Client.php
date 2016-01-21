@@ -2,14 +2,18 @@
 namespace Icicle\Http\Client;
 
 use Icicle\Dns;
+use Icicle\Http\Exception\RedirectException;
+use Icicle\Http\Message\BasicUri;
 use Icicle\Http\Message\Request;
 use Icicle\Http\Message\BasicRequest;
+use Icicle\Http\Message\Response;
 use Icicle\Stream\ReadableStream;
 
 class Client
 {
     const DEFAULT_CRYPTO_METHOD = STREAM_CRYPTO_METHOD_TLS_CLIENT;
     const DEFAULT_TIMEOUT = 15;
+    const DEFAULT_MAX_REDIRECTS = 10;
 
     /**
      * @var \Icicle\Http\Client\Requester
@@ -17,11 +21,26 @@ class Client
     private $requester;
 
     /**
+     * @var bool True to follow 3xx redirects, false to return redirect response.
+     */
+    private $follow = true;
+
+    /**
+     * @var int Max number of redirect responses to follow before failing.
+     */
+    private $maxRedirects = self::DEFAULT_MAX_REDIRECTS;
+
+    /**
      * @param mixed[] $options
      */
     public function __construct(array $options = [])
     {
         $options = array_merge($options, ['allow_persistent' => false]);
+
+        $this->follow = isset($options['follow_redirects']) ? (bool) $options['follow_redirects'] : true;
+        $this->maxRedirects = isset($options['max_redirects'])
+            ? (int) $options['max_redirects']
+            : self::DEFAULT_MAX_REDIRECTS;
 
         $this->requester = new Requester($options);
     }
@@ -61,26 +80,62 @@ class Client
      */
     public function send(Request $request, array $options = [])
     {
+        $timeout = isset($options['timeout']) ? (float) $options['timeout'] : self::DEFAULT_TIMEOUT;
+        $cryptoMethod = isset($options['crypto_method'])
+            ? (int) $options['crypto_method']
+            : self::DEFAULT_CRYPTO_METHOD;
+
         $request = $request->withHeader('Connection', 'close');
-
-        $uri = $request->getUri();
-
-        /** @var \Icicle\Socket\Socket $socket */
-        $socket = (yield Dns\connect($uri->getHost(), $uri->getPort(), $options));
+        $count = 0;
 
         try {
-            if ($uri->getScheme() === 'https') {
-                $timeout = isset($options['timeout']) ? (float) $options['timeout'] : self::DEFAULT_TIMEOUT;
-                $cryptoMethod = isset($options['crypto_method'])
-                    ? (int) $options['crypto_method']
-                    : self::DEFAULT_CRYPTO_METHOD;
+            do {
+                $uri = $request->getUri();
 
-                yield $socket->enableCrypto($cryptoMethod, $timeout);
-            }
+                /** @var \Icicle\Socket\Socket $socket */
+                $socket = (yield Dns\connect($uri->getHost(), $uri->getPort(), $options));
 
-            yield $this->requester->send($socket, $request, $options);
+                if ($uri->getScheme() === 'https') {
+                    yield $socket->enableCrypto($cryptoMethod, $timeout);
+                }
+
+                /** @var \Icicle\Http\Message\Response $response */
+                $response = (yield $this->requester->send($socket, $request, $options));
+
+                if ($this->follow) {
+                    switch ($response->getStatusCode()) {
+                        case Response::SEE_OTHER:
+                            $request = $request->withMethod($request->getMethod() === 'HEAD' ? 'HEAD' : 'GET');
+                            // No break.
+
+                        case Response::MOVED_PERMANENTLY:
+                        case Response::FOUND:
+                        case Response::TEMPORARY_REDIRECT:
+                        case Response::PERMANENT_REDIRECT:
+                            $socket->close(); // Close original connection.
+
+                            if (++$count > $this->maxRedirects) {
+                                throw new RedirectException(
+                                    sprintf('Too many redirects encountered (max redirects: %d).', $this->maxRedirects)
+                                );
+                            }
+
+                            if (!$response->hasHeader('Location')) {
+                                throw new RedirectException('No Location header found in redirect response.');
+                            }
+
+                            $request = $request->withUri(new BasicUri($response->getHeader('Location')));
+
+                            printf("New URI: %s\n", $request->getUri());
+
+                            $response = null; // Let's go around again!
+                    }
+                }
+            } while (null === $response);
         } finally {
-            $socket->close();
+            $request->getBody()->close();
         }
+
+        yield $response;
     }
 }
