@@ -198,17 +198,18 @@ class Listener
                 }
 
                 $response = (yield $this->driver->buildResponse(
-                    $socket,
                     $response,
                     $request,
                     $timeout,
                     $allowPersistent
                 ));
 
-                $coroutine = new Coroutine($this->driver->writeResponse($socket, $response, $request, $timeout));
+                try {
+                    yield $this->driver->writeResponse($socket, $response, $request, $timeout);
+                } finally {
+                    $response->getBody()->close();
+                }
             } while (strtolower($response->getHeader('Connection')) === 'keep-alive');
-
-            yield $coroutine; // Wait until response has completed writing.
         } catch (Exception $exception) {
             yield $this->log->write(sprintf(
                 "Error when handling request from %s:%d: %s\n",

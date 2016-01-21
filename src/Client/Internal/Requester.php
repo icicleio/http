@@ -38,7 +38,7 @@ class Requester
         $timeout = isset($options['timeout']) ? (float) $options['timeout'] : self::DEFAULT_TIMEOUT;
         $allowPersistent = isset($options['allow_persistent']) ? (bool) $options['allow_persistent'] : true;
 
-        $request = (yield $this->driver->buildRequest($socket, $request, $timeout, $allowPersistent));
+        $request = (yield $this->driver->buildRequest($request, $timeout, $allowPersistent));
 
         yield $this->driver->writeRequest($socket, $request, $timeout);
 

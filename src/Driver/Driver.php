@@ -22,7 +22,7 @@ interface Driver
     /**
      * @coroutine
      *
-     * @param \Icicle\Socket\Socket $socket
+     * @param \Icicle\Http\Message\Response $response
      * @param \Icicle\Http\Message\Request $request
      * @param float|int $timeout
      * @param bool $allowPersistent
@@ -32,7 +32,6 @@ interface Driver
      * @resolve \Icicle\Http\Message\Response
      */
     public function buildResponse(
-        Socket $socket,
         Response $response,
         Request $request = null,
         $timeout = 0,
@@ -66,14 +65,13 @@ interface Driver
     /**
      * @coroutine
      *
-     * @param \Icicle\Socket\Socket $socket
      * @param \Icicle\Http\Message\Request $request
      * @param float|int $timeout
      * @param bool $allowPersistent
      *
      * @return \Generator
      */
-    public function buildRequest(Socket $socket, Request $request, $timeout = 0, $allowPersistent = false);
+    public function buildRequest(Request $request, $timeout = 0, $allowPersistent = false);
 
     /**
      * @coroutine
