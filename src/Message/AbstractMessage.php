@@ -299,7 +299,7 @@ abstract class AbstractMessage implements Message
         $lines = [];
 
         foreach ($values as $value) {
-            if (is_numeric($value) || (is_object($value) && method_exists($value, '__toString'))) {
+            if (is_numeric($value) || is_null($value) || (is_object($value) && method_exists($value, '__toString'))) {
                 $value = (string) $value;
             } elseif (!is_string($value)) {
                 throw new InvalidHeaderException('Header values must be strings or an array of strings.');

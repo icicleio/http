@@ -15,20 +15,6 @@ interface Uri
     public function getScheme();
 
     /**
-     * Returns the authority portion of the URI or an empty string if no host is set.
-     *
-     * @return string String in [user[:password]@]host[:port] format.
-     */
-    public function getAuthority();
-
-    /**
-     * Returns the user and password portion of the URI, or an empty string.
-     *
-     * @return string String in user[:password] format.
-     */
-    public function getUserInfo();
-
-    /**
      * Returns the host or an empty string if no host is set.
      *
      * @return string
@@ -50,16 +36,9 @@ interface Uri
     public function getPath();
 
     /**
-     * Returns the query portion of the URI (does not include ? prefix). Key names are sorted through ksort().
-     *
-     * @return string
-     */
-    public function getQuery();
-
-    /**
      * Returns an array of the key/value pairs corresponding to the query portion of the URI.
      *
-     * @return string[]
+     * @return string[][]
      */
     public function getQueryValues();
 
@@ -73,7 +52,9 @@ interface Uri
     public function hasQueryValue($name);
 
     /**
-     * Returns the value for the given query key name or an empty if the key name does not exist.
+     * Returns the value of the given query value. If multiple values were present for the named parameter, only the
+     * first value will be returned. Use getQueryValueAsArray() to return an array of all values for the particular
+     * parameter. Returns an empty string if the named parameter does not exist.
      *
      * @param string $name
      *
@@ -82,11 +63,48 @@ interface Uri
     public function getQueryValue($name);
 
     /**
+     * Returns all values for the given query key name or an empty array if the key name does not exist.
+     *
+     * @param string $name
+     *
+     * @return string[]
+     */
+    public function getQueryValueAsArray($name);
+
+    /**
      * Returns the fragment portion of the URI (does not include # prefix).
      *
      * @return string
      */
     public function getFragment();
+
+    /**
+     * Returns the authority portion of the URI or an empty string if no host is set.
+     *
+     * @return string String in [user[:password]@]host[:port] format.
+     */
+    public function encodeAuthority();
+
+    /**
+     * Returns the encoded path (special characters escaped).
+     *
+     * @return string
+     */
+    public function encodePath();
+
+    /**
+     * Returns the encoded query string (special characters escaped).
+     *
+     * @return string
+     */
+    public function encodeQuery();
+
+    /**
+     * Returns the encoded fragment (special characters escaped).
+     *
+     * @return string
+     */
+    public function encodeFragment();
 
     /**
      * Returns a new instance with the given scheme or no scheme if null. :// or : suffix should be trimmed.
@@ -105,7 +123,7 @@ interface Uri
      *
      * @return self
      */
-    public function withUserInfo($user, $password = null);
+    public function withUser($user, $password = null);
 
     /**
      * Returns a new instance with the given host or null to remove the host.

@@ -76,13 +76,13 @@ class BasicRequest extends AbstractMessage implements Request
             return $this->target;
         }
 
-        $target = $this->uri->getPath();
+        $target = $this->uri->encodePath();
 
         if ('' === $target) {
             $target = '/';
         }
 
-        $query = $this->uri->getQuery();
+        $query = $this->uri->encodeQuery();
         if ('' !== $query) {
             $target = sprintf('%s?%s', $target, $query);
         }
