@@ -2,6 +2,7 @@
 namespace Icicle\Http\Message\Cookie;
 
 use Icicle\Http\Exception\InvalidValueException;
+use Icicle\Http\Message;
 
 class SetCookie extends BasicCookie implements MetaCookie
 {
@@ -182,7 +183,7 @@ class SetCookie extends BasicCookie implements MetaCookie
         }
 
         if ('' !== $this->path) {
-            $line .= '; Path=' . $this->path;
+            $line .= '; Path=' . Message\encode($this->path, true);
         }
 
         if ('' !== $this->domain) {

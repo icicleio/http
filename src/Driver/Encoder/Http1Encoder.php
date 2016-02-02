@@ -1,6 +1,7 @@
 <?php
 namespace Icicle\Http\Driver\Encoder;
 
+use Icicle\Http\Message;
 use Icicle\Http\Message\Request;
 use Icicle\Http\Message\Response;
 
@@ -44,19 +45,15 @@ class Http1Encoder
         $data = '';
 
         foreach ($headers as $name => $values) {
-            switch (strtolower($name)) {
-                case 'host':
-                    $data = sprintf("%s: %s\r\n%s", $name, implode(',', $values), $data);
-                    break;
+            foreach ($values as $value) {
+                switch (strtolower($name)) {
+                    case 'host':
+                        $data = sprintf("%s: %s\r\n%s", $name, Message\encode($value), $data);
+                        break;
 
-                case 'set-cookie':
-                    foreach ($values as $value) {
-                        $data .= sprintf("%s: %s\r\n", $name, $value);
-                    }
-                    break;
-
-                default:
-                    $data .= sprintf("%s: %s\r\n", $name, implode(',', $values));
+                    default:
+                        $data .= sprintf("%s: %s\r\n", $name, Message\encode($value));
+                }
             }
         }
 

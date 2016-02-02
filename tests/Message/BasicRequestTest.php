@@ -189,16 +189,16 @@ class BasicRequestTest extends TestCase
      */
     public function testConstructWithInvalidTarget()
     {
-        new BasicRequest('GET', '', [], null, 'Invalid target');
+        new BasicRequest('GET', '', [], null, 0);
     }
 
     public function getUris()
     {
         return [
-            ['http://example.com', '/'],
-            ['http://example.com/', '/'],
-            ['http://example.com/path', '/path'],
-            ['http://example.com/path?name=value', '/path?name=value'],
+            ['http://example.com', 'http://example.com'],
+            ['http://example.com/', 'http://example.com/'],
+            ['http://example.com/path', 'http://example.com/path'],
+            ['http://example.com/path?name=value', 'http://example.com/path?name=value'],
             ['/path', '/path'],
             ['/path?name=value', '/path?name=value']
         ];
@@ -212,7 +212,7 @@ class BasicRequestTest extends TestCase
     public function testIsTargetBasedOnUri($uri, $expected)
     {
         $request = new BasicRequest('GET', $uri);
-        $this->assertSame($expected, $request->getRequestTarget());
+        $this->assertSame($expected, (string) $request->getRequestTarget());
     }
 
     public function getTargets()
@@ -235,7 +235,7 @@ class BasicRequestTest extends TestCase
     public function testConstructWithTarget($target)
     {
         $request = new BasicRequest('GET', 'http://example.org/different/path', [], null, $target);
-        $this->assertSame($target, $request->getRequestTarget());
+        $this->assertSame($target, (string) $request->getRequestTarget());
     }
 
     /**
@@ -247,7 +247,7 @@ class BasicRequestTest extends TestCase
         $request = new BasicRequest('GET', 'http://example.org/different/path');
         $new = $request->withRequestTarget($target);
         $this->assertNotSame($request, $new);
-        $this->assertSame($target, $new->getRequestTarget());
+        $this->assertSame($target, (string) $new->getRequestTarget());
     }
 
     public function testCookieDecode()

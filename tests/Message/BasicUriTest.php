@@ -19,9 +19,8 @@ class BasicUriTest extends TestCase
                 'password',
                 'example.com',
                 8443,
-                'username:password@example.com:8443',
                 '/async/http',
-                'bar=value2&foo=value1',
+                ['bar' => ['value2'], 'foo' => ['value1']],
                 'fragment-value',
             ],
             [
@@ -31,9 +30,8 @@ class BasicUriTest extends TestCase
                 '',
                 'example.com',
                 80,
-                'example.com',
                 '/path',
-                '',
+                [],
                 '',
             ],
             [
@@ -43,9 +41,8 @@ class BasicUriTest extends TestCase
                 '',
                 'example.com',
                 0,
-                'example.com',
                 '',
-                '',
+                [],
                 '',
             ],
             [
@@ -55,9 +52,8 @@ class BasicUriTest extends TestCase
                 '',
                 'example.org',
                 443,
-                'example.org:443',
                 '',
-                '',
+                [],
                 '',
             ],
             [
@@ -67,9 +63,8 @@ class BasicUriTest extends TestCase
                 '',
                 'example.com',
                 0,
-                'example.com',
                 '/path/to/resource',
-                '',
+                [],
                 '',
             ],
             [
@@ -79,9 +74,8 @@ class BasicUriTest extends TestCase
                 '',
                 '',
                 0,
-                '',
                 '/path/without/host',
-                'name=value',
+                ['name' => ['value']],
                 'fragment-value',
             ],
             [
@@ -91,9 +85,8 @@ class BasicUriTest extends TestCase
                 '',
                 'example.org',
                 80,
-                'username@example.org',
                 '/',
-                '',
+                [],
                 '',
             ],
             [
@@ -104,8 +97,7 @@ class BasicUriTest extends TestCase
                 '',
                 0,
                 '',
-                '',
-                '',
+                [],
                 '',
             ],
         ];
@@ -119,12 +111,11 @@ class BasicUriTest extends TestCase
      * @param string $user
      * @param string $host
      * @param int|null $port
-     * @param string $authority
      * @param string $path
      * @param string $query
      * @param string $fragment
      */
-    public function testConstructor($uri, $scheme, $user, $password, $host, $port, $authority, $path, $query, $fragment)
+    public function testConstructor($uri, $scheme, $user, $password, $host, $port, $path, $query, $fragment)
     {
         $uri = new BasicUri($uri);
         $this->assertSame($scheme, $uri->getScheme());
@@ -132,9 +123,8 @@ class BasicUriTest extends TestCase
         $this->assertSame($password, $uri->getPassword());
         $this->assertSame($host, $uri->getHost());
         $this->assertSame($port, $uri->getPort());
-        $this->assertSame($authority, $uri->encodeAuthority());
         $this->assertSame($path, $uri->getPath());
-        $this->assertSame($query, $uri->encodeQuery());
+        $this->assertSame($query, $uri->getQueryValues());
         $this->assertSame($fragment, $uri->getFragment());
     }
 
@@ -289,14 +279,14 @@ class BasicUriTest extends TestCase
     public function getAuthorities()
     {
         return [
-            ['https://example.com:443', '', '', 'example.com', 443, 'example.com'],
-            ['http://example.com:8080', '', '', 'example.com', 8080, 'example.com:8080'],
-            ['http://username@example.com:80', 'username', '', 'example.com', 80, 'username@example.com'],
-            ['https://username:password@example.com:8443', 'username', 'password', 'example.com', 8443, 'username:password@example.com:8443'],
-            ['https://username:password@example.com', 'username', 'password', 'example.com', 443, 'username:password@example.com'],
-            ['/no/authority', '', '', '', 0, ''],
+            ['https://example.com:443', '', '', 'example.com', 443, 'https://example.com'],
+            ['http://example.com:8080', '', '', 'example.com', 8080, 'http://example.com:8080'],
+            ['http://username@example.com:80', 'username', '', 'example.com', 80, 'http://username@example.com'],
+            ['https://username:password@example.com:8443', 'username', 'password', 'example.com', 8443, 'https://username:password@example.com:8443'],
+            ['https://username:password@example.com', 'username', 'password', 'example.com', 443, 'https://username:password@example.com'],
+            ['/no/authority', '', '', '', 0, '/no/authority'],
             ['example.com:80', '', '', 'example.com', 80, 'example.com:80'],
-            ['http://usérnäme:passwörd@example.com', 'usérnäme', 'passwörd', 'example.com', 80, 'us%C3%A9rn%C3%A4me:passw%C3%B6rd@example.com'],
+            ['http://usérnäme:passwörd@example.com', 'usérnäme', 'passwörd', 'example.com', 80, 'http://us%C3%A9rn%C3%A4me:passw%C3%B6rd@example.com'],
         ];
     }
 
@@ -308,7 +298,6 @@ class BasicUriTest extends TestCase
      * @param string $password
      * @param string $host
      * @param int $port
-     * @param string $encoded
      */
     public function testAuthority($uri, $user, $password, $host, $port, $encoded)
     {
@@ -317,7 +306,7 @@ class BasicUriTest extends TestCase
         $this->assertSame($password, $uri->getPassword());
         $this->assertSame($host, $uri->getHost());
         $this->assertSame($port, $uri->getPort());
-        $this->assertSame($encoded, $uri->encodeAuthority());
+        $this->assertSame($encoded, (string) $uri);
     }
 
     /**
@@ -330,7 +319,6 @@ class BasicUriTest extends TestCase
         $new = $uri->withQuery('?key2=value2&key1=value1');
 
         $this->assertNotSame($uri, $new);
-        $this->assertSame('key1=value1&key2=value2', $new->encodeQuery());
         $this->assertSame('value1', $new->getQueryValue('key1'));
         $this->assertSame('value2', $new->getQueryValue('key2'));
         $this->assertSame(['key1' => ['value1'], 'key2' => ['value2']], $new->getQueryValues());
@@ -339,7 +327,6 @@ class BasicUriTest extends TestCase
         $new = $uri->withQuery('test1&test2=value');
 
         $this->assertNotSame($uri, $new);
-        $this->assertSame('test1&test2=value', $new->encodeQuery());
         $this->assertSame('', $new->getQueryValue('test1'));
         $this->assertSame('value', $new->getQueryValue('test2'));
         $this->assertSame(['test1' => [''], 'test2' => ['value']], $new->getQueryValues());
@@ -348,7 +335,6 @@ class BasicUriTest extends TestCase
         $new = $uri->withQuery('test[]=value1&test[]=value2');
 
         $this->assertNotSame($uri, $new);
-        $this->assertSame('test[]=value1&test[]=value2', $new->encodeQuery());
         $this->assertSame('value1', $new->getQueryValue('test[]'));
         $this->assertSame(['value1', 'value2'], $new->getQueryValueAsArray('test[]'));
         $this->assertSame('http://example.com/path?test[]=value1&test[]=value2', (string) $new);
@@ -364,28 +350,24 @@ class BasicUriTest extends TestCase
         $new = $uri->withQueryValue('name', 'valüe');
 
         $this->assertNotSame($uri, $new);
-        $this->assertSame('foo=bar&name=val%C3%BCe', $new->encodeQuery());
         $this->assertSame(['foo' => ['bar'], 'name' => ['valüe']], $new->getQueryValues());
         $this->assertSame('http://example.com/path?foo=bar&name=val%C3%BCe', (string) $new);
 
         $new = $uri->withQueryValue('tést', null);
 
         $this->assertNotSame($uri, $new);
-        $this->assertSame('foo=bar&t%C3%A9st', $new->encodeQuery());
         $this->assertSame(['foo' => ['bar'], 'tést' => ['']], $new->getQueryValues());
         $this->assertSame('http://example.com/path?foo=bar&t%C3%A9st', (string) $new);
 
         $new = $uri->withQueryValue('foo', 'foo=bar');
 
         $this->assertNotSame($uri, $new);
-        $this->assertSame('foo=foo=bar', $new->encodeQuery());
         $this->assertSame(['foo' => ['foo=bar']], $new->getQueryValues());
         $this->assertSame('http://example.com/path?foo=foo=bar', (string) $new);
 
         $new = $uri->withQueryValue('foo', ['value1', 'value2']);
 
         $this->assertNotSame($uri, $new);
-        $this->assertSame('foo=value1&foo=value2', $new->encodeQuery());
         $this->assertSame(['value1', 'value2'], $new->getQueryValueAsArray('foo'));
         $this->assertSame(['foo' => ['value1', 'value2']], $new->getQueryValues());
         $this->assertSame('http://example.com/path?foo=value1&foo=value2', (string) $new);
@@ -401,7 +383,6 @@ class BasicUriTest extends TestCase
         $new = $uri->withoutQueryValue('key2');
 
         $this->assertNotSame($uri, $new);
-        $this->assertSame('key1=value1&key3', $new->encodeQuery());
         $this->assertTrue($new->hasQueryValue('key1'));
         $this->assertFalse($new->hasQueryValue('key2'));
         $this->assertSame('', $new->getQueryValue('key2'));
@@ -411,7 +392,6 @@ class BasicUriTest extends TestCase
         $new = $uri->withoutQueryValue('key1');
 
         $this->assertNotSame($uri, $new);
-        $this->assertSame('key2=value2&key3', $new->encodeQuery());
         $this->assertFalse($new->hasQueryValue('key1'));
         $this->assertTrue($new->hasQueryValue('key2'));
         $this->assertSame('', $new->getQueryValue('key1'));
@@ -423,7 +403,6 @@ class BasicUriTest extends TestCase
         $new = $new->withoutQueryValue('key3');
 
         $this->assertNotSame($uri, $new);
-        $this->assertSame('', $new->encodeQuery());
         $this->assertSame([], $new->getQueryValues());
         $this->assertSame('http://example.com/path', (string) $new);
     }
@@ -458,7 +437,6 @@ class BasicUriTest extends TestCase
 
         $this->assertNotSame($uri, $new);
         $this->assertSame($expected, $new->getPath());
-        $this->assertSame($encoded, $new->encodePath());
         $this->assertSame(sprintf('http://example.com%s', $encoded), (string) $new);
     }
 
@@ -471,10 +449,10 @@ class BasicUriTest extends TestCase
             ['#', '', ''],
             ['', '', ''],
             [null, '', ''],
-            ['new-fragment', 'new-fragment', 'new-fragment'],
-            ['#with-hash', 'with-hash', 'with-hash'],
-            ['wïth/spécial/chârs', 'wïth/spécial/chârs', 'w%C3%AFth/sp%C3%A9cial/ch%C3%A2rs'],
-            ['#w%C3%AFth/enc%C3%B8ded/ch%C3%A2rs', 'wïth/encøded/chârs', 'w%C3%AFth/enc%C3%B8ded/ch%C3%A2rs'],
+            ['new-fragment', 'new-fragment', '#new-fragment'],
+            ['#with-hash', 'with-hash', '#with-hash'],
+            ['wïth/spécial/chârs', 'wïth/spécial/chârs', '#w%C3%AFth/sp%C3%A9cial/ch%C3%A2rs'],
+            ['#w%C3%AFth/enc%C3%B8ded/ch%C3%A2rs', 'wïth/encøded/chârs', '#w%C3%AFth/enc%C3%B8ded/ch%C3%A2rs'],
         ];
     }
 
@@ -492,6 +470,6 @@ class BasicUriTest extends TestCase
 
         $this->assertNotSame($uri, $new);
         $this->assertSame($expected, $new->getFragment());
-        $this->assertSame($encoded, $new->encodeFragment());
+        $this->assertSame(sprintf('http://example.com/path%s', $encoded), (string) $new);
     }
 }

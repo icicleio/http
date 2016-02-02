@@ -8,11 +8,6 @@ use Icicle\Http\Exception\InvalidValueException;
  */
 class BasicUri implements Uri
 {
-    const UNRESERVED_CHARS = 'A-Za-z0-9_\-\.~';
-    const GEN_DELIMITERS = ':\/\?#@';
-    const SUB_DELIMITERS = '!\$&\'\(\)\[\]\*\+,;=';
-    const ENCODED_CHAR = '%(?![A-Fa-f0-9]{2})';
-
     /**
      * Array of valid schemes to corresponding port numbers.
      *
@@ -138,7 +133,7 @@ class BasicUri implements Uri
      */
     public function hasQueryValue($name)
     {
-        return isset($this->query[$this->encodeValue($name)]);
+        return isset($this->query[$name]);
     }
 
     /**
@@ -183,8 +178,8 @@ class BasicUri implements Uri
     {
         $new = clone $this;
 
-        $new->user = $new->decodeValue($user);
-        $new->password = $new->decodeValue($password);
+        $new->user = decode($user);
+        $new->password = decode($password);
 
         return $new;
     }
@@ -251,8 +246,6 @@ class BasicUri implements Uri
     {
         $new = clone $this;
 
-        $name = $new->decodeValue((string) $name);
-
         $new->query[$name] = $this->filterValue($value);
 
         return $new;
@@ -264,9 +257,6 @@ class BasicUri implements Uri
     public function withAddedQueryValue($name, $value)
     {
         $new = clone $this;
-
-        $name = $new->decodeValue($name);
-        $value = $new->decodeValue($value);
 
         if (isset($new->query[$name])) {
             $new->query[$name][] = $value;
@@ -281,8 +271,6 @@ class BasicUri implements Uri
     public function withoutQueryValue($name)
     {
         $new = clone $this;
-
-        $name = $this->decodeValue($name);
 
         unset($new->query[$name]);
 
@@ -303,7 +291,7 @@ class BasicUri implements Uri
             }
         }
 
-        $uri .= $this->encodePath();
+        $uri .= encode($this->path);
 
         $query = $this->encodeQuery();
         if ($query) {
@@ -311,7 +299,7 @@ class BasicUri implements Uri
         }
 
         if ($this->fragment) {
-            $uri = sprintf('%s#%s', $uri, $this->encodeValue($this->fragment));
+            $uri = sprintf('%s#%s', $uri, encode($this->fragment));
         }
 
         return $uri;
@@ -349,8 +337,8 @@ class BasicUri implements Uri
         $this->scheme   = isset($components['scheme'])   ? $this->filterScheme($components['scheme']) : '';
         $this->host     = isset($components['host'])     ? $components['host'] : '';
         $this->port     = isset($components['port'])     ? $this->filterPort($components['port']) : 0;
-        $this->user     = isset($components['user'])     ? $components['user'] : '';
-        $this->password = isset($components['pass'])     ? $components['pass'] : '';
+        $this->user     = isset($components['user'])     ? decode($components['user']) : '';
+        $this->password = isset($components['pass'])     ? decode($components['pass']) : '';
         $this->path     = isset($components['path'])     ? $this->parsePath($components['path']) : '';
         $this->query    = isset($components['query'])    ? $this->parseQuery($components['query']) : [];
         $this->fragment = isset($components['fragment']) ? $this->parseFragment($components['fragment']) : '';
@@ -424,9 +412,9 @@ class BasicUri implements Uri
 
         $path = ltrim($path, '/');
 
-        $path = '/' . $path;
+        $path = '*' === $path ? $path : '/' . $path;
 
-        return $this->decodeValue($path);
+        return decode($path);
     }
 
     /**
@@ -466,12 +454,9 @@ class BasicUri implements Uri
         $data = explode('=', $data, 2);
         if (1 === count($data)) {
             $data[] = '';
-            //return [$this->decodeValue($data[0]), ''];
         }
 
-        return array_map([$this, 'decodeValue'], $data);
-
-        //return [$this->decodeValue($data[0]), $this->decodeValue($data[1])];
+        return array_map(__NAMESPACE__ . '\decode', $data);
     }
 
     /**
@@ -483,7 +468,7 @@ class BasicUri implements Uri
     {
         $fragment = ltrim($fragment, '#');
 
-        return $this->decodeValue($fragment);
+        return decode($fragment);
     }
 
     /**
@@ -511,7 +496,7 @@ class BasicUri implements Uri
                 throw new InvalidValueException('Query values must be strings or an array of strings.');
             }
 
-            $lines[] = $this->decodeValue($value);
+            $lines[] = decode($value);
         }
 
         return $lines;
@@ -520,7 +505,7 @@ class BasicUri implements Uri
     /**
      * {@inheritdoc}
      */
-    public function encodeAuthority()
+    protected function encodeAuthority()
     {
         $authority = $this->getHost();
         if (!$authority) {
@@ -529,12 +514,10 @@ class BasicUri implements Uri
 
         if ('' !== $this->user) {
             if ('' !== $this->password) {
-                $user = sprintf('%s:%s', $this->encodeValue($this->user), $this->encodeValue($this->password));
+                $authority = sprintf('%s:%s@%s', encode($this->user), encode($this->password), $authority);
             } else {
-                $user = $this->encodeValue($this->user);
+                $authority = sprintf('%s@%s', encode($this->user), $authority);
             }
-
-            $authority = sprintf('%s@%s', $user, $authority);
         }
 
         $port = $this->getPort();
@@ -548,7 +531,7 @@ class BasicUri implements Uri
     /**
      * {@inheritdoc}
      */
-    public function encodeQuery()
+    protected function encodeQuery()
     {
         if (empty($this->query)) {
             return '';
@@ -558,69 +541,14 @@ class BasicUri implements Uri
 
         foreach ($this->query as $name => $values) {
             foreach ($values as $value) {
-                $name = $this->encodeValue($name);
-                $value = $this->encodeValue($value);
-
                 if ('' === $value) {
-                    $query[] = $name;
+                    $query[] = encode($name);
                 } else {
-                    $query[] = sprintf('%s=%s', $this->encodeValue($name), $value);
+                    $query[] = sprintf('%s=%s', encode($name), encode($value));
                 }
             }
         }
 
         return implode('&', $query);
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function encodeFragment()
-    {
-        return $this->encodeValue($this->fragment);
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function encodePath()
-    {
-        return preg_replace_callback(
-            '/(?:[^' . self::UNRESERVED_CHARS . '\/%]+|' . self::ENCODED_CHAR . ')/',
-            function (array $matches) {
-                return rawurlencode($matches[0]);
-            },
-            $this->path
-        );
-    }
-
-    /**
-     * Escapes all reserved chars.
-     *
-     * @param string $string
-     *
-     * @return string
-     */
-    protected function encodeValue($string)
-    {
-        return preg_replace_callback(
-            '/(?:[^' . self::UNRESERVED_CHARS . self::SUB_DELIMITERS . '\/%]+|' . self::ENCODED_CHAR . ')/',
-            function (array $matches) {
-                return rawurlencode($matches[0]);
-            },
-            $string
-        );
-    }
-
-    /**
-     * Decodes all URL encoded characters.
-     *
-     * @param string $string
-     *
-     * @return string
-     */
-    protected function decodeValue($string)
-    {
-        return rawurldecode($string);
     }
 }

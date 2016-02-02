@@ -34,7 +34,7 @@ interface Request extends Message
      * Returns the target of the request. Unless explicitly set, this will usually be the path and query portion
      * of the URI.
      *
-     * @return string
+     * @return \Icicle\Http\Message\Uri
      */
     public function getRequestTarget();
 
@@ -74,7 +74,7 @@ interface Request extends Message
     /**
      * Returns a new instance with the given request target.
      *
-     * @param string|null $target
+     * @param string|\Icicle\Http\Message\Uri|null $target
      *
      * @return self
      *

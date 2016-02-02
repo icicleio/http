@@ -38,7 +38,7 @@ class BasicRequest extends AbstractMessage implements Request
      * @param string|\Icicle\Http\Message\Uri $uri
      * @param \Icicle\Stream\ReadableStream|null $stream
      * @param string[][] $headers
-     * @param string $target
+     * @param string|\Icicle\Http\Message\Uri $target
      * @param string $protocol
      *
      * @throws \Icicle\Http\Exception\MessageException If one of the arguments is invalid.
@@ -56,7 +56,7 @@ class BasicRequest extends AbstractMessage implements Request
         $this->method = $this->filterMethod($method);
         $this->uri = $uri instanceof Uri ? $uri : new BasicUri($uri);
 
-        $this->target = $this->filterTarget($target);
+        $this->target = $target instanceof Uri ? $target : $this->filterTarget($target);
 
         if (!$this->hasHeader('Host')) {
             $this->setHostFromUri();
@@ -72,22 +72,37 @@ class BasicRequest extends AbstractMessage implements Request
      */
     public function getRequestTarget()
     {
-        if ('' !== $this->target) {
+        if (null !== $this->target) {
             return $this->target;
         }
 
-        $target = $this->uri->encodePath();
+        return $this->uri;
+
+        $target = encode($this->uri->getPath(), true);
 
         if ('' === $target) {
             $target = '/';
         }
 
-        $query = $this->uri->encodeQuery();
-        if ('' !== $query) {
-            $target = sprintf('%s?%s', $target, $query);
+        $query = $this->uri->getQueryValues();
+
+        if (empty($query)) {
+            return $target;
         }
 
-        return $target;
+        $encoded = [];
+
+        foreach ($query as $name => $values) {
+            foreach ($values as $value) {
+                if ('' === $value) {
+                    $encoded[] = encode($name);
+                } else {
+                    $encoded[] = sprintf('%s=%s', encode($name), encode($value));
+                }
+            }
+        }
+
+        return sprintf('%s?%s', $target, implode('&', $encoded));
     }
 
     /**
@@ -112,7 +127,7 @@ class BasicRequest extends AbstractMessage implements Request
     public function withRequestTarget($target = null)
     {
         $new = clone $this;
-        $new->target = $new->filterTarget($target);
+        $new->target = $target instanceof Uri ? $target : $new->filterTarget($target);
         return $new;
     }
 
@@ -214,7 +229,7 @@ class BasicRequest extends AbstractMessage implements Request
     public function getCookie($name)
     {
         $name = (string) $name;
-        return array_key_exists($name, $this->cookies) ? $this->cookies[$name] : null;
+        return isset($this->cookies[$name]) ? $this->cookies[$name] : null;
     }
 
     /**
@@ -222,7 +237,7 @@ class BasicRequest extends AbstractMessage implements Request
      */
     public function hasCookie($name)
     {
-        return array_key_exists((string) $name, $this->cookies);
+        return isset($this->cookies[(string) $name]);
     }
 
     /**
@@ -266,25 +281,35 @@ class BasicRequest extends AbstractMessage implements Request
     /**
      * @param string|null $target
      *
-     * @return string
+     * @return \Icicle\Http\Message\Uri
      *
      * @throws \Icicle\Http\Exception\InvalidValueException If the target contains whitespace.
      */
     protected function filterTarget($target)
     {
-        if (null === $target) {
-            return '';
+        if (null === $target || '' === $target) {
+            return null;
         }
 
         if (!is_string($target)) {
-            throw new InvalidMethodException('Request target must be a string.');
+            throw new InvalidValueException(
+                sprintf('Request target must be an instance of %s, a string, or null.', Uri::class)
+            );
         }
 
-        if (preg_match('/\s/', $target)) {
-            throw new InvalidValueException('Request target cannot contain whitespace.');
+        if ('/' === $target[0]) {
+            return new BasicUri($target);
         }
 
-        return $target;
+        if (preg_match('/^https?:\/\//i', $target)) { // absolute-form
+            return new BasicUri($target);
+        }
+
+        if (strrpos($target, ':', -1)) {
+            return new BasicUri($target);
+        }
+
+        return new BasicUri('//' . $target);
     }
 
     /**

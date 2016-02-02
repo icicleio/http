@@ -2,6 +2,7 @@
 namespace Icicle\Http\Message\Cookie;
 
 use Icicle\Http\Exception\InvalidValueException;
+use Icicle\Http\Message;
 
 class BasicCookie implements Cookie
 {
@@ -70,7 +71,7 @@ class BasicCookie implements Cookie
      */
     public function toHeader()
     {
-        return $this->name . '=' . $this->value;
+        return Message\encode($this->name) . '=' . Message\encode($this->value);
     }
 
     /**
@@ -87,6 +88,6 @@ class BasicCookie implements Cookie
             throw new InvalidValueException('Invalid cookie header value.');
         }
 
-        return $value;
+        return Message\decode($value);
     }
 }

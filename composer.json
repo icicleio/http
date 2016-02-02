@@ -27,7 +27,10 @@
     "autoload": {
         "psr-4": {
             "Icicle\\Http\\": "src"
-        }
+        },
+        "files": [
+            "src/Message/functions.php"
+        ]
     },
     "autoload-dev": {
         "psr-4": {

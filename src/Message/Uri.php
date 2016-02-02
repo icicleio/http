@@ -79,34 +79,6 @@ interface Uri
     public function getFragment();
 
     /**
-     * Returns the authority portion of the URI or an empty string if no host is set.
-     *
-     * @return string String in [user[:password]@]host[:port] format.
-     */
-    public function encodeAuthority();
-
-    /**
-     * Returns the encoded path (special characters escaped).
-     *
-     * @return string
-     */
-    public function encodePath();
-
-    /**
-     * Returns the encoded query string (special characters escaped).
-     *
-     * @return string
-     */
-    public function encodeQuery();
-
-    /**
-     * Returns the encoded fragment (special characters escaped).
-     *
-     * @return string
-     */
-    public function encodeFragment();
-
-    /**
      * Returns a new instance with the given scheme or no scheme if null. :// or : suffix should be trimmed.
      *
      * @param string $scheme
