@@ -13,12 +13,8 @@ $coroutine = Coroutine\create(function () {
     $client = new Client();
     $encoder = new Http1Encoder();
 
-    // Connect to a google.com IP.
-    // Use Icicle\Dns\connect() in icicleio/dns package to resolve and connect using domain names.
-    $socket = (yield Socket\connect('173.194.46.70', 80));
-
     /** @var \Icicle\Http\Message\Response $response */
-    $response = (yield $client->request($socket, 'GET', 'http://www.google.com/teapot'));
+    $response = (yield $client->request('GET', 'http://www.google.com/teapot'));
 
     printf("Headers:\n%s", $encoder->encodeResponse($response));
 

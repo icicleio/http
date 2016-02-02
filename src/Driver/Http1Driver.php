@@ -40,21 +40,20 @@ class Http1Driver implements Driver
     {
         $request = yield from $this->reader->readRequest($socket, $timeout);
 
-        return yield from $this->builder->buildIncomingRequest($socket, $request, $timeout);
+        return yield from $this->builder->buildIncomingRequest($request, $timeout);
     }
 
     /**
      * {@inheritdoc}
      */
     public function buildResponse(
-        Socket $socket,
         Response $response,
         Request $request = null,
         float $timeout = 0,
         bool $allowPersistent = false
     ): \Generator {
         return $this->builder->buildOutgoingResponse(
-            $socket, $response, $request, $timeout, $allowPersistent
+            $response, $request, $timeout, $allowPersistent
         );
     }
 
@@ -71,12 +70,8 @@ class Http1Driver implements Driver
 
         $stream = $response->getBody();
 
-        try {
-            if ((!isset($request) || $request->getMethod() !== 'HEAD') && $stream->isReadable()) {
-                $written += yield from Stream\pipe($stream, $socket, false, 0, null, $timeout);
-            }
-        } finally {
-            $stream->close();
+        if ((!isset($request) || $request->getMethod() !== 'HEAD') && $stream->isReadable()) {
+            $written += yield from Stream\pipe($stream, $socket, false, 0, null, $timeout);
         }
 
         return $written;
@@ -89,19 +84,15 @@ class Http1Driver implements Driver
     {
         $request = yield from $this->reader->readResponse($socket, $timeout);
 
-        return yield from $this->builder->buildIncomingResponse($socket, $request, $timeout);
+        return yield from $this->builder->buildIncomingResponse($request, $timeout);
     }
 
     /**
      * {@inheritdoc}
      */
-    public function buildRequest(
-        Socket $socket,
-        Request $request,
-        float $timeout = 0,
-        bool $allowPersistent = false
-    ): \Generator {
-        return $this->builder->buildOutgoingRequest($socket, $request, $timeout, $allowPersistent);
+    public function buildRequest(Request $request, float $timeout = 0, bool $allowPersistent = false): \Generator
+    {
+        return $this->builder->buildOutgoingRequest($request, $timeout, $allowPersistent);
     }
 
     /**
@@ -113,12 +104,8 @@ class Http1Driver implements Driver
 
         $stream = $request->getBody();
 
-        try {
-            if ($stream->isReadable()) {
-                $written += yield from Stream\pipe($stream, $socket, false, 0, null, $timeout);
-            }
-        } finally {
-            $stream->close();
+        if ($stream->isReadable()) {
+            $written += yield from Stream\pipe($stream, $socket, false, 0, null, $timeout);
         }
 
         return $written;

@@ -2,6 +2,7 @@
 namespace Icicle\Http\Server\Internal;
 
 use Exception;
+use Icicle\Awaitable\Awaitable;
 use Icicle\Awaitable\Exception\TimeoutException;
 use Icicle\Coroutine\Coroutine;
 use Icicle\Http\Driver\Driver;
@@ -198,17 +199,18 @@ class Listener
                 }
 
                 $response = yield from $this->driver->buildResponse(
-                    $socket,
                     $response,
                     $request,
                     $timeout,
                     $allowPersistent
                 );
 
-                $coroutine = new Coroutine($this->driver->writeResponse($socket, $response, $request, $timeout));
+                try {
+                    yield from $this->driver->writeResponse($socket, $response, $request, $timeout);
+                } finally {
+                    $response->getBody()->close();
+                }
             } while (strtolower($response->getHeader('Connection')) === 'keep-alive');
-
-            yield $coroutine; // Wait until response has completed writing.
         } catch (Exception $exception) {
             yield from $this->log->write(sprintf(
                 "Error when handling request from %s:%d: %s\n",
@@ -234,7 +236,13 @@ class Listener
     private function createResponse(Request $request, Socket $socket): \Generator
     {
         try {
-            $response = yield from $this->handler->onRequest($request, $socket);
+            $response = $this->handler->onRequest($request, $socket);
+
+            if ($response instanceof \Generator) {
+                $response = yield from $response;
+            } elseif ($response instanceof Awaitable) {
+                $response = yield $response;
+            }
 
             if (!$response instanceof Response) {
                 throw new InvalidResultError(
@@ -270,7 +278,13 @@ class Listener
     private function createErrorResponse(int $code, Socket $socket): \Generator
     {
         try {
-            $response = yield from $this->handler->onError($code, $socket);
+            $response = $this->handler->onError($code, $socket);
+
+            if ($response instanceof \Generator) {
+                $response = yield from $response;
+            } elseif ($response instanceof Awaitable) {
+                $response = yield $response;
+            }
 
             if (!$response instanceof Response) {
                 throw new InvalidResultError(

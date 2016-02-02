@@ -15,20 +15,6 @@ interface Uri
     public function getScheme(): string;
 
     /**
-     * Returns the authority portion of the URI or an empty string if no host is set.
-     *
-     * @return string String in [user[:password]@]host[:port] format.
-     */
-    public function getAuthority(): string;
-
-    /**
-     * Returns the user and password portion of the URI, or an empty string.
-     *
-     * @return string String in user[:password] format.
-     */
-    public function getUserInfo(): string;
-
-    /**
      * Returns the host or an empty string if no host is set.
      *
      * @return string
@@ -50,16 +36,9 @@ interface Uri
     public function getPath(): string;
 
     /**
-     * Returns the query portion of the URI (does not include ? prefix). Key names are sorted through ksort().
-     *
-     * @return string
-     */
-    public function getQuery(): string;
-
-    /**
      * Returns an array of the key/value pairs corresponding to the query portion of the URI.
      *
-     * @return string[]
+     * @return string[][]
      */
     public function getQueryValues(): array;
 
@@ -73,13 +52,24 @@ interface Uri
     public function hasQueryValue(string $name): bool;
 
     /**
-     * Returns the value for the given query key name or an empty if the key name does not exist.
+     * Returns the value of the given query value. If multiple values were present for the named parameter, only the
+     * first value will be returned. Use getQueryValueAsArray() to return an array of all values for the particular
+     * parameter. Returns an empty string if the named parameter does not exist.
      *
      * @param string $name
      *
      * @return string
      */
     public function getQueryValue(string $name): string;
+
+    /**
+     * Returns all values for the given query key name or an empty array if the key name does not exist.
+     *
+     * @param string $name
+     *
+     * @return string[]
+     */
+    public function getQueryValueAsArray(string $name): array;
 
     /**
      * Returns the fragment portion of the URI (does not include # prefix).
@@ -105,7 +95,7 @@ interface Uri
      *
      * @return static
      */
-    public function withUserInfo(string $user = null, string $password = null): Uri;
+    public function withUser(string $user, string $password = null): Uri;
 
     /**
      * Returns a new instance with the given port or null to remove port.

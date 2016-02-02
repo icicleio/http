@@ -39,7 +39,7 @@ class CookieJar
      */
     public function has($name)
     {
-        return array_key_exists((string) $name, $this->cookies);
+        return isset($this->cookies[(string) $name]);
     }
 
     /**
@@ -50,7 +50,7 @@ class CookieJar
     public function get($name)
     {
         $name = (string) $name;
-        return array_key_exists($name, $this->cookies) ? $this->cookies[$name] : null;
+        return isset($this->cookies[$name]) ? $this->cookies[$name] : null;
     }
 
     /**

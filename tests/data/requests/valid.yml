@@ -1,7 +1,7 @@
 
 - file: requests/01.txt
   method: GET
-  target: /
+  target: example.com/
   protocolVersion: "1.1"
   headers:
     Host:
@@ -11,7 +11,7 @@
 
 - file: requests/02.txt
   method: POST
-  target: /test
+  target: example.com/test
   protocolVersion: "1.0"
   headers:
     Host:
@@ -21,7 +21,7 @@
 
 - file: requests/03.txt
   method: GET
-  target: /search?query=test
+  target: example.com/search?query=test
   protocolVersion: "1.1"
   headers:
     Host:
@@ -35,7 +35,7 @@
 
 - file: requests/04.txt
   method: PUT
-  target: /path/to/resource
+  target: api.example.org/path/to/resource
   protocolVersion: "1.1"
   headers:
     Host:
@@ -46,7 +46,7 @@
 
 - file: requests/05.txt
   method: POST
-  target: /form/submit
+  target: example.com/form/submit
   protocolVersion: "1.1"
   headers:
     Host:

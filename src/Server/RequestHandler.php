@@ -7,26 +7,18 @@ use Icicle\Socket\Socket;
 interface RequestHandler
 {
     /**
-     * @coroutine
-     *
      * @param \Icicle\Http\Message\Request $request
      * @param \Icicle\Socket\Socket $socket
      *
-     * @return \Generator
-     *
-     * @resolve \Icicle\Http\Message\Response $response
+     * @return \Generator|\Icicle\Awaitable\Awaitable|\Icicle\Http\Message\Response
      */
-    public function onRequest(Request $request, Socket $socket): \Generator;
+    public function onRequest(Request $request, Socket $socket);
 
     /**
-     * @coroutine
-     *
      * @param int $code
      * @param \Icicle\Socket\Socket $socket
      *
-     * @return \Generator
-     *
-     * @resolve \Icicle\Http\Message\Response
+     * @return \Generator|\Icicle\Awaitable\Awaitable|\Icicle\Http\Message\Response
      */
-    public function onError(int $code, Socket $socket): \Generator;
+    public function onError(int $code, Socket $socket);
 }

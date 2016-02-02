@@ -10,7 +10,6 @@ use Icicle\Http\Stream\ChunkedDecoder;
 use Icicle\Http\Stream\ChunkedEncoder;
 use Icicle\Http\Stream\ZlibDecoder;
 use Icicle\Http\Stream\ZlibEncoder;
-use Icicle\Socket\Socket;
 use Icicle\Stream;
 use Icicle\Stream\MemoryStream;
 use Icicle\Stream\SeekableStream;
@@ -60,16 +59,22 @@ class Http1Builder
     public function __construct(array $options = [])
     {
         if (isset($options['compress_types']) && is_array($options['compress_types'])) {
-            $this->compressTypes = $options['compress_types'];
+            $this->compressTypes = array_map(function ($type) {
+                return (string) $type;
+            }, $options['compress_types']);
         }
 
+        $this->compressionEnabled = isset($options['disable_compression'])
+            ? !$options['disable_compression']
+            : extension_loaded('zlib');
+
         $this->compressionLevel = isset($options['compression_level'])
-            ? $options['compression_level']
+            ? (int) $options['compression_level']
             : ZlibEncoder::DEFAULT_LEVEL;
 
         $this->hwm = isset($options['hwm']) ? (int) $options['hwm'] : self::DEFAULT_STREAM_HWM;
 
-        $this->compressionEnabled = !isset($options['disable_compression']) ? extension_loaded('zlib') : false;
+        $this->maxBodyLength = isset($options['max_length']) ? $options['max_length'] : self::DEFAULT_MAX_COMP_LENGTH;
 
         $this->keepAliveTimeout = isset($options['keep_alive_timeout'])
             ? (int) $options['keep_alive_timeout']
@@ -84,12 +89,11 @@ class Http1Builder
      * {@inheritdoc}
      */
     public function buildOutgoingResponse(
-        Socket $socket,
         Response $response,
         Request $request = null,
         float $timeout = 0,
         bool $allowPersistent = false
-    ) {
+    ): \Generator {
         if ('upgrade' === strtolower($response->getHeader('Connection'))) {
             return $response;
         }
@@ -124,18 +128,14 @@ class Http1Builder
             }
         }
 
-        return $this->buildOutgoingStream($socket, $response, $timeout);
+        return $this->buildOutgoingStream($response, $timeout);
     }
 
     /**
      * {@inheritdoc}
      */
-    public function buildOutgoingRequest(
-        Socket $socket,
-        Request $request,
-        float $timeout = 0,
-        bool $allowPersistent = false
-    ): \Generator {
+    public function buildOutgoingRequest(Request $request, float $timeout = 0, bool $allowPersistent = false): \Generator
+    {
         if (!$request->hasHeader('Connection')) {
             $request = $request->withHeader('Connection', $allowPersistent ? 'keep-alive' : 'close');
         }
@@ -150,16 +150,16 @@ class Http1Builder
             $request = $request->withoutHeader('Accept-Encoding');
         }
 
-        return $this->buildOutgoingStream($socket, $request, $timeout);
+        return $this->buildOutgoingStream($request, $timeout);
     }
 
     /**
      * {@inheritdoc}
      */
-    public function buildIncomingRequest(Socket $socket, Request $request, float $timeout = 0): \Generator
+    public function buildIncomingRequest(Request $request, float $timeout = 0): \Generator
     {
         if ($request->getMethod() === 'POST' || $request->getMethod() === 'PUT') {
-            return $this->buildIncomingStream($socket, $request, $timeout);
+            return $this->buildIncomingStream($request, $timeout);
         }
 
         $stream = new MemoryStream();
@@ -171,13 +171,12 @@ class Http1Builder
     /**
      * {@inheritdoc}
      */
-    public function buildIncomingResponse(Socket $socket, Response $response, float $timeout = 0): \Generator
+    public function buildIncomingResponse(Response $response, $timeout = 0)
     {
-        return $this->buildIncomingStream($socket, $response, $timeout);
+        return $this->buildIncomingStream($response, $timeout);
     }
 
     /**
-     * @param \Icicle\Socket\Socket $socket
      * @param \Icicle\Http\Message\Message $message
      * @param float|int $timeout
      *
@@ -187,11 +186,11 @@ class Http1Builder
      *
      * @throws \Icicle\Http\Exception\MessageException
      */
-    private function buildOutgoingStream(Socket $socket, Message $message, float $timeout = 0): \Generator
+    private function buildOutgoingStream(Message $message, $timeout = 0)
     {
         $body = $message->getBody();
 
-        if ($body instanceof SeekableStream) {
+        if ($body instanceof SeekableStream && $body->isOpen()) {
             yield from $body->seek(0);
         }
 
@@ -219,9 +218,7 @@ class Http1Builder
             }
 
             $coroutine = new Coroutine(Stream\pipe($body, $stream, true, 0, null, $timeout));
-            $coroutine->done(null, function () use ($socket) {
-                $socket->close();
-            });
+            $coroutine->done(null, [$stream, 'close']);
 
             $message = $message
                 ->withBody($stream)
@@ -230,12 +227,9 @@ class Http1Builder
 
         if ($message->getProtocolVersion() === '1.1' && !$message->hasHeader('Content-Length')) {
             $stream = new ChunkedEncoder($this->hwm);
-            $body = $message->getBody();
 
-            $coroutine = new Coroutine(Stream\pipe($body, $stream, true, 0, null, $timeout));
-            $coroutine->done(null, function () use ($socket) {
-                $socket->close();
-            });
+            $coroutine = new Coroutine(Stream\pipe($message->getBody(), $stream, true, 0, null, $timeout));
+            $coroutine->done(null, [$stream, 'close']);
 
             return $message
                 ->withBody($stream)
@@ -246,7 +240,6 @@ class Http1Builder
     }
 
     /**
-     * @param \Icicle\Socket\Socket $socket
      * @param \Icicle\Http\Message\Message $message
      * @param float|int $timeout
      *
@@ -256,26 +249,23 @@ class Http1Builder
      *
      * @throws \Icicle\Http\Exception\MessageException
      */
-    private function buildIncomingStream(Socket $socket, Message $message, float $timeout = 0): \Generator
+    private function buildIncomingStream(Message $message, $timeout = 0)
     {
-        $stream = $message->getBody();
+        $body = $message->getBody();
 
-        if ($stream instanceof SeekableStream) {
-            yield from $stream->seek(0);
+        if ($body instanceof SeekableStream && $body->isOpen()) {
+            yield from $body->seek(0);
         }
 
-        if (!$stream->isReadable()) {
+        if (!$body->isReadable()) {
             return $message;
         }
 
         if (strtolower($message->getHeader('Transfer-Encoding') === 'chunked')) {
             $stream = new ChunkedDecoder($this->hwm);
-            $body = $message->getBody();
 
             $coroutine = new Coroutine(Stream\pipe($body, $stream, true, 0, null, $timeout));
-            $coroutine->done(null, function () use ($socket) {
-                $socket->close();
-            });
+            $coroutine->done(null, [$stream, 'close']);
 
             $message = $message->withBody($stream);
         } elseif ($message->hasHeader('Content-Length')) {
@@ -284,12 +274,9 @@ class Http1Builder
                 throw new MessageException(Response::BAD_REQUEST, 'Content-Length header invalid.');
             }
             $stream = new MemoryStream($this->hwm);
-            $body = $message->getBody();
 
             $coroutine = new Coroutine(Stream\pipe($body, $stream, true, $length, null, $timeout));
-            $coroutine->done(null, function () use ($socket) {
-                $socket->close();
-            });
+            $coroutine->done(null, [$stream, 'close']);
 
             $message = $message->withBody($stream);
         } elseif (
@@ -307,9 +294,7 @@ class Http1Builder
                 $stream = new ZlibDecoder($this->hwm);
 
                 $coroutine = new Coroutine(Stream\pipe($message->getBody(), $stream, true, 0, null, $timeout));
-                $coroutine->done(null, function () use ($socket) {
-                    $socket->close();
-                });
+                $coroutine->done(null, [$stream, 'close']);
 
                 return $message->withBody($stream);
 

@@ -75,7 +75,7 @@ class Http1ReaderTest extends TestCase
             $method, $target, $protocolVersion, $headers, $body
         ) {
             $this->assertSame($method, $request->getMethod());
-            $this->assertSame($target, $request->getRequestTarget());
+            $this->assertSame($target, (string) $request->getRequestTarget());
             $this->assertSame($protocolVersion, $request->getProtocolVersion());
             $this->assertEquals($headers, $request->getHeaders());
 

@@ -4,17 +4,10 @@ namespace Icicle\Http\Message;
 use Icicle\Http\Exception\InvalidValueException;
 
 /**
- * URI implementation based on phly/http URI implementation.
- *
- * @see https://github.com/phly/http
+ * Uri implementation loosely based on PSR-7.
  */
 class BasicUri implements Uri
 {
-    const UNRESERVED_CHARS = 'A-Za-z0-9_\-\.~';
-    const GEN_DELIMITERS = ':\/\?#\[\]@';
-    const SUB_DELIMITERS = '!\$&\'\(\)\*\+,;=';
-    const ENCODED_CHAR = '%(?![A-Fa-f0-9]{2})';
-
     /**
      * Array of valid schemes to corresponding port numbers.
      *
@@ -56,7 +49,7 @@ class BasicUri implements Uri
     private $path;
 
     /**
-     * @var string[]
+     * @var string[][]
      */
     private $query = [];
 
@@ -86,36 +79,17 @@ class BasicUri implements Uri
     /**
      * {@inheritdoc}
      */
-    public function getAuthority(): string
+    public function getUser(): string
     {
-        $authority = $this->getHost();
-        if (!$authority) {
-            return '';
-        }
-
-        $userInfo = $this->getUserInfo();
-        if ($userInfo) {
-            $authority = sprintf('%s@%s', $userInfo, $authority);
-        }
-
-        $port = $this->getPort();
-        if ($port && $this->getPortForScheme() !== $port) {
-            $authority = sprintf('%s:%s', $authority, $this->getPort());
-        }
-
-        return $authority;
+        return $this->user;
     }
 
     /**
      * {@inheritdoc}
      */
-    public function getUserInfo(): string
+    public function getPassword(): string
     {
-        if ('' !== $this->password) {
-            return sprintf('%s:%s', $this->user, $this->password);
-        }
-
-        return $this->user;
+        return $this->password;
     }
 
     /**
@@ -149,28 +123,6 @@ class BasicUri implements Uri
     /**
      * {@inheritdoc}
      */
-    public function getQuery(): string
-    {
-        if (empty($this->query)) {
-            return '';
-        }
-
-        $query = [];
-
-        foreach ($this->query as $name => $value) {
-            if ('' === $value) {
-                $query[] = $name;
-            } else {
-                $query[] = sprintf('%s=%s', $name, $value);
-            }
-        }
-
-        return implode('&', $query);
-    }
-
-    /**
-     * {@inheritdoc}
-     */
     public function getQueryValues(): array
     {
         return $this->query;
@@ -181,7 +133,7 @@ class BasicUri implements Uri
      */
     public function hasQueryValue(string $name): bool
     {
-        return isset($this->query[$this->encodeValue($name)]);
+        return isset($this->query[$name]);
     }
 
     /**
@@ -189,9 +141,15 @@ class BasicUri implements Uri
      */
     public function getQueryValue(string $name): string
     {
-        $name = $this->encodeValue($name);
+        return isset($this->query[$name][0]) ? $this->query[$name][0] : '';
+    }
 
-        return isset($this->query[$name]) ? $this->query[$name] : '';
+    /**
+     * {@inheritdoc}
+     */
+    public function getQueryValueAsArray(string $name): array
+    {
+        return isset($this->query[$name]) ? $this->query[$name] : [];
     }
 
     /**
@@ -216,12 +174,12 @@ class BasicUri implements Uri
     /**
      * {@inheritdoc}
      */
-    public function withUserInfo(string $user = null, string $password = null): Uri
+    public function withUser(string $user, string $password = null): Uri
     {
         $new = clone $this;
 
-        $new->user = $new->encodeValue($user);
-        $new->password = $new->encodeValue($password);
+        $new->user = decode($user);
+        $new->password = decode($password);
 
         return $new;
     }
@@ -288,12 +246,23 @@ class BasicUri implements Uri
     {
         $new = clone $this;
 
-        $name = $new->encodeValue($name);
-        $value = $new->encodeValue($value);
-
-        $new->query[$name] = $value;
+        $new->query[$name] = $this->filterValue($value);
 
         return $new;
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function withAddedQueryValue(string $name, $value): Uri
+    {
+        $new = clone $this;
+
+        if (isset($new->query[$name])) {
+            $new->query[$name][] = $value;
+        } else {
+            $new->query[$name] = [$value];
+        }
     }
 
     /**
@@ -302,8 +271,6 @@ class BasicUri implements Uri
     public function withoutQueryValue(string $name): Uri
     {
         $new = clone $this;
-
-        $name = $this->encodeValue($name);
 
         unset($new->query[$name]);
 
@@ -315,7 +282,7 @@ class BasicUri implements Uri
      */
     public function __toString(): string
     {
-        $uri = $this->getAuthority();
+        $uri = $this->encodeAuthority();
 
         if (!empty($uri)) {
             $scheme = $this->getScheme();
@@ -324,16 +291,15 @@ class BasicUri implements Uri
             }
         }
 
-        $uri .= $this->getPath();
+        $uri .= encode($this->path);
 
-        $query = $this->getQuery();
+        $query = $this->encodeQuery();
         if ($query) {
             $uri = sprintf('%s?%s', $uri, $query);
         }
 
-        $fragment = $this->getFragment();
-        if ($fragment) {
-            $uri = sprintf('%s#%s', $uri, $fragment);
+        if ($this->fragment) {
+            $uri = sprintf('%s#%s', $uri, encode($this->fragment));
         }
 
         return $uri;
@@ -371,8 +337,8 @@ class BasicUri implements Uri
         $this->scheme   = isset($components['scheme'])   ? $this->filterScheme($components['scheme']) : '';
         $this->host     = isset($components['host'])     ? $components['host'] : '';
         $this->port     = isset($components['port'])     ? $this->filterPort($components['port']) : 0;
-        $this->user     = isset($components['user'])     ? $this->encodeValue($components['user']) : '';
-        $this->password = isset($components['pass'])     ? $this->encodeValue($components['pass']) : '';
+        $this->user     = isset($components['user'])     ? decode($components['user']) : '';
+        $this->password = isset($components['pass'])     ? decode($components['pass']) : '';
         $this->path     = isset($components['path'])     ? $this->parsePath($components['path']) : '';
         $this->query    = isset($components['query'])    ? $this->parseQuery($components['query']) : [];
         $this->fragment = isset($components['fragment']) ? $this->parseFragment($components['fragment']) : '';
@@ -446,9 +412,9 @@ class BasicUri implements Uri
 
         $path = ltrim($path, '/');
 
-        $path = '/' . $path;
+        $path = '*' === $path ? $path : '/' . $path;
 
-        return $this->encodePath($path);
+        return decode($path);
     }
 
     /**
@@ -465,7 +431,11 @@ class BasicUri implements Uri
         foreach (explode('&', $query) as $data) {
             list($name, $value) = $this->parseQueryPair($data);
             if ('' !== $name) {
-                $fields[$name] = $value;
+                if (isset($fields[$name])) {
+                    $fields[$name][] = $value;
+                } else {
+                    $fields[$name] = [$value];
+                }
             }
         }
 
@@ -483,9 +453,10 @@ class BasicUri implements Uri
     {
         $data = explode('=', $data, 2);
         if (1 === count($data)) {
-            return [$this->encodeValue($data[0]), ''];
+            $data[] = '';
         }
-        return [$this->encodeValue($data[0]), $this->encodeValue($data[1])];
+
+        return array_map(__NAMESPACE__ . '\decode', $data);
     }
 
     /**
@@ -497,42 +468,87 @@ class BasicUri implements Uri
     {
         $fragment = ltrim($fragment, '#');
 
-        return $this->encodeValue($fragment);
+        return decode($fragment);
     }
 
     /**
-     * Escapes all reserved chars and sub delimiters.
+     * Converts a given query value to an integer-indexed array of strings.
      *
-     * @param string $string
+     * @param mixed|mixed[] $values
      *
-     * @return string
+     * @return string[]
+     *
+     * @throws \Icicle\Http\Exception\InvalidValueException If the given value cannot be converted to a string and
+     *     is not an array of values that can be converted to strings.
      */
-    protected function encodePath(string $string = null): string
+    protected function filterValue($values): array
     {
-        return preg_replace_callback(
-            '/(?:[^' . self::UNRESERVED_CHARS . '\/%]+|' . self::ENCODED_CHAR . ')/',
-            function (array $matches) {
-                return rawurlencode($matches[0]);
-            },
-            $string
-        );
+        if (!is_array($values)) {
+            $values = [$values];
+        }
+
+        $lines = [];
+
+        foreach ($values as $value) {
+            if (is_numeric($value) || is_null($value) || (is_object($value) && method_exists($value, '__toString'))) {
+                $value = (string) $value;
+            } elseif (!is_string($value)) {
+                throw new InvalidValueException('Query values must be strings or an array of strings.');
+            }
+
+            $lines[] = decode($value);
+        }
+
+        return $lines;
     }
 
     /**
-     * Escapes all reserved chars.
-     *
-     * @param string $string
-     *
-     * @return string
+     * {@inheritdoc}
      */
-    protected function encodeValue(string $string = null): string
+    protected function encodeAuthority(): string
     {
-        return preg_replace_callback(
-            '/(?:[^' . self::UNRESERVED_CHARS . self::SUB_DELIMITERS . '\/%]+|' . self::ENCODED_CHAR . ')/',
-            function (array $matches) {
-                return rawurlencode($matches[0]);
-            },
-            $string
-        );
+        $authority = $this->getHost();
+        if (!$authority) {
+            return '';
+        }
+
+        if ('' !== $this->user) {
+            if ('' !== $this->password) {
+                $authority = sprintf('%s:%s@%s', encode($this->user), encode($this->password), $authority);
+            } else {
+                $authority = sprintf('%s@%s', encode($this->user), $authority);
+            }
+        }
+
+        $port = $this->getPort();
+        if ($port && $this->getPortForScheme() !== $port) {
+            $authority = sprintf('%s:%s', $authority, $this->getPort());
+        }
+
+        return $authority;
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    protected function encodeQuery(): string
+    {
+        if (empty($this->query)) {
+            return '';
+        }
+
+        $query = [];
+
+        foreach ($this->query as $name => $values) {
+            foreach ($values as $value) {
+                if ('' === $value) {
+                    $query[] = encode($name);
+                } else {
+                    $query[] = sprintf('%s=%s', encode($name), encode($value));
+                }
+            }
+        }
+
+        return implode('&', $query);
     }
 }
