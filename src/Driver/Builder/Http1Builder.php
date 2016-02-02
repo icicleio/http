@@ -3,16 +3,10 @@ namespace Icicle\Http\Driver\Builder;
 
 use Icicle\Coroutine\Coroutine;
 use Icicle\Http\Exception\MessageException;
-use Icicle\Http\Message\Message;
-use Icicle\Http\Message\Request;
-use Icicle\Http\Message\Response;
-use Icicle\Http\Stream\ChunkedDecoder;
-use Icicle\Http\Stream\ChunkedEncoder;
-use Icicle\Http\Stream\ZlibDecoder;
-use Icicle\Http\Stream\ZlibEncoder;
+use Icicle\Http\Message\{Message, Request, Response};
+use Icicle\Http\Stream\{ChunkedDecoder, ChunkedEncoder, ZlibDecoder, ZlibEncoder};
 use Icicle\Stream;
-use Icicle\Stream\MemoryStream;
-use Icicle\Stream\SeekableStream;
+use Icicle\Stream\{MemoryStream, SeekableStream};
 
 class Http1Builder
 {

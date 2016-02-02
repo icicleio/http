@@ -1,12 +1,8 @@
 <?php
 namespace Icicle\Http\Driver\Reader;
 
-use Icicle\Http\Exception\MessageException;
-use Icicle\Http\Exception\ParseException;
-use Icicle\Http\Message\BasicRequest;
-use Icicle\Http\Message\BasicResponse;
-use Icicle\Http\Message\BasicUri;
-use Icicle\Http\Message\Response;
+use Icicle\Http\Exception\{MessageException, ParseException};
+use Icicle\Http\Message\{BasicRequest, BasicResponse, BasicUri, Response};
 use Icicle\Socket\Socket;
 use Icicle\Stream;
 use Icicle\Stream\Structures\Buffer;

@@ -2,8 +2,7 @@
 namespace Icicle\Http\Driver\Encoder;
 
 use Icicle\Http\Message;
-use Icicle\Http\Message\Request;
-use Icicle\Http\Message\Response;
+use Icicle\Http\Message\{Request, Response};
 
 class Http1Encoder
 {

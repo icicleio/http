@@ -1,10 +1,8 @@
 <?php
 namespace Icicle\Http\Message;
 
-use Icicle\Http\Exception\InvalidMethodException;
-use Icicle\Http\Exception\InvalidValueException;
-use Icicle\Http\Message\Cookie\BasicCookie;
-use Icicle\Http\Message\Cookie\Cookie;
+use Icicle\Http\Exception\{InvalidMethodException, InvalidValueException};
+use Icicle\Http\Message\Cookie\{BasicCookie, Cookie};
 use Icicle\Stream\ReadableStream;
 
 class BasicRequest extends AbstractMessage implements Request

@@ -1,8 +1,7 @@
 <?php
 namespace Icicle\Http\Driver;
 
-use Icicle\Http\Message\Request;
-use Icicle\Http\Message\Response;
+use Icicle\Http\Message\{Request, Response};
 use Icicle\Socket\Socket;
 use Icicle\Stream;
 

@@ -1,10 +1,8 @@
 <?php
 namespace Icicle\Http\Message;
 
-use Icicle\Http\Exception\InvalidHeaderException;
-use Icicle\Http\Exception\UnsupportedVersionException;
-use Icicle\Stream\ReadableStream;
-use Icicle\Stream\MemorySink;
+use Icicle\Http\Exception\{InvalidHeaderException, UnsupportedVersionException};
+use Icicle\Stream\{ReadableStream, MemorySink};
 
 abstract class AbstractMessage implements Message
 {
