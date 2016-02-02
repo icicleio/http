@@ -14,7 +14,7 @@ $coroutine = Coroutine\create(function () {
     $encoder = new Http1Encoder();
 
     /** @var \Icicle\Http\Message\Response $response */
-    $response = (yield $client->request('GET', 'http://www.google.com/teapot'));
+    $response = yield from $client->request('GET', 'http://www.google.com/teapot');
 
     printf("Headers:\n%s", $encoder->encodeResponse($response));
 
@@ -23,14 +23,14 @@ $coroutine = Coroutine\create(function () {
     $stream = $response->getBody();
 
     while ($stream->isReadable()) {
-        $data = (yield $stream->read());
+        $data = yield from $stream->read();
         echo $data;
     }
 
     echo "\n";
 });
 
-$coroutine->done(null, function (Exception $exception) {
+$coroutine->done(null, function (Throwable $exception) {
     printf("Exception: %s\n", $exception);
 });
 

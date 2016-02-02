@@ -3,10 +3,8 @@
 
 require dirname(__DIR__) . '/vendor/autoload.php';
 
-use Icicle\Http\Message\Request;
-use Icicle\Http\Message\BasicResponse;
-use Icicle\Http\Server\RequestHandler;
-use Icicle\Http\Server\Server;
+use Icicle\Http\Message\{BasicResponse, Request, Response};
+use Icicle\Http\Server\{RequestHandler, Server};
 use Icicle\Loop;
 use Icicle\Socket\Socket;
 use Icicle\Stream\MemorySink;
@@ -57,14 +55,11 @@ class ExampleRequestHandler implements RequestHandler
      * @param int $code
      * @param \Icicle\Socket\Socket $socket
      *
-     * @return \Generator
-     *
-     * @resolve \Icicle\Http\Message\Response
+     * @return \Icicle\Http\Message\Response
      */
-    public function onError(int $code, Socket $socket): Generator
+    public function onError(int $code, Socket $socket): Response
     {
         return new BasicResponse($code);
-        yield; // Unreachable, but makes method a coroutine.
     }
 }
 
