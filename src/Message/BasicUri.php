@@ -291,7 +291,7 @@ class BasicUri implements Uri
             }
         }
 
-        $uri .= encode($this->path);
+        $uri .= encodePath($this->path);
 
         $query = $this->encodeQuery();
         if ($query) {
@@ -299,7 +299,7 @@ class BasicUri implements Uri
         }
 
         if ($this->fragment) {
-            $uri = sprintf('%s#%s', $uri, encode($this->fragment));
+            $uri = sprintf('%s#%s', $uri, encodeValue($this->fragment));
         }
 
         return $uri;
@@ -514,9 +514,9 @@ class BasicUri implements Uri
 
         if ('' !== $this->user) {
             if ('' !== $this->password) {
-                $authority = sprintf('%s:%s@%s', encode($this->user), encode($this->password), $authority);
+                $authority = sprintf('%s:%s@%s', encodeValue($this->user), encodeValue($this->password), $authority);
             } else {
-                $authority = sprintf('%s@%s', encode($this->user), $authority);
+                $authority = sprintf('%s@%s', encodeValue($this->user), $authority);
             }
         }
 
@@ -542,9 +542,9 @@ class BasicUri implements Uri
         foreach ($this->query as $name => $values) {
             foreach ($values as $value) {
                 if ('' === $value) {
-                    $query[] = encode($name);
+                    $query[] = encodeValue($name);
                 } else {
-                    $query[] = sprintf('%s=%s', encode($name), encode($value));
+                    $query[] = sprintf('%s=%s', encodeValue($name), encodeValue($value));
                 }
             }
         }

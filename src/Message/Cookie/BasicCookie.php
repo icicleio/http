@@ -71,7 +71,7 @@ class BasicCookie implements Cookie
      */
     public function toHeader()
     {
-        return Message\encode($this->name) . '=' . Message\encode($this->value);
+        return Message\encodeValue($this->name) . '=' . Message\encodeValue($this->value);
     }
 
     /**
