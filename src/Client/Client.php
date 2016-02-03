@@ -2,6 +2,7 @@
 namespace Icicle\Http\Client;
 
 use Icicle\Dns;
+use Icicle\Exception\InvalidArgumentError;
 use Icicle\Http\Exception\RedirectException;
 use Icicle\Http\Message\BasicUri;
 use Icicle\Http\Message\Request;
@@ -91,6 +92,12 @@ class Client
         try {
             do {
                 $uri = $request->getUri();
+                $host = $uri->getHost();
+                $port = $uri->getPort();
+
+                if ('' === $host || 0 === $port) {
+                    throw new InvalidArgumentError('Request URI must have a host and port.');
+                }
 
                 /** @var \Icicle\Socket\Socket $socket */
                 $socket = (yield Dns\connect($uri->getHost(), $uri->getPort(), $options));
@@ -125,8 +132,6 @@ class Client
                             }
 
                             $request = $request->withUri(new BasicUri($response->getHeader('Location')));
-
-                            printf("New URI: %s\n", $request->getUri());
 
                             $response = null; // Let's go around again!
                     }
