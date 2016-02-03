@@ -13,9 +13,9 @@ if (!function_exists(__NAMESPACE__ . '\encode')) {
     function encode(string $string, bool $isPath = false): string
     {
         if ($isPath) {
-            $regex = '/(?:[^A-Za-z0-9_\-\.~\/%]+|%(?![A-Fa-f0-9]{2}))/';
+            $regex = '/(?:[^A-Za-z0-9_\-\.~\/:%]+|%(?![A-Fa-f0-9]{2}))/';
         } else {
-            $regex = '/(?:[^A-Za-z0-9_\-\.~!\$&\'\(\)\[\]\*\+,;=\/%]+|%(?![A-Fa-f0-9]{2}))/';
+            $regex = '/(?:[^A-Za-z0-9_\-\.~!\$&\'\(\)\[\]\*\+,:;=\/% ]+|%(?![A-Fa-f0-9]{2}))/';
         }
 
         return preg_replace_callback($regex, function (array $matches) {
