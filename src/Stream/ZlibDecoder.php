@@ -1,21 +1,28 @@
 <?php
 namespace Icicle\Http\Stream;
 
+use Icicle\Exception\InvalidArgumentError;
 use Icicle\Exception\UnsupportedError;
 use Icicle\Stream\Exception\FailureException;
 use Icicle\Stream\MemoryStream;
 
 class ZlibDecoder extends MemoryStream
 {
+    const GZIP = \ZLIB_ENCODING_GZIP;
+    const DEFLATE = \ZLIB_ENCODING_RAW;
+
     /**
      * @var resource
      */
     private $resource;
 
     /**
+     * @param int $type Compression type. Use GZIP or DEFLATE constants defined in this class.
+     * @param int $hwm
+     *
      * @throws \Icicle\Exception\UnsupportedError If the zlib extension is not loaded.
      */
-    public function __construct(int $hwm = 0)
+    public function __construct(int $type, int $hwm = 0)
     {
         // @codeCoverageIgnoreStart
         if (!extension_loaded('zlib')) {
@@ -24,9 +31,17 @@ class ZlibDecoder extends MemoryStream
 
         parent::__construct($hwm);
 
-        $this->resource = inflate_init();
+        switch ($type) {
+            case self::GZIP:
+            case self::DEFLATE:
+                $this->resource = inflate_init($type);
+                break;
 
-        if (false === $this->resource) {
+            default:
+                throw new InvalidArgumentError('Invalid compression type.');
+        }
+
+        if (null === $this->resource) {
             throw new FailureException('Could not initialize inflate handle.');
         }
     }
@@ -39,7 +54,7 @@ class ZlibDecoder extends MemoryStream
      */
     protected function send(string $data, float $timeout = 0, bool $end = false): \Generator
     {
-        if (false === ($data = inflate_add($this->resource, $data, ZLIB_SYNC_FLUSH))) {
+        if (false === ($data = inflate_add($this->resource, $data, $end ? \ZLIB_FINISH : \ZLIB_SYNC_FLUSH))) {
             throw new FailureException('Failed adding date to inflate stream.');
         }
 

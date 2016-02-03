@@ -284,13 +284,12 @@ class Http1Builder
 
         switch ($contentEncoding) {
             case 'deflate':
+                $stream = new ZlibDecoder(ZlibDecoder::DEFLATE, $this->hwm);
+                break;
+
             case 'gzip':
-                $stream = new ZlibDecoder($this->hwm);
-
-                $coroutine = new Coroutine(Stream\pipe($message->getBody(), $stream, true, 0, null, $timeout));
-                $coroutine->done(null, [$stream, 'close']);
-
-                return $message->withBody($stream);
+                $stream = new ZlibDecoder(ZlibDecoder::GZIP, $this->hwm);
+                break;
 
             case '':
                 return $message;
@@ -301,5 +300,10 @@ class Http1Builder
                     sprintf('Unsupported content encoding received: %s', $contentEncoding)
                 );
         }
+
+        $coroutine = new Coroutine(Stream\pipe($message->getBody(), $stream, true, 0, null, $timeout));
+        $coroutine->done(null, [$stream, 'close']);
+
+        return $message->withBody($stream);
     }
 }

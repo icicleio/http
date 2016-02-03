@@ -8,8 +8,8 @@ use Icicle\Stream\MemoryStream;
 
 class ZlibEncoder extends MemoryStream
 {
-    const GZIP = ZLIB_ENCODING_GZIP;
-    const DEFLATE = ZLIB_ENCODING_RAW;
+    const GZIP = \ZLIB_ENCODING_GZIP;
+    const DEFLATE = \ZLIB_ENCODING_RAW;
 
     const DEFAULT_LEVEL = -1;
 
@@ -59,7 +59,7 @@ class ZlibEncoder extends MemoryStream
      */
     protected function send(string $data, float $timeout = 0, bool $end = false): \Generator
     {
-        if (false === ($data = deflate_add($this->resource, $data, $end ? ZLIB_FINISH : 0))) {
+        if (false === ($data = deflate_add($this->resource, $data, $end ? \ZLIB_FINISH : \ZLIB_SYNC_FLUSH))) {
             throw new FailureException('Failed adding date to deflate stream.');
         }
 
