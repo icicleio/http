@@ -183,7 +183,7 @@ class SetCookie extends BasicCookie implements MetaCookie
         }
 
         if ('' !== $this->path) {
-            $line .= '; Path=' . Message\encode($this->path, true);
+            $line .= '; Path=' . Message\encodePath($this->path);
         }
 
         if ('' !== $this->domain) {

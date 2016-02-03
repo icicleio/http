@@ -153,11 +153,11 @@ class BasicRequestTest extends TestCase
     }
 
     /**
-     * @expectedException \Icicle\Http\Exception\InvalidValueException
+     * @expectedException \TypeError
      */
     public function testConstructWithInvalidTarget()
     {
-        new BasicRequest('GET', '', [], null, 0);
+        new BasicRequest('GET', '', [], null, []);
     }
 
     public function getUris()

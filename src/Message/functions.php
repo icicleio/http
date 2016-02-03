@@ -3,24 +3,58 @@ namespace Icicle\Http\Message;
 
 if (!function_exists(__NAMESPACE__ . '\encode')) {
     /**
-     * Escapes all reserved chars.
+     * Escapes URI value.
      *
-     * @param string $string
-     * @param bool $isPath
+     * @param string $value
      *
      * @return string
      */
-    function encode(string $string, bool $isPath = false): string
+    function encodeValue(string $value): string
     {
-        if ($isPath) {
-            $regex = '/(?:[^A-Za-z0-9_\-\.~\/:%]+|%(?![A-Fa-f0-9]{2}))/';
-        } else {
-            $regex = '/(?:[^A-Za-z0-9_\-\.~!\$&\'\(\)\[\]\*\+,:;=\/% ]+|%(?![A-Fa-f0-9]{2}))/';
-        }
+        return preg_replace_callback(
+            '/(?:[^A-Za-z0-9_\-\.~!\$&\'\(\)\[\]\*\+,:;=\/%]+|%(?![A-Fa-f0-9]{2}))/',
+            function (array $matches) {
+                return rawurlencode($matches[0]);
+            },
+            $value
+        );
+    }
 
-        return preg_replace_callback($regex, function (array $matches) {
-            return rawurlencode($matches[0]);
-        }, $string);
+    /**
+     * Escapes path.
+     *
+     * @param string $path
+     *
+     * @return string
+     */
+    function encodePath(string $path): string
+    {
+        return preg_replace_callback(
+            '/(?:[^A-Za-z0-9_\-\.~\/:%]+|%(?![A-Fa-f0-9]{2}))/',
+            function (array $matches) {
+                return rawurlencode($matches[0]);
+            },
+            $path
+        );
+    }
+
+
+    /**
+     * Escapes header value.
+     *
+     * @param string $header
+     *
+     * @return string
+     */
+    function encodeHeader(string $header): string
+    {
+        return preg_replace_callback(
+            '/(?:[^A-Za-z0-9_\-\.~!\$&\'\(\)\[\]\*\+,:;=\/% ]+|%(?![A-Fa-f0-9]{2}))/',
+            function (array $matches) {
+                return rawurlencode($matches[0]);
+            },
+            $header
+        );
     }
 
     /**

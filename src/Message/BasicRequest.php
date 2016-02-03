@@ -47,7 +47,7 @@ class BasicRequest extends AbstractMessage implements Request
         $uri = '',
         array $headers = [],
         ReadableStream $stream = null,
-        string $target = null,
+        $target = null,
         string $protocol = '1.1'
     ) {
         parent::__construct($headers, $stream, $protocol);
@@ -76,32 +76,6 @@ class BasicRequest extends AbstractMessage implements Request
         }
 
         return $this->uri;
-
-        $target = encode($this->uri->getPath(), true);
-
-        if ('' === $target) {
-            $target = '/';
-        }
-
-        $query = $this->uri->getQueryValues();
-
-        if (empty($query)) {
-            return $target;
-        }
-
-        $encoded = [];
-
-        foreach ($query as $name => $values) {
-            foreach ($values as $value) {
-                if ('' === $value) {
-                    $encoded[] = encode($name);
-                } else {
-                    $encoded[] = sprintf('%s=%s', encode($name), encode($value));
-                }
-            }
-        }
-
-        return sprintf('%s?%s', $target, implode('&', $encoded));
     }
 
     /**
@@ -288,12 +262,6 @@ class BasicRequest extends AbstractMessage implements Request
     {
         if (null === $target || '' === $target) {
             return null;
-        }
-
-        if (!is_string($target)) {
-            throw new InvalidValueException(
-                sprintf('Request target must be an instance of %s, a string, or null.', Uri::class)
-            );
         }
 
         if ('/' === $target[0]) {
