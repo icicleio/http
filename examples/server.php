@@ -57,13 +57,11 @@ class ExampleRequestHandler implements RequestHandler
      * @param int $code
      * @param \Icicle\Socket\Socket $socket
      *
-     * @return \Generator
-     *
-     * @resolve \Icicle\Http\Message\Response
+     * @return \Icicle\Http\Message\Response
      */
     public function onError($code, Socket $socket)
     {
-        yield new BasicResponse($code);
+        return new BasicResponse($code);
     }
 }
 
