@@ -128,8 +128,11 @@ class Http1Builder
     /**
      * {@inheritdoc}
      */
-    public function buildOutgoingRequest(Request $request, float $timeout = 0, bool $allowPersistent = false): \Generator
-    {
+    public function buildOutgoingRequest(
+        Request $request,
+        float $timeout = 0,
+        bool $allowPersistent = false
+    ): \Generator {
         if (!$request->hasHeader('Connection')) {
             $request = $request->withHeader('Connection', $allowPersistent ? 'keep-alive' : 'close');
         }
@@ -153,7 +156,7 @@ class Http1Builder
     public function buildIncomingRequest(Request $request, float $timeout = 0): \Generator
     {
         if ($request->getMethod() === 'POST' || $request->getMethod() === 'PUT') {
-            return $this->buildIncomingStream($request, $timeout);
+            return yield from $this->buildIncomingStream($request, $timeout);
         }
 
         $stream = new MemoryStream();
@@ -165,12 +168,14 @@ class Http1Builder
     /**
      * {@inheritdoc}
      */
-    public function buildIncomingResponse(Response $response, $timeout = 0)
+    public function buildIncomingResponse(Response $response, float $timeout = 0): \Generator
     {
         return $this->buildIncomingStream($response, $timeout);
     }
 
     /**
+     * @coroutine
+     *
      * @param \Icicle\Http\Message\Message $message
      * @param float|int $timeout
      *
@@ -180,7 +185,7 @@ class Http1Builder
      *
      * @throws \Icicle\Http\Exception\MessageException
      */
-    private function buildOutgoingStream(Message $message, $timeout = 0)
+    private function buildOutgoingStream(Message $message, float $timeout = 0): \Generator
     {
         $body = $message->getBody();
 
@@ -234,6 +239,8 @@ class Http1Builder
     }
 
     /**
+     * @coroutine
+     *
      * @param \Icicle\Http\Message\Message $message
      * @param float|int $timeout
      *
@@ -243,7 +250,7 @@ class Http1Builder
      *
      * @throws \Icicle\Http\Exception\MessageException
      */
-    private function buildIncomingStream(Message $message, $timeout = 0)
+    private function buildIncomingStream(Message $message, float $timeout = 0): \Generator
     {
         $body = $message->getBody();
 
