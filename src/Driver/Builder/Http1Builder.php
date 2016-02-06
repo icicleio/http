@@ -285,8 +285,12 @@ class Http1Builder
             }
             $stream = new MemoryStream($this->hwm);
 
-            $coroutine = new Coroutine(Stream\pipe($body, $stream, true, $length, null, $timeout));
-            $coroutine->done(null, [$stream, 'close']);
+            if (0 === $length) {
+                yield $stream->end();
+            } else {
+                $coroutine = new Coroutine(Stream\pipe($body, $stream, true, $length, null, $timeout));
+                $coroutine->done(null, [$stream, 'close']);
+            }
 
             $message = $message->withBody($stream);
         } elseif (
