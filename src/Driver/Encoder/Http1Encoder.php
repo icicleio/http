@@ -46,14 +46,7 @@ class Http1Encoder
 
         foreach ($headers as $name => $values) {
             foreach ($values as $value) {
-                switch (strtolower($name)) {
-                    case 'host':
-                        $data = sprintf("%s: %s\r\n%s", $name, Message\encodeHeader($value), $data);
-                        break;
-
-                    default:
-                        $data .= sprintf("%s: %s\r\n", $name, Message\encodeHeader($value));
-                }
+                $data .= sprintf("%s: %s\r\n", $name, Message\encodeHeader($value));
             }
         }
 
