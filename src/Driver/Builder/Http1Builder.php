@@ -164,15 +164,7 @@ class Http1Builder
      */
     public function buildIncomingRequest(Request $request, $timeout = 0)
     {
-        if ($request->getMethod() === 'POST' || $request->getMethod() === 'PUT') {
-            yield $this->buildIncomingStream($request, $timeout);
-            return;
-        }
-
-        $stream = new MemoryStream();
-        yield $stream->end(); // No body in other requests.
-
-        yield $request->withBody($stream);
+        return $this->buildIncomingStream($request, $timeout);
     }
 
     /**
@@ -202,6 +194,19 @@ class Http1Builder
         }
 
         if (!$body->isReadable()) {
+            if ($message instanceof Request) {
+                switch ($message->getMethod()) {
+                    case 'POST':
+                    case 'PUT':
+                        yield $message->withHeader('Content-Length', 0);
+                        return;
+
+                    default: // No content length header required on other methods.
+                        yield $message;
+                        return;
+                }
+            }
+
             yield $message->withHeader('Content-Length', 0);
             return;
         }
@@ -293,10 +298,20 @@ class Http1Builder
             }
 
             $message = $message->withBody($stream);
-        } elseif (
-            !$message instanceof Response // Response may have no length on incoming stream.
-            && strtolower($message->getHeader('Connection')) !== 'close'
-        ) {
+        } elseif ($message instanceof Request) {
+            switch ($message->getMethod()) {
+                case 'POST':
+                case 'PUT': // Post and put messages must have content length or be transfer encoded.
+                    throw new MessageException(Response::LENGTH_REQUIRED, 'Content-Length header required.');
+
+                default: // Assume 0 length body.
+                    $stream = new MemoryStream();
+                    yield $stream->end(); // Creates empty request body.
+
+                    yield $message->withBody($stream);
+                    return;
+            }
+        } elseif (strtolower($message->getHeader('Connection')) !== 'close') {
             throw new MessageException(Response::LENGTH_REQUIRED, 'Content-Length header required.');
         }
 
@@ -313,7 +328,7 @@ class Http1Builder
                 yield $message->withBody($stream);
                 return;
 
-            case '':
+            case '': // No content encoding.
                 yield $message;
                 return;
 
