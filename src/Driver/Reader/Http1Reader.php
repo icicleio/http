@@ -45,7 +45,7 @@ class Http1Reader
 
         do {
             $buffer->push(yield from $socket->read(0, null, $timeout));
-        } while (false === ($position = $buffer->search("\r\n")) && $buffer->getLength() >= $this->maxStartLineLength);
+        } while (false === ($position = $buffer->search("\r\n")) && $buffer->getLength() < $this->maxStartLineLength);
 
         if (false === $position) {
             throw new MessageException(
@@ -82,7 +82,7 @@ class Http1Reader
 
         do {
             $buffer->push(yield from $socket->read(0, null, $timeout));
-        } while (false === ($position = $buffer->search("\r\n")) && $buffer->getLength() >= $this->maxStartLineLength);
+        } while (false === ($position = $buffer->search("\r\n")) && $buffer->getLength() < $this->maxStartLineLength);
 
         if (false === $position) {
             throw new MessageException(
@@ -205,7 +205,7 @@ class Http1Reader
     {
         foreach ($headers as $name => $values) {
             if (strtolower($name) === 'host') {
-                return implode(',', $values);
+                return $values[0];
             }
         }
 
