@@ -14,11 +14,11 @@ use Icicle\Http\Message\BasicResponse;
 use Icicle\Http\Message\Request;
 use Icicle\Http\Message\Response;
 use Icicle\Http\Server\RequestHandler;
+use Icicle\Log\Log;
 use Icicle\Socket\Server\ServerFactory;
 use Icicle\Socket\Server\Server as SocketServer;
 use Icicle\Socket\Socket;
 use Icicle\Stream\MemorySink;
-use Icicle\Stream\WritableStream;
 
 class Listener
 {
@@ -46,7 +46,7 @@ class Listener
     private $servers = [];
 
     /**
-     * @var \Icicle\Stream\WritableStream
+     * @var \Icicle\Log\Log
      */
     private $log;
 
@@ -58,13 +58,13 @@ class Listener
     /**
      * @param \Icicle\Http\Driver\Driver $driver
      * @param \Icicle\Http\Server\RequestHandler $handler
-     * @param \Icicle\Stream\WritableStream $log
+     * @param \Icicle\Log\Log $log
      * @param \Icicle\Socket\Server\ServerFactory $factory
      */
     public function __construct(
         Driver $driver,
         RequestHandler $handler,
-        WritableStream $log,
+        Log $log,
         ServerFactory $factory
     ) {
         $this->driver = $driver;
@@ -140,6 +140,12 @@ class Listener
      */
     private function accept(SocketServer $server, $cryptoMethod, $timeout, $allowPersistent)
     {
+        assert(yield $this->log->log(Log::INFO, sprintf(
+            'Server listening on %s:%d',
+            $server->getAddress(),
+            $server->getPort()
+        )));
+
         while ($server->isOpen()) {
             try {
                 $coroutine = new Coroutine(
@@ -169,6 +175,14 @@ class Listener
     {
         $count = 0;
 
+        assert(yield $this->log->log(Log::DEBUG, sprintf(
+            'Accepted client from %s:%d on %s:%d',
+            $socket->getRemoteAddress(),
+            $socket->getRemotePort(),
+            $socket->getLocalAddress(),
+            $socket->getLocalPort()
+        )));
+
         try {
             if (0 !== $cryptoMethod) {
                 yield $socket->enableCrypto($cryptoMethod, $timeout);
@@ -184,8 +198,24 @@ class Listener
 
                     /** @var \Icicle\Http\Message\Response $response */
                     $response = (yield $this->createResponse($request, $socket));
+
+                    assert(yield $this->log->log(Log::DEBUG, sprintf(
+                        'Responded to request from %s:%d for %s with %d %s',
+                        $socket->getRemoteAddress(),
+                        $socket->getRemotePort(),
+                        $request->getUri(),
+                        $response->getStatusCode(),
+                        $response->getReasonPhrase()
+                    )));
                 } catch (TimeoutException $exception) { // Request timeout.
                     if (0 < $count) {
+                        assert(yield $this->log->log(Log::DEBUG, sprintf(
+                            'Keep-alive timeout from %s:%d on %s:%d',
+                            $socket->getRemoteAddress(),
+                            $socket->getRemotePort(),
+                            $socket->getLocalAddress(),
+                            $socket->getLocalPort()
+                        )));
                         return; // Keep-alive timeout expired.
                     }
                     $response = (yield $this->createErrorResponse(Response::REQUEST_TIMEOUT, $socket));
@@ -209,10 +239,11 @@ class Listener
                 } finally {
                     $response->getBody()->close();
                 }
+
             } while (strtolower($response->getHeader('Connection')) === 'keep-alive');
         } catch (Exception $exception) {
-            yield $this->log->write(sprintf(
-                "Error when handling request from %s:%d: %s\n",
+            yield $this->log->log(Log::NOTICE, sprintf(
+                "Error when handling request from %s:%d: %s",
                 $socket->getRemoteAddress(),
                 $socket->getRemotePort(),
                 $exception->getMessage()
@@ -220,6 +251,14 @@ class Listener
         } finally {
             $socket->close();
         }
+
+        assert(yield $this->log->log(Log::DEBUG, sprintf(
+            'Disconnected client from %s:%d on %s:%d',
+            $socket->getRemoteAddress(),
+            $socket->getRemotePort(),
+            $socket->getLocalAddress(),
+            $socket->getLocalPort()
+        )));
     }
 
     /**
@@ -235,6 +274,13 @@ class Listener
     private function createResponse(Request $request, Socket $socket)
     {
         try {
+            assert(yield $this->log->log(Log::DEBUG, sprintf(
+                'Received request from %s:%d for %s',
+                $socket->getRemoteAddress(),
+                $socket->getRemotePort(),
+                $request->getUri()
+            )));
+
             $response = (yield $this->handler->onRequest($request, $socket));
 
             if (!$response instanceof Response) {
@@ -244,8 +290,8 @@ class Listener
                 );
             }
         } catch (Exception $exception) {
-            yield $this->log->write(sprintf(
-                "Uncaught exception when creating response to a request from %s:%d in file %s on line %d: %s\n",
+            yield $this->log->log(Log::ERROR, sprintf(
+                "Uncaught exception when creating response to a request from %s:%d in file %s on line %d: %s",
                 $socket->getRemoteAddress(),
                 $socket->getRemotePort(),
                 $exception->getFile(),
@@ -271,6 +317,13 @@ class Listener
     private function createErrorResponse($code, Socket $socket)
     {
         try {
+            yield $this->log->log(Log::NOTICE, sprintf(
+                'Error reading request from %s:%d (Code: %d)',
+                $socket->getRemoteAddress(),
+                $socket->getRemotePort(),
+                $code
+            ));
+
             $response = (yield $this->handler->onError($code, $socket));
 
             if (!$response instanceof Response) {
@@ -280,8 +333,8 @@ class Listener
                 );
             }
         } catch (Exception $exception) {
-            yield $this->log->write(sprintf(
-                "Uncaught exception when creating response to an error from %s:%d in file %s on line %d: %s\n",
+            yield $this->log->log(Log::ERROR, sprintf(
+                "Uncaught exception when creating response to an error from %s:%d in file %s on line %d: %s",
                 $socket->getRemoteAddress(),
                 $socket->getRemotePort(),
                 $exception->getFile(),
