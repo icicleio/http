@@ -2,8 +2,7 @@
 namespace Icicle\Http\Server;
 
 use Icicle\Http\Driver\Http1Driver;
-use Icicle\Log as LogNS;
-use Icicle\Log\Log;
+use Icicle\Log\{Log, function log};
 use Icicle\Socket\Server\DefaultServerFactory;
 
 final class Server
@@ -25,7 +24,7 @@ final class Server
         $this->listener = new Internal\Listener(
             new Http1Driver($options),
             $handler,
-            $log ?: LogNS\log(),
+            $log ?: log(),
             new DefaultServerFactory()
         );
     }

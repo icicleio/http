@@ -4,10 +4,7 @@ namespace Icicle\Http\Client;
 use Icicle\Dns;
 use Icicle\Exception\InvalidArgumentError;
 use Icicle\Http\Exception\RedirectException;
-use Icicle\Http\Message\BasicUri;
-use Icicle\Http\Message\Request;
-use Icicle\Http\Message\BasicRequest;
-use Icicle\Http\Message\Response;
+use Icicle\Http\Message\{BasicUri, Request, BasicRequest, Response};
 use Icicle\Stream\ReadableStream;
 
 class Client

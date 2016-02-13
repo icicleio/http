@@ -1,25 +1,15 @@
 <?php
 namespace Icicle\Http\Server\Internal;
 
-use Exception;
-use Icicle\Awaitable\Awaitable;
-use Icicle\Awaitable\Exception\TimeoutException;
+use Icicle\Awaitable\{Awaitable, Exception\TimeoutException};
 use Icicle\Coroutine\Coroutine;
-use Icicle\Http\Driver\Driver;
-use Icicle\Http\Exception\ClosedError;
-use Icicle\Http\Exception\InvalidResultError;
-use Icicle\Http\Exception\InvalidValueException;
-use Icicle\Http\Exception\MessageException;
-use Icicle\Http\Exception\ParseException;
-use Icicle\Http\Message\BasicResponse;
-use Icicle\Http\Message\Request;
-use Icicle\Http\Message\Response;
-use Icicle\Http\Server\RequestHandler;
+use Icicle\Http\{Driver\Driver, Server\RequestHandler};
+use Icicle\Http\Exception\{ClosedError, InvalidResultError, InvalidValueException, MessageException, ParseException};
+use Icicle\Http\Message\{BasicResponse, Request, Response};
 use Icicle\Log\Log;
-use Icicle\Socket\Server\ServerFactory;
-use Icicle\Socket\Server\Server;
-use Icicle\Socket\Socket;
+use Icicle\Socket\{Server\ServerFactory, Server\Server, Socket};
 use Icicle\Stream\MemorySink;
+use Throwable;
 
 class Listener
 {
@@ -118,7 +108,7 @@ class Listener
 
         try {
             $server = $this->factory->create($address, $port, $options);
-        } catch (Exception $exception) {
+        } catch (Throwable $exception) {
             $this->close();
             throw $exception;
         }
@@ -154,7 +144,7 @@ class Listener
                     $this->process(yield from $server->accept(), $cryptoMethod, $timeout, $allowPersistent)
                 );
                 $coroutine->done();
-            } catch (Exception $exception) {
+            } catch (Throwable $exception) {
                 if ($this->open) {
                     $this->close();
                     throw $exception;
@@ -245,7 +235,7 @@ class Listener
                     $response->getBody()->close();
                 }
             } while (strtolower($response->getHeader('Connection')) === 'keep-alive');
-        } catch (Exception $exception) {
+        } catch (Throwable $exception) {
             yield from $this->log->log(
                 Log::NOTICE,
                 "Error when handling request from %s:%d: %s",
@@ -302,7 +292,7 @@ class Listener
                     $response
                 );
             }
-        } catch (Exception $exception) {
+        } catch (Throwable $exception) {
             yield from $this->log->log(
                 Log::ERROR,
                 "Uncaught exception when creating response to a request from %s:%d on %s:%d in file %s on line %d: %s",
@@ -355,7 +345,7 @@ class Listener
                     $response
                 );
             }
-        } catch (Exception $exception) {
+        } catch (Throwable $exception) {
             yield from $this->log->log(
                 Log::ERROR,
                 "Uncaught exception when creating response to an error from %s:%d on %s:%d in file %s on line %d: %s",

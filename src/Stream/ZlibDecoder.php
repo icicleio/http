@@ -1,10 +1,8 @@
 <?php
 namespace Icicle\Http\Stream;
 
-use Icicle\Exception\InvalidArgumentError;
-use Icicle\Exception\UnsupportedError;
-use Icicle\Stream\Exception\FailureException;
-use Icicle\Stream\MemoryStream;
+use Icicle\Exception\{InvalidArgumentError, UnsupportedError};
+use Icicle\Stream\{Exception\FailureException, MemoryStream};
 
 class ZlibDecoder extends MemoryStream
 {

@@ -2,8 +2,7 @@
 namespace Icicle\Http\Client;
 
 use Icicle\Http\Driver\Http1Driver;
-use Icicle\Http\Message\Request;
-use Icicle\Http\Message\BasicRequest;
+use Icicle\Http\Message\{Request, BasicRequest};
 use Icicle\Socket\Socket;
 use Icicle\Stream\ReadableStream;
 

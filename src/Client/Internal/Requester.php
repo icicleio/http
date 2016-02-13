@@ -1,8 +1,7 @@
 <?php
 namespace Icicle\Http\Client\Internal;
 
-use Icicle\Http\Driver\Driver;
-use Icicle\Http\Message\Request;
+use Icicle\Http\{Driver\Driver, Message\Request};
 use Icicle\Socket\Socket;
 
 class Requester

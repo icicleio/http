@@ -1,9 +1,7 @@
 <?php
 namespace Icicle\Http\Client;
 
-use Icicle\Http\Message\Cookie\MetaCookie;
-use Icicle\Http\Message\Request;
-use Icicle\Http\Message\Response;
+use Icicle\Http\Message\{Cookie\MetaCookie, Request, Response};
 
 class CookieJar
 {

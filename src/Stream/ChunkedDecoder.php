@@ -1,10 +1,8 @@
 <?php
 namespace Icicle\Http\Stream;
 
-use Icicle\Http\Exception\MessageException;
-use Icicle\Http\Message\Response;
-use Icicle\Stream\MemoryStream;
-use Icicle\Stream\Structures\Buffer;
+use Icicle\Http\{Exception\MessageException, Message\Response};
+use Icicle\Stream\{MemoryStream, Structures\Buffer};
 
 class ChunkedDecoder extends MemoryStream
 {
