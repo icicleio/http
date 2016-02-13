@@ -18,7 +18,8 @@
         "icicleio/icicle": "^2.0",
         "icicleio/stream": "^2.0",
         "icicleio/socket": "^2.0",
-        "icicleio/dns": "^2.0"
+        "icicleio/dns": "^2.0",
+        "icicleio/log": "^2.0"
     },
     "require-dev": {
         "phpunit/phpunit": "^5.0",
