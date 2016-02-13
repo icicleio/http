@@ -1,7 +1,7 @@
 <?php
 namespace Icicle\Http\Message;
 
-if (!function_exists(__NAMESPACE__ . '\encode')) {
+if (!function_exists(__NAMESPACE__ . '\encodeValue')) {
     /**
      * Escapes URI value.
      *
