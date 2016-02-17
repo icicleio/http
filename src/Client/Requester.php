@@ -1,6 +1,7 @@
 <?php
 namespace Icicle\Http\Client;
 
+use Icicle\Http\Driver\Driver;
 use Icicle\Http\Driver\Http1Driver;
 use Icicle\Http\Message\Request;
 use Icicle\Http\Message\BasicRequest;
@@ -9,17 +10,19 @@ use Icicle\Stream\ReadableStream;
 
 class Requester
 {
-    /**
-     * @var \Icicle\Http\Client\Internal\Requester
-     */
-    private $requester;
+    const DEFAULT_TIMEOUT = 15;
 
     /**
-     * @param mixed[] $options
+     * @var \Icicle\Http\Driver\Driver
      */
-    public function __construct(array $options = [])
+    private $driver;
+
+    /**
+     * @param \Icicle\Http\Driver\Driver
+     */
+    public function __construct(Driver $driver = null)
     {
-        $this->requester = new Internal\Requester(new Http1Driver($options));
+        $this->driver = $driver ?: new Http1Driver();
     }
 
     /**
@@ -60,6 +63,13 @@ class Requester
      */
     public function send(Socket $socket, Request $request, array $options = [])
     {
-        return $this->requester->send($socket, $request, $options);
+        $timeout = isset($options['timeout']) ? (float) $options['timeout'] : self::DEFAULT_TIMEOUT;
+        $allowPersistent = isset($options['allow_persistent']) ? (bool) $options['allow_persistent'] : true;
+
+        $request = (yield $this->driver->buildRequest($request, $timeout, $allowPersistent));
+
+        yield $this->driver->writeRequest($socket, $request, $timeout);
+
+        yield $this->driver->readResponse($socket, $timeout);
     }
 }
