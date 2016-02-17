@@ -3,6 +3,7 @@ namespace Icicle\Http\Client;
 
 use Icicle\Dns;
 use Icicle\Exception\InvalidArgumentError;
+use Icicle\Http\Driver\Driver;
 use Icicle\Http\Exception\RedirectException;
 use Icicle\Http\Message\{BasicUri, Request, BasicRequest, Response};
 use Icicle\Stream\ReadableStream;
@@ -29,18 +30,17 @@ class Client
     private $maxRedirects = self::DEFAULT_MAX_REDIRECTS;
 
     /**
+     * @param \Icicle\Http\Driver\Driver $driver
      * @param mixed[] $options
      */
-    public function __construct(array $options = [])
+    public function __construct(Driver $driver = null, array $options = [])
     {
-        $options = array_merge($options, ['allow_persistent' => false]);
-
         $this->follow = isset($options['follow_redirects']) ? (bool) $options['follow_redirects'] : true;
         $this->maxRedirects = isset($options['max_redirects'])
             ? (int) $options['max_redirects']
             : self::DEFAULT_MAX_REDIRECTS;
 
-        $this->requester = new Requester($options);
+        $this->requester = new Requester($driver);
     }
 
     /**

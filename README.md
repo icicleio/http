@@ -2,17 +2,24 @@
 
 **Asynchronous, non-blocking HTTP/1.1 client and server.**
 
-This library is a component for [Icicle](https://github.com/icicleio/icicle) that provides an HTTP/1.1 server and client implementations. Like other Icicle components, this library uses [Promises](https://github.com/icicleio/icicle/wiki/Promises) and [Generators](http://www.php.net/manual/en/language.generators.overview.php) for asynchronous operations that may be used to build [Coroutines](https://github.com/icicleio/icicle/wiki/Coroutines) to make writing asynchronous code more like writing synchronous code.
+This library is a component for [Icicle](https://github.com/icicleio/icicle) that provides an HTTP/1.1 server and client implementations. Like other Icicle components, this library uses [Coroutines](https://icicle.io/docs/manual/coroutines/) built from [Awaitables](https://icicle.io/docs/manual/awaitables/) and [Generators](http://www.php.net/manual/en/language.generators.overview.php) to make writing asynchronous code more like writing synchronous code.
 
-[![Build Status](https://img.shields.io/travis/icicleio/http/master.svg?style=flat-square)](https://travis-ci.org/icicleio/http)
-[![Coverage Status](https://img.shields.io/coveralls/icicleio/http/master.svg?style=flat-square)](https://coveralls.io/r/icicleio/http)
+[![Build Status](https://img.shields.io/travis/icicleio/http/v1.x.svg?style=flat-square)](https://travis-ci.org/icicleio/http)
+[![Coverage Status](https://img.shields.io/coveralls/icicleio/http/v1.x.svg?style=flat-square)](https://coveralls.io/r/icicleio/http)
 [![Semantic Version](https://img.shields.io/github/release/icicleio/http.svg?style=flat-square)](http://semver.org)
 [![MIT License](https://img.shields.io/packagist/l/icicleio/http.svg?style=flat-square)](LICENSE)
 [![@icicleio on Twitter](https://img.shields.io/badge/twitter-%40icicleio-5189c7.svg?style=flat-square)](https://twitter.com/icicleio)
 
+#### Documentation and Support
+
+- [Full API Documentation](https://icicle.io/docs)
+- [Official Twitter](https://twitter.com/icicleio)
+- [Gitter Chat](https://gitter.im/icicleio/icicle)
+
 ##### Requirements
 
-- PHP 5.5+
+- PHP 5.5+ for v0.3.x branch (current stable) and v1.x branch (mirrors current stable)
+- PHP 7 for v2.0 (master) branch supporting generator delegation and return expressions
 
 ##### Suggested
 
@@ -34,7 +41,7 @@ You can also manually edit `composer.json` to add this library as a project requ
 // composer.json
 {
     "require": {
-        "icicleio/http": "^0.2"
+        "icicleio/http": "^0.3"
     }
 }
 ```
@@ -49,22 +56,30 @@ The example below creates a simple HTTP server that responds with `Hello, world!
 
 require '/vendor/autoload.php';
 
-use Icicle\Http\Message\RequestInterface;
-use Icicle\Http\Message\Response;
-use Icicle\Http\Server\Server;
+use Icicle\Http\Message\{BasicResponse, Request, Response};
+use Icicle\Http\Server\{RequestHandler, Server};
+use Icicle\Socket\Socket;
 use Icicle\Loop;
 
-$server = new Server(function (RequestInterface $request) {
-    $response = new Response(200);
-    yield $response->getBody()->end('Hello, world!');
-    yield $response->withHeader('Content-Type', 'text/plain');
+$server = new Server(new class implements RequestHandler {
+    public function onRequest(Request $request, Socket $socket)
+    {
+        $response = new BasicResponse(Response::OK, [
+            'Content-Type' => 'text/plain',
+        ]);
+        
+        yield from $response->getBody()->end('Hello, world!');
+        
+        return $response;
+    }
+    
+    public function onError(int $code, Socket $socket)
+    {
+        return new BasicResponse($code);
+    }
 });
 
 $server->listen(8080);
 
-echo "Server running at http://127.0.0.1:8080\n";
-
 Loop\run();
 ```
-
-**More documentation coming soon...**
