@@ -59,6 +59,11 @@ class Server
     private $open = true;
 
     /**
+     * @var \Closure
+     */
+    private $onError;
+
+    /**
      * @param \Icicle\Http\Server\RequestHandler $handler
      * @param \Icicle\Log\Log $log
      * @param \Icicle\Socket\Server\ServerFactory|null $factory
@@ -75,6 +80,11 @@ class Server
         $this->log = $log ?: LogNS\log();
         $this->driver = $driver ?: new Http1Driver();
         $this->factory = $factory ?: new DefaultServerFactory();
+
+        $this->onError = function (Exception $exception) {
+            $this->close();
+            throw $exception;
+        };
     }
 
     /**
@@ -156,7 +166,7 @@ class Server
         $this->servers[] = $server;
 
         $coroutine = new Coroutine($this->accept($server, $cryptoMethod, $timeout, $allowPersistent));
-        $coroutine->done();
+        $coroutine->done(null, $this->onError);
     }
 
     /**
@@ -183,10 +193,9 @@ class Server
                 $coroutine = new Coroutine(
                     $this->process((yield $server->accept()), $cryptoMethod, $timeout, $allowPersistent)
                 );
-                $coroutine->done();
+                $coroutine->done(null, $this->onError);
             } catch (Exception $exception) {
-                if ($this->open) {
-                    $this->close();
+                if ($this->isOpen()) {
                     throw $exception;
                 }
             }
