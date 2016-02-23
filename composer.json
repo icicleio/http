@@ -26,6 +26,11 @@
         "symfony/yaml": "^2.7"
     },
     "minimum-stability": "dev",
+    "extra": {
+        "branch-alias": {
+            "dev-master": "2.0.x-dev"
+        }
+    },
     "autoload": {
         "psr-4": {
             "Icicle\\Http\\": "src"
