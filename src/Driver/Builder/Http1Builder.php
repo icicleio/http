@@ -122,7 +122,7 @@ class Http1Builder
             }
         }
 
-        return $this->buildOutgoingStream($response, $timeout);
+        return yield from $this->buildOutgoingStream($response, $timeout);
     }
 
     /**
@@ -147,7 +147,7 @@ class Http1Builder
             $request = $request->withoutHeader('Accept-Encoding');
         }
 
-        return $this->buildOutgoingStream($request, $timeout);
+        return yield from $this->buildOutgoingStream($request, $timeout);
     }
 
     /**
