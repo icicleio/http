@@ -46,10 +46,26 @@ class Http1Encoder
 
         foreach ($headers as $name => $values) {
             foreach ($values as $value) {
-                $data .= sprintf("%s: %s\r\n", $name, Message\encodeHeader($value));
+                $data .= sprintf("%s: %s\r\n", $name, $this->encodeHeader($value));
             }
         }
 
         return $data;
+    }
+
+    /**
+     * @param string $header
+     *
+     * @return string
+     */
+    protected function encodeHeader($header)
+    {
+        return preg_replace_callback(
+            '/(?:[^A-Za-z0-9_\-\.~!\$&\'\(\)\[\]\*\+,:;=\/% ]+|%(?![A-Fa-f0-9]{2}))/',
+            function (array $matches) {
+                return rawurlencode($matches[0]);
+            },
+            $header
+        );
     }
 }

@@ -179,11 +179,11 @@ class SetCookie extends BasicCookie implements MetaCookie
         $line = parent::toHeader();
 
         if (0 !== $this->expires) {
-            $line .= '; Expires=' . gmdate('D, j M Y G:i:s T', $this->expires);
+            $line .= '; Expires=' . $this->encodeDate($this->expires);
         }
 
         if ('' !== $this->path) {
-            $line .= '; Path=' . Message\encodePath($this->path);
+            $line .= '; Path=' . $this->encodePath($this->path);
         }
 
         if ('' !== $this->domain) {
@@ -201,4 +201,29 @@ class SetCookie extends BasicCookie implements MetaCookie
         return $line;
     }
 
+    /**
+     * @param string $path
+     *
+     * @return string
+     */
+    protected function encodePath($path)
+    {
+        return preg_replace_callback(
+            '/(?:[^A-Za-z0-9_\-\.~\/:%]+|%(?![A-Fa-f0-9]{2}))/',
+            function (array $matches) {
+                return rawurlencode($matches[0]);
+            },
+            $path
+        );
+    }
+
+    /**
+     * @param int $date
+     *
+     * @return string
+     */
+    protected function encodeDate($date)
+    {
+        return gmdate('D, j M Y G:i:s T', $date);
+    }
 }

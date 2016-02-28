@@ -291,7 +291,7 @@ class BasicUri implements Uri
             }
         }
 
-        $uri .= encodePath($this->path);
+        $uri .= $this->encodePath();
 
         $query = $this->encodeQuery();
         if ($query) {
@@ -299,7 +299,7 @@ class BasicUri implements Uri
         }
 
         if ($this->fragment) {
-            $uri = sprintf('%s#%s', $uri, encodeValue($this->fragment));
+            $uri = sprintf('%s#%s', $uri, encode($this->fragment));
         }
 
         return $uri;
@@ -502,9 +502,6 @@ class BasicUri implements Uri
         return $lines;
     }
 
-    /**
-     * {@inheritdoc}
-     */
     protected function encodeAuthority()
     {
         $authority = $this->getHost();
@@ -514,9 +511,9 @@ class BasicUri implements Uri
 
         if ('' !== $this->user) {
             if ('' !== $this->password) {
-                $authority = sprintf('%s:%s@%s', encodeValue($this->user), encodeValue($this->password), $authority);
+                $authority = sprintf('%s:%s@%s', encode($this->user), encode($this->password), $authority);
             } else {
-                $authority = sprintf('%s@%s', encodeValue($this->user), $authority);
+                $authority = sprintf('%s@%s', encode($this->user), $authority);
             }
         }
 
@@ -528,9 +525,6 @@ class BasicUri implements Uri
         return $authority;
     }
 
-    /**
-     * {@inheritdoc}
-     */
     protected function encodeQuery()
     {
         if (empty($this->query)) {
@@ -542,13 +536,24 @@ class BasicUri implements Uri
         foreach ($this->query as $name => $values) {
             foreach ($values as $value) {
                 if ('' === $value) {
-                    $query[] = encodeValue($name);
+                    $query[] = encode($name);
                 } else {
-                    $query[] = sprintf('%s=%s', encodeValue($name), encodeValue($value));
+                    $query[] = sprintf('%s=%s', encode($name), encode($value));
                 }
             }
         }
 
         return implode('&', $query);
+    }
+
+    protected function encodePath()
+    {
+        return preg_replace_callback(
+            '/(?:[^A-Za-z0-9_\-\.~\/:%]+|%(?![A-Fa-f0-9]{2}))/',
+            function (array $matches) {
+                return rawurlencode($matches[0]);
+            },
+            $this->path
+        );
     }
 }
