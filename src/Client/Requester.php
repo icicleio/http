@@ -39,13 +39,13 @@ class Requester
      */
     public function request(
         Socket $socket,
-        $method,
+        string $method,
         $uri,
         array $headers = [],
         ReadableStream $body = null,
         array $options = []
-    ) {
-        return $this->send($socket, new BasicRequest($method, $uri, $headers, $body), $options);
+    ): \Generator {
+        return yield from $this->send($socket, new BasicRequest($method, $uri, $headers, $body), $options);
     }
 
     /**
@@ -59,7 +59,7 @@ class Requester
      *
      * @resolve \Icicle\Http\Message\Response
      */
-    public function send(Socket $socket, Request $request, array $options = [])
+    public function send(Socket $socket, Request $request, array $options = []): \Generator
     {
         $timeout = isset($options['timeout']) ? (float) $options['timeout'] : self::DEFAULT_TIMEOUT;
         $allowPersistent = isset($options['allow_persistent']) ? (bool) $options['allow_persistent'] : true;
