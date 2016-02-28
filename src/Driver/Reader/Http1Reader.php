@@ -47,30 +47,30 @@ class Http1Reader
     {
         $buffer = new Buffer();
 
-        do {
-            $buffer->push(yield $socket->read(0, null, $timeout));
-        } while (false === ($position = $buffer->search("\r\n")) && $buffer->getLength() < $this->maxStartLineLength);
+        try {
+            do {
+                $buffer->push(yield $socket->read(0, null, $timeout));
+            } while (false === ($position = $buffer->search("\r\n")) && $buffer->getLength() < $this->maxStartLineLength);
 
-        if (false === $position) {
-            throw new MessageException(
-                Response::REQUEST_HEADER_TOO_LARGE,
-                sprintf('Message start line exceeded maximum size of %d bytes.', $this->maxStartLineLength)
-            );
-        }
+            if (false === $position) {
+                throw new MessageException(
+                    Response::REQUEST_HEADER_TOO_LARGE,
+                    sprintf('Message start line exceeded maximum size of %d bytes.', $this->maxStartLineLength)
+                );
+            }
 
-        $line = $buffer->shift($position + 2);
+            $line = $buffer->shift($position + 2);
 
-        if (!preg_match("/^HTTP\/(\d+(?:\.\d+)?) (\d{3})(?: (.+))?\r\n$/i", $line, $matches)) {
-            throw new ParseException('Could not parse start line.');
-        }
+            if (!preg_match("/^HTTP\/(\d+(?:\.\d+)?) (\d{3})(?: (.+))?\r\n$/i", $line, $matches)) {
+                throw new ParseException('Could not parse start line.');
+            }
 
-        $protocol = $matches[1];
-        $code = (int) $matches[2];
-        $reason = isset($matches[3]) ? $matches[3] : '';
+            $protocol = $matches[1];
+            $code = (int) $matches[2];
+            $reason = isset($matches[3]) ? $matches[3] : '';
 
-        $headers = (yield $this->readHeaders($buffer, $socket, $timeout));
-
-        if ($buffer->getLength()) {
+            $headers = (yield $this->readHeaders($buffer, $socket, $timeout));
+        } finally {
             $socket->unshift((string) $buffer);
         }
 
@@ -84,30 +84,30 @@ class Http1Reader
     {
         $buffer = new Buffer();
 
-        do {
-            $buffer->push(yield $socket->read(0, null, $timeout));
-        } while (false === ($position = $buffer->search("\r\n")) && $buffer->getLength() < $this->maxStartLineLength);
+        try {
+            do {
+                $buffer->push(yield $socket->read(0, null, $timeout));
+            } while (false === ($position = $buffer->search("\r\n")) && $buffer->getLength() < $this->maxStartLineLength);
 
-        if (false === $position) {
-            throw new MessageException(
-                Response::REQUEST_HEADER_TOO_LARGE,
-                sprintf('Message start line exceeded maximum size of %d bytes.', $this->maxStartLineLength)
-            );
-        }
+            if (false === $position) {
+                throw new MessageException(
+                    Response::REQUEST_HEADER_TOO_LARGE,
+                    sprintf('Message start line exceeded maximum size of %d bytes.', $this->maxStartLineLength)
+                );
+            }
 
-        $line = $buffer->shift($position + 2);
+            $line = $buffer->shift($position + 2);
 
-        if (!preg_match("/^([A-Z]+) (\S+) HTTP\/(\d+(?:\.\d+)?)\r\n$/i", $line, $matches)) {
-            throw new ParseException('Could not parse start line.');
-        }
+            if (!preg_match("/^([A-Z]+) (\S+) HTTP\/(\d+(?:\.\d+)?)\r\n$/i", $line, $matches)) {
+                throw new ParseException('Could not parse start line.');
+            }
 
-        $method = $matches[1];
-        $target = $matches[2];
-        $protocol = $matches[3];
+            $method = $matches[1];
+            $target = $matches[2];
+            $protocol = $matches[3];
 
-        $headers = (yield $this->readHeaders($buffer, $socket, $timeout));
-
-        if ($buffer->getLength()) {
+            $headers = (yield $this->readHeaders($buffer, $socket, $timeout));
+        } finally {
             $socket->unshift((string) $buffer);
         }
 
