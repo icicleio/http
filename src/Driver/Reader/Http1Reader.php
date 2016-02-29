@@ -3,6 +3,7 @@ namespace Icicle\Http\Driver\Reader;
 
 use Icicle\Http\Exception\MessageException;
 use Icicle\Http\Exception\ParseException;
+use Icicle\Http\Message;
 use Icicle\Http\Message\BasicRequest;
 use Icicle\Http\Message\BasicResponse;
 use Icicle\Http\Message\BasicUri;
@@ -169,7 +170,8 @@ class Http1Reader
             }
 
             list($name, $value) = $parts;
-            $value = trim($value);
+            $name = Message\decode($name);
+            $value = Message\decode(trim($value));
 
             // No check for case as Message class will automatically combine similarly named headers.
             if (!isset($headers[$name])) {
