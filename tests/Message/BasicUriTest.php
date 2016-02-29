@@ -157,15 +157,6 @@ class BasicUriTest extends TestCase
     }
 
     /**
-     * @depends testConstructor
-     * @expectedException \Icicle\Http\Exception\InvalidValueException
-     */
-    public function testWithInvalidScheme()
-    {
-        new BasicUri('ftp://example.com/path');
-    }
-
-    /**
      * @return array
      */
     public function getValidPorts()

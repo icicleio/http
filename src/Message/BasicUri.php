@@ -9,13 +9,17 @@ use Icicle\Http\Exception\InvalidValueException;
 class BasicUri implements Uri
 {
     /**
-     * Array of valid schemes to corresponding port numbers.
+     * Array of schemes to corresponding port numbers.
      *
      * @var int[]
      */
     private static $schemes = [
+        'ftp' => 21,
+        'ssh' => 22,
         'http'  => 80,
         'https' => 443,
+        'ws' => 80,
+        'wss' => 443,
     ];
 
     /**
@@ -318,7 +322,7 @@ class BasicUri implements Uri
             return 0;
         }
 
-        return $this->allowedSchemes()[$scheme];
+        return self::$schemes[$scheme];
     }
 
     /**
@@ -345,14 +349,6 @@ class BasicUri implements Uri
     }
 
     /**
-     * @return int[] Array indexed by valid scheme names to their corresponding ports.
-     */
-    protected function allowedSchemes()
-    {
-        return self::$schemes;
-    }
-
-    /**
      * @param string $scheme
      *
      * @return string
@@ -367,14 +363,6 @@ class BasicUri implements Uri
 
         $scheme = strtolower($scheme);
         $scheme = rtrim($scheme, ':/');
-
-        if ('' !== $scheme && !array_key_exists($scheme, $this->allowedSchemes())) {
-            throw new InvalidValueException(sprintf(
-                    'Invalid scheme: %s. Must be null, an empty string, or in set (%s).',
-                    $scheme,
-                    implode(', ', array_keys($this->allowedSchemes()))
-                ));
-        }
 
         return $scheme;
     }

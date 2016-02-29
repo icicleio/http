@@ -117,7 +117,7 @@ class Http1Reader
             $target = null; // Empty request target since it was a path.
         } elseif ('*' === $target) { // asterisk-form
             $uri = new BasicUri($this->filterHost($this->findHost($headers)));
-        } elseif (preg_match('/^https?:\/\//i', $target)) { // absolute-form
+        } elseif (preg_match('/^[A-Za-z0-9]+:\/\//', $target)) { // absolute-form
             $uri = new BasicUri($target);
         } else { // authority-form
             $uri = new BasicUri($this->filterHost($target));
