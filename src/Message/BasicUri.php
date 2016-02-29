@@ -9,13 +9,17 @@ use Icicle\Http\Exception\InvalidValueException;
 class BasicUri implements Uri
 {
     /**
-     * Array of valid schemes to corresponding port numbers.
+     * Array of schemes to corresponding port numbers.
      *
      * @var int[]
      */
     private static $schemes = [
+        'ftp' => 21,
+        'ssh' => 22,
         'http'  => 80,
         'https' => 443,
+        'ws' => 80,
+        'wss' => 443,
     ];
 
     /**
@@ -291,7 +295,7 @@ class BasicUri implements Uri
             }
         }
 
-        $uri .= encodePath($this->path);
+        $uri .= $this->encodePath();
 
         $query = $this->encodeQuery();
         if ($query) {
@@ -299,7 +303,7 @@ class BasicUri implements Uri
         }
 
         if ($this->fragment) {
-            $uri = sprintf('%s#%s', $uri, encodeValue($this->fragment));
+            $uri = sprintf('%s#%s', $uri, encode($this->fragment));
         }
 
         return $uri;
@@ -318,7 +322,7 @@ class BasicUri implements Uri
             return 0;
         }
 
-        return $this->allowedSchemes()[$scheme];
+        return self::$schemes[$scheme];
     }
 
     /**
@@ -345,15 +349,7 @@ class BasicUri implements Uri
     }
 
     /**
-     * @return int[] Array indexed by valid scheme names to their corresponding ports.
-     */
-    protected function allowedSchemes(): array
-    {
-        return self::$schemes;
-    }
-
-    /**
-     * @param string|null $scheme
+     * @param string $scheme
      *
      * @return string
      *
@@ -367,14 +363,6 @@ class BasicUri implements Uri
 
         $scheme = strtolower($scheme);
         $scheme = rtrim($scheme, ':/');
-
-        if ('' !== $scheme && !array_key_exists($scheme, $this->allowedSchemes())) {
-            throw new InvalidValueException(sprintf(
-                    'Invalid scheme: %s. Must be null, an empty string, or in set (%s).',
-                    $scheme,
-                    implode(', ', array_keys($this->allowedSchemes()))
-                ));
-        }
 
         return $scheme;
     }
@@ -502,9 +490,6 @@ class BasicUri implements Uri
         return $lines;
     }
 
-    /**
-     * {@inheritdoc}
-     */
     protected function encodeAuthority(): string
     {
         $authority = $this->getHost();
@@ -514,9 +499,9 @@ class BasicUri implements Uri
 
         if ('' !== $this->user) {
             if ('' !== $this->password) {
-                $authority = sprintf('%s:%s@%s', encodeValue($this->user), encodeValue($this->password), $authority);
+                $authority = sprintf('%s:%s@%s', encode($this->user), encode($this->password), $authority);
             } else {
-                $authority = sprintf('%s@%s', encodeValue($this->user), $authority);
+                $authority = sprintf('%s@%s', encode($this->user), $authority);
             }
         }
 
@@ -528,9 +513,6 @@ class BasicUri implements Uri
         return $authority;
     }
 
-    /**
-     * {@inheritdoc}
-     */
     protected function encodeQuery(): string
     {
         if (empty($this->query)) {
@@ -542,13 +524,24 @@ class BasicUri implements Uri
         foreach ($this->query as $name => $values) {
             foreach ($values as $value) {
                 if ('' === $value) {
-                    $query[] = encodeValue($name);
+                    $query[] = encode($name);
                 } else {
-                    $query[] = sprintf('%s=%s', encodeValue($name), encodeValue($value));
+                    $query[] = sprintf('%s=%s', encode($name), encode($value));
                 }
             }
         }
 
         return implode('&', $query);
+    }
+
+    protected function encodePath(): string
+    {
+        return preg_replace_callback(
+            '/(?:[^A-Za-z0-9_\-\.~\/:%]+|%(?![A-Fa-f0-9]{2}))/',
+            function (array $matches) {
+                return rawurlencode($matches[0]);
+            },
+            $this->path
+        );
     }
 }

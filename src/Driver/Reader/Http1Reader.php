@@ -2,6 +2,7 @@
 namespace Icicle\Http\Driver\Reader;
 
 use Icicle\Http\Exception\{MessageException, ParseException};
+use Icicle\Http\Message;
 use Icicle\Http\Message\{BasicRequest, BasicResponse, BasicUri, Response};
 use Icicle\Socket\Socket;
 use Icicle\Stream;
@@ -112,7 +113,7 @@ class Http1Reader
             $target = null; // Empty request target since it was a path.
         } elseif ('*' === $target) { // asterisk-form
             $uri = new BasicUri($this->filterHost($this->findHost($headers)));
-        } elseif (preg_match('/^https?:\/\//i', $target)) { // absolute-form
+        } elseif (preg_match('/^[A-Za-z0-9]+:\/\//', $target)) { // absolute-form
             $uri = new BasicUri($target);
         } else { // authority-form
             $uri = new BasicUri($this->filterHost($target));
@@ -164,7 +165,8 @@ class Http1Reader
             }
 
             list($name, $value) = $parts;
-            $value = trim($value);
+            $name = Message\decode($name);
+            $value = Message\decode(trim($value));
 
             // No check for case as Message class will automatically combine similarly named headers.
             if (!isset($headers[$name])) {

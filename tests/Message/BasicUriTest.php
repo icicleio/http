@@ -157,15 +157,6 @@ class BasicUriTest extends TestCase
     }
 
     /**
-     * @depends testConstructor
-     * @expectedException \Icicle\Http\Exception\InvalidValueException
-     */
-    public function testWithInvalidScheme()
-    {
-        new BasicUri('ftp://example.com/path');
-    }
-
-    /**
      * @return array
      */
     public function getValidPorts()
@@ -363,7 +354,7 @@ class BasicUriTest extends TestCase
 
         $this->assertNotSame($uri, $new);
         $this->assertSame(['foo' => ['foo=bar']], $new->getQueryValues());
-        $this->assertSame('http://example.com/path?foo=foo=bar', (string) $new);
+        $this->assertSame('http://example.com/path?foo=foo%3Dbar', (string) $new);
 
         $new = $uri->withQueryValue('foo', ['value1', 'value2']);
 
@@ -371,6 +362,12 @@ class BasicUriTest extends TestCase
         $this->assertSame(['value1', 'value2'], $new->getQueryValueAsArray('foo'));
         $this->assertSame(['foo' => ['value1', 'value2']], $new->getQueryValues());
         $this->assertSame('http://example.com/path?foo=value1&foo=value2', (string) $new);
+
+        $new = $uri->withQueryValue('plus', '2+2=4');
+
+        $this->assertNotSame($uri, $new);
+        $this->assertSame(['2+2=4'], $new->getQueryValueAsArray('plus'));
+        $this->assertSame('http://example.com/path?foo=bar&plus=2%2B2%3D4', (string) $new);
     }
 
     /**
@@ -451,8 +448,8 @@ class BasicUriTest extends TestCase
             [null, '', ''],
             ['new-fragment', 'new-fragment', '#new-fragment'],
             ['#with-hash', 'with-hash', '#with-hash'],
-            ['wïth/spécial/chârs', 'wïth/spécial/chârs', '#w%C3%AFth/sp%C3%A9cial/ch%C3%A2rs'],
-            ['#w%C3%AFth/enc%C3%B8ded/ch%C3%A2rs', 'wïth/encøded/chârs', '#w%C3%AFth/enc%C3%B8ded/ch%C3%A2rs'],
+            ['wïth-spécial-chârs', 'wïth-spécial-chârs', '#w%C3%AFth-sp%C3%A9cial-ch%C3%A2rs'],
+            ['#w%C3%AFth-enc%C3%B8ded-ch%C3%A2rs', 'wïth-encøded-chârs', '#w%C3%AFth-enc%C3%B8ded-ch%C3%A2rs'],
         ];
     }
 
