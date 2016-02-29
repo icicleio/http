@@ -10,6 +10,7 @@ use Icicle\Loop;
 use Icicle\Stream;
 use Icicle\Socket\Socket;
 use Icicle\Tests\Http\TestCase;
+use Mockery;
 use Symfony\Component\Yaml\Yaml;
 
 class Http1ReaderTest extends TestCase
@@ -19,7 +20,9 @@ class Http1ReaderTest extends TestCase
      */
     protected function createSocket()
     {
-        return $this->getMock(Socket::class);
+        $socket = Mockery::mock(Socket::class);
+        $socket->shouldIgnoreMissing();
+        return $socket;
     }
 
     /**
@@ -31,17 +34,17 @@ class Http1ReaderTest extends TestCase
     {
         $data = file_get_contents(dirname(dirname(__DIR__)) . '/data/' . $filename);
 
-        $socket = $this->getMock(Socket::class);
+        $socket = $this->createSocket();
 
-        $socket->method('read')
-            ->will($this->returnCallback(function () use (&$data) {
+        $socket->shouldReceive('read')
+            ->andReturnUsing(function () use (&$data) {
                 yield $data;
-            }));
+            });
 
-        $socket->method('unshift')
-            ->will($this->returnCallback(function ($string) use (&$data) {
+        $socket->shouldReceive('unshift')
+            ->andReturnUsing(function ($string) use (&$data) {
                 $data = $string;
-            }));
+            });
 
         return $socket;
     }
@@ -89,8 +92,6 @@ class Http1ReaderTest extends TestCase
                     ->with($this->identicalTo($body));
 
                 $promise->done($callback, $this->createCallback(0));
-
-                //Loop\run();
             }
         });
 
@@ -216,18 +217,18 @@ class Http1ReaderTest extends TestCase
         $socket = $this->createSocket();
         $maxSize = 1;
 
-        $socket->method('read')
-            ->will($this->onConsecutiveCalls(
-                $this->returnCallback(function () {
+        $socket->shouldReceive('read')
+            ->andReturnUsing(
+                function () {
                     yield "GET / HTTP/1.1\r\n";
-                }),
-                $this->returnCallback(function () {
+                },
+                function () {
                     yield "Host: example.com\r\n";
-                }),
-                $this->returnCallback(function () {
+                },
+                function () {
                     yield "\r\n";
-                })
-            ));
+                }
+            );
 
         $promise = new Coroutine($reader->readRequest($socket, $maxSize));
 
@@ -250,18 +251,18 @@ class Http1ReaderTest extends TestCase
         $socket = $this->createSocket();
         $maxSize = 1;
 
-        $socket->method('read')
-            ->will($this->onConsecutiveCalls(
-                $this->returnCallback(function () {
+        $socket->shouldReceive('read')
+            ->andReturnUsing(
+                function () {
                     yield "HTTP/1.1 200 OK\r\n";
-                }),
-                $this->returnCallback(function () {
+                },
+                function () {
                     yield "Connection: close\r\n";
-                }),
-                $this->returnCallback(function () {
+                },
+                function () {
                     yield "\r\n";
-                })
-            ));
+                }
+            );
 
         $promise = new Coroutine($reader->readResponse($socket, $maxSize));
 
