@@ -61,10 +61,6 @@ class ZlibEncoder extends MemoryStream
             throw new FailureException('Failed adding date to deflate stream.');
         }
 
-        if ('' === $data) {
-            return 0;
-        }
-
         return yield from parent::send($data, $timeout, $end);
     }
 }
