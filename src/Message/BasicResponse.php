@@ -62,6 +62,7 @@ class BasicResponse extends AbstractMessage implements Response
         428 => 'Precondition Required',
         429 => 'Too Many Requests',
         431 => 'Request Header Fields Too Large',
+        451 => 'Unavailable For Legal Reasons',
         500 => 'Internal Server Error',
         501 => 'Not Implemented',
         502 => 'Bad Gateway',
@@ -103,7 +104,7 @@ class BasicResponse extends AbstractMessage implements Response
         $code = 200,
         array $headers = [],
         ReadableStream $stream = null,
-        $reason = '',
+        $reason = null,
         $protocol = '1.1'
     ) {
         parent::__construct($headers, $stream, $protocol);
