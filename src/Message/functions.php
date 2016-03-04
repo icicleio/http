@@ -12,7 +12,7 @@ if (!function_exists(__NAMESPACE__ . '\encode')) {
     function encode(string $value): string
     {
         return preg_replace_callback(
-            '/(?:[^A-Za-z0-9_\-\.~!\'\(\)\[\]\*]+|%(?![A-Fa-f0-9]{2}))/',
+            '/(?:[^A-Za-z0-9_\-\.~!\'\(\)\*]+|%(?![A-Fa-f0-9]{2}))/',
             function (array $matches) {
                 return rawurlencode($matches[0]);
             },

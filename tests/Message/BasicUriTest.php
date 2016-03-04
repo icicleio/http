@@ -328,7 +328,7 @@ class BasicUriTest extends TestCase
         $this->assertNotSame($uri, $new);
         $this->assertSame('value1', $new->getQueryValue('test[]'));
         $this->assertSame(['value1', 'value2'], $new->getQueryValueAsArray('test[]'));
-        $this->assertSame('http://example.com/path?test[]=value1&test[]=value2', (string) $new);
+        $this->assertSame('http://example.com/path?test%5B%5D=value1&test%5B%5D=value2', (string) $new);
     }
 
     /**

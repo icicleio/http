@@ -55,6 +55,7 @@ interface Response extends Message
     const PRECONDITION_REQUIRED = 428;
     const TOO_MANY_REQUESTS = 429;
     const REQUEST_HEADER_TOO_LARGE = 431;
+    const UNAVAILABLE_FOR_LEGAL_REASONS = 451;
 
     const INTERNAL_SERVER_ERROR = 500;
     const NOT_IMPLEMENTED = 501;
