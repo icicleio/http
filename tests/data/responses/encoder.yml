@@ -1,0 +1,7 @@
+- file: responses/19.txt
+  code: 302
+  reason: Found
+  protocolVersion: "1.1"
+  headers:
+    Location:
+      - http://www.example.org/index.php?foo=bar&bar=baz#test

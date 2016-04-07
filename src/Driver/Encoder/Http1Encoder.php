@@ -61,7 +61,7 @@ class Http1Encoder
     protected function encodeHeader($header)
     {
         return preg_replace_callback(
-            '/(?:[^A-Za-z0-9_\-\.~!\$&\'\(\)\[\]\*\+,:;=\/% ]+|%(?![A-Fa-f0-9]{2}))/',
+            '/(?:[^A-Za-z0-9_\-\.~!\$@#?&\'\(\)\[\]\*\+,:;=\/% ]+|%(?![A-Fa-f0-9]{2}))/',
             function (array $matches) {
                 return rawurlencode($matches[0]);
             },
