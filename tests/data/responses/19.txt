@@ -1,0 +1,3 @@
+HTTP/1.1 302 Found
+Location: http://www.example.org/index.php?foo=bar&bar=baz#test
+
