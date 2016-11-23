@@ -70,10 +70,10 @@ $server = new Server(new class implements RequestHandler {
         
         yield from $response->getBody()->end('Hello, world!');
         
-        return $response;
+        yield $response;
     }
     
-    public function onError(int $code, Socket $socket)
+    public function onError($code, Socket $socket)
     {
         return new BasicResponse($code);
     }
